@@ -315,3 +315,7 @@ html.static .chip{display:none}
 @media(max-width:1000px){.bgrid{grid-template-columns:repeat(2,1fr)}.bgrid .bcard:last-child{grid-column:1/-1}}
 @media(max-width:640px){.bgrid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.viz .ghostline,.viz .bars rect{animation:none}.bcard{transition:none}}
+
+/* brand mark: nav sits on dark, footer on cream */
+.logo{background:url(../assets/nav-mark.png) center/contain no-repeat}
+.foot .logo{background-image:url(../assets/mark-dark.png)}
