@@ -26,6 +26,7 @@
   <ul>
     <li><a class="logo" href="index.html" aria-label="Project Apex home"></a></li>
     <li><a class="nl" href="#abstract">Abstract</a></li>
+    <li><a class="nl" href="#film-sec">Film</a></li>
     <li><a class="nl" href="#manifesto">Manifesto</a></li>
     <li><a class="nl" href="#lab">Lab</a></li>
     <li><a class="nl" href="#algorithm">Algorithm</a></li>
@@ -96,6 +97,27 @@
     </div>
   </section>
 
+  <!-- film -->
+  <section class="s dark" id="film-sec" aria-labelledby="film-h">
+    <div class="wrap">
+      <p class="mono lbl">Film</p>
+      <h2 id="film-h">The mathematics, as a film.</h2>
+      <p class="grey" style="margin-bottom:34px">Nine scenes, about ninety seconds. It plays when it scrolls into view. Pause, scrub, change speed or jump to a scene. Press K to play or pause.</p>
+      <div class="film">
+        <canvas id="film" role="img" aria-label="Animated explanation of the Prism mathematics. The caption below narrates each scene."></canvas>
+        <div class="film-bar">
+          <button class="btn" id="film-play" type="button">Play</button>
+          <input id="film-seek" type="range" min="0" max="8700" step="1" value="0" aria-label="Seek">
+          <span class="mono" id="film-time">0:00 / 1:27</span>
+          <select id="film-speed" aria-label="Playback speed"><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option></select>
+        </div>
+        <p class="mono film-title" id="film-title"></p>
+        <p class="film-cap" id="film-cap" aria-live="polite"></p>
+        <div class="film-chips" id="film-chips"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- manifesto -->
   <section class="s dark" id="manifesto" aria-labelledby="manifesto-h">
     <div class="wrap">
@@ -109,6 +131,19 @@
         <article><b>004 /</b><div><h3>A reader never waits for a writer, and never sees half a write.</h3><p>Every read happens against a named position in the log. The same question at the same position gives the same answer, so a surprising result can be replayed and explained.</p></div></article>
         <article><b>005 /</b><div><h3>Say what was measured.</h3><p>Every number carries its data, its machine and a checksum of the code that produced it. A number from synthetic data says so. A claim without a measurement is a goal, and we label it as one.</p></div></article>
         <article><b>006 /</b><div><h3>Keep it open.</h3><p>The reference implementation, the benchmark and the raw results are public, so anyone can disagree with us with evidence.</p></div></article>
+      </div>
+      <div class="northstar">
+        <p class="mono lbl">North star</p>
+        <h3>The best open-source vector database of this decade, built by one person with agents, for agents.</h3>
+        <p>We want model labs and model hubs to choose it because it is better, not because it is ours. That is a goal. We have no customers and we claim none. What we can do is write down the bar they would apply, and clear it in public:</p>
+        <ul>
+          <li><b>Speed on public data.</b> Recall against latency curves versus the leading engines, on SIFT1M, GIST1M and a current text-embedding set, on identical hardware.</li>
+          <li><b>Honest concurrency.</b> P99 under agent-rate writes, over hours, on a quiet machine.</li>
+          <li><b>Durability.</b> Power-loss tests and an independent review before anyone is asked to trust it with memory.</li>
+          <li><b>Isolation.</b> Tenant boundaries proved by tests that try to break them.</li>
+          <li><b>Drop-in for agents.</b> An embedded Rust library, SDKs and an MCP server, so an agent can use it without glue.</li>
+          <li><b>Reproducible.</b> Every number from a public script, with a checksum, that a stranger can re-run.</li>
+        </ul>
       </div>
       <div class="vision">
         <div><p class="mono lbl">What it is for</p><p>A person running an agent on their own machine, with their own data, who should not need a cluster to give that agent a memory. A small team that wants retrieval it can reason about and replay. A research community that deserves an open reference for the read-while-writing case, not only the static one.</p></div>
@@ -289,6 +324,7 @@ SEARCH(q, k, schedule, z, snapshot):
 </main>
 
 <script src="js/prism.js"></script>
+<script src="js/prism-film.js"></script>
 <script src="js/prism-evidence.js"></script>
 </body>
 </html>

@@ -167,6 +167,26 @@ svg.geo text{font-family:var(--mono);font-size:11px;fill:currentColor}
 
 /* equation stage */
 .eqband .lbl{max-width:none;text-align:center}
+
+/* film player */
+.film{border:1px solid var(--line);border-radius:14px;padding:clamp(10px,2vw,22px);background:#1b1b1b}
+.film canvas{width:100%;height:auto;aspect-ratio:16/9;display:block;border-radius:8px;background:var(--black)}
+.film-bar{display:grid;grid-template-columns:auto 1fr auto auto;gap:14px;align-items:center;margin-top:16px}
+.film-bar .btn{padding:14px 22px;min-width:96px;justify-content:center}
+.film-bar input[type=range]{width:100%;accent-color:var(--accent)}
+.film-bar select{font-family:var(--mono);font-size:13px;padding:8px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--off)}
+.film-title{margin-top:18px;color:var(--accent)}
+.film-cap{margin-top:8px;font-size:var(--t-lead);font-weight:600;max-width:70ch;min-height:3em}
+.film-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.film-chips button{font-family:var(--mono);font-size:12px;text-transform:uppercase;padding:8px 11px;border-radius:7px;box-shadow:inset 0 0 0 1px var(--line);color:var(--mid)}
+.film-chips button[aria-current=true]{background:var(--accent);color:var(--black);box-shadow:none}
+.northstar{margin-top:64px;border:1px solid var(--accent);border-radius:14px;padding:clamp(20px,3vw,40px)}
+.northstar h3{font-size:var(--t-h1);line-height:1.08;letter-spacing:-.02em;font-weight:600;max-width:24ch;margin-bottom:18px}
+.northstar p{color:var(--mid)}
+.northstar ul{list-style:none;margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:14px 40px}
+.northstar li{border-top:1px solid var(--line);padding-top:12px;color:var(--mid);line-height:1.45}
+.northstar li b{color:var(--off)}
+@media (max-width:900px){.film-bar{grid-template-columns:auto 1fr}.film-bar #film-time,.film-bar select{grid-row:2}.northstar ul{grid-template-columns:1fr}}
 .eqband{padding:clamp(40px,6vw,90px) var(--gutter) clamp(70px,9vw,130px)}
 .eqstage{display:grid;place-items:center;min-height:clamp(150px,22vw,260px);perspective:900px}
 .eqq{grid-area:1/1;text-align:center;opacity:0;pointer-events:none;transition:opacity .5s}
