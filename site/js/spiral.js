@@ -1,11 +1,12 @@
-// GPU spiral: text is baked into one texture, then rotated / twisted / zoomed in a fragment shader.
+// GPU text rings: text is baked into one texture, then rotated / twisted / zoomed in a fragment shader.
 // Per-frame cost is one fullscreen quad; no 2D text drawing after startup.
 import * as THREE from '../vendor/three.module.min.js';
 
 const SIZE = 4096;        // texture px
 const SPAN = 1.9;         // texture covers SPAN view-heights
-const PITCH_PX = 74;      // radial gap between spiral turns, in texture px
-const R0_PX = 26;
+const PITCH_PX = 44;      // radial gap between rings, in texture px
+const R0_PX = 66;
+const FS = 19;            // glyph size, texture px
 const WORD = 'PROJECT APEX · ATLAS · ';
 const PITCH = (PITCH_PX / SIZE) * SPAN;
 const R0 = (R0_PX / SIZE) * SPAN;
@@ -27,7 +28,9 @@ void main(){
   p/=uZoom;
   float r=length(p);
   float a=atan(p.y,p.x);
-  a+=uRot+uTwist*exp(-r*3.2)*sin(uTime*0.35);
+  float k=floor((r-R0)/PITCH+0.5);
+  float dir=mod(k,2.0)<0.5?1.0:-1.0;
+  a+=dir*uRot*(1.0+0.18*mod(k,3.0))+uTwist*0.0*uTime;
   vec2 q=vec2(cos(a),sin(a))*r;
   float t=texture2D(tMap,q/SPAN+0.5).a;
   float fade=mix(1.0,0.38,smoothstep(0.25,1.1,r*uZoom));
@@ -50,19 +53,18 @@ function bakeTexture() {
   x.textAlign = 'center';
   x.textBaseline = 'middle';
   const max = (SIZE / 2) * 1.04;
-  let th = 0, i = 0;
-  for (;;) {
-    const r = R0_PX + (PITCH_PX * th) / (Math.PI * 2);
-    if (r > max) break;
-    const fs = Math.min(40, 14 + r / 26);
-    x.font = `500 ${fs.toFixed(1)}px "Geist Mono", monospace`;
-    x.save();
-    x.translate(SIZE / 2 + Math.cos(th) * r, SIZE / 2 + Math.sin(th) * r);
-    x.rotate(th + Math.PI / 2);
-    x.fillText(WORD[i % WORD.length], 0, 0);
-    x.restore();
-    th += (fs * 0.68) / r;
-    i++;
+  x.font = `500 ${FS}px "Geist Mono", monospace`;
+  for (let r = R0_PX; r <= max; r += PITCH_PX) {
+    // whole repeats of WORD per ring, so there is no seam and the ring is symmetrical
+    const n = Math.max(1, Math.round((Math.PI * 2 * r) / (FS * 0.7 * WORD.length))) * WORD.length;
+    for (let i = 0; i < n; i++) {
+      const th = (i / n) * Math.PI * 2;
+      x.save();
+      x.translate(SIZE / 2 + Math.cos(th) * r, SIZE / 2 + Math.sin(th) * r);
+      x.rotate(th + Math.PI / 2);
+      x.fillText(WORD[i % WORD.length], 0, 0);
+      x.restore();
+    }
   }
   const tex = new THREE.CanvasTexture(c);
   tex.generateMipmaps = true;

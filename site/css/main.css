@@ -274,7 +274,7 @@ html.static .ledger{height:auto;mask-image:none;-webkit-mask-image:none}html.sta
   .cue .mo{display:none}.cue .rm{display:inline}
 }
 
-.chip{position:fixed;left:0;top:0;z-index:60;pointer-events:none;padding:7px 12px;border-radius:999px;background:var(--off);color:var(--black);font-family:var(--mono);font-size:var(--t-cap);text-transform:uppercase;white-space:nowrap;opacity:0;transition:opacity .25s;will-change:transform}
+.chip{position:fixed;left:0;top:0;z-index:60;pointer-events:none;padding:7px 12px;border-radius:999px;background:var(--off);color:#000;font-family:var(--mono);font-size:var(--t-cap);text-transform:uppercase;white-space:nowrap;opacity:0;transition:opacity .25s;will-change:transform;mix-blend-mode:difference}
 .chip.on{opacity:1}
 html.static .chip{display:none}
 .ring-cta{background:var(--black);color:var(--off);padding:clamp(80px,14vh,160px) var(--gutter);text-align:center}
