@@ -169,9 +169,9 @@
 
   // ---------- scene 9: honest summary
   function s9(t) {
-    const lines = [["1.06 bits per coordinate at z = 3, vs 4 flat", C.off], ["exact top 10 on 1000 of 1000 queries", C.off], ["4.4 ms vs 3.7 ms exact scan: not faster yet", C.acc], ["next: real embeddings, fast kernel, per-vector bounds", C.mid]];
+    const lines = [["1.06 bits per coordinate at z = 3, vs 4 flat", C.off], ["exact top 10 on 1000 of 1000 queries", C.off], ["0.61 ms vs 0.55 ms exact scan: not faster yet", C.acc], ["a live writer adds 21% to median P99", C.acc], ["next: real embeddings, SIMD, sharper bounds", C.mid]];
     T("what we measured", 110, 130, 30, { c: C.mid, w: 500 });
-    lines.forEach(([s, c], i) => T(typed(s, seg(t, .1 + i * .2, .1 + i * .2 + .18)), 110, 250 + i * 90, 44, { c }));
+    lines.forEach(([s, c], i) => T(typed(s, seg(t, .08 + i * .16, .08 + i * .16 + .15)), 110, 230 + i * 84, 42, { c }));
     T("synthetic data · one machine · open source", 110, 660, 24, { c: C.dim, w: 500, a: seg(t, .85, 1) });
   }
 

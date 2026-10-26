@@ -94,3 +94,15 @@ impl J {
         }
     }
 }
+
+/// `n` isotropic Gaussian unit vectors in `d` dimensions (no cluster structure).
+pub fn isotropic(rng: &mut SplitMix64, n: usize, d: usize) -> Vec<Vec<f32>> {
+    (0..n)
+        .map(|_| {
+            let mut v: Vec<f32> = (0..d).map(|_| rng.gauss() as f32).collect();
+            let norm = v.iter().map(|x| x * x).sum::<f32>().sqrt();
+            v.iter_mut().for_each(|x| *x /= norm);
+            v
+        })
+        .collect()
+}

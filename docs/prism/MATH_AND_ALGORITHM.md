@@ -122,6 +122,8 @@ For `k = 10`, `S = 3`, `δ = 0.01`: `z ≈ 4.2`. A Hoeffding bound on a bounded 
 
 **Open problem.** The provable `z` (above 4) costs most of the saving that an empirical `z` of 2 gives. Closing that gap, with per-vector bounds of the kind RaBitQ derives, is the main research question. Until it is closed, the correct statement is: the gate is empirically calibrated and its miss rate is measured, not guaranteed.
 
+**Measured tails.** Over 20 million (query, vector) pairs per set, the score error was close to Gaussian in shape (excess kurtosis -0.02 to 0.23) with maximum |error|/sigma of 5.2 to 7.1, so zero misses over every pair needs z near 7.1. A per-vector bound using the stored residual norm `r_x`, `|s_hat - s| <= r_x * sqrt(2 ln(2/delta) / d)`, held on at least 99.94% of pairs at delta = 0.001 but read about as many bits as z = 4. The deterministic bound `|s_hat - s| <= r_x` (Cauchy-Schwarz) never missed and pruned almost nothing at d = 256, because it ignores that the error direction is random relative to the query. See `PAPER.md` section 6.6.
+
 ## 5. Cost model: bytes touched
 
 Stage 1 reads `b_1` bits for all `n` vectors. Stage `j > 1` reads the new planes for the `n_{j-1}` survivors. Define `m_j = b_j - b_{j-1}` with `b_0 = 0`:

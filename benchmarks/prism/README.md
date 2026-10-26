@@ -1,25 +1,53 @@
 # Prism (research reference implementation)
 
-Std-only Rust, detached workspace. Not part of the Atlas core build or audit.
+Std-only Rust, no unsafe, detached workspace. Not part of the Atlas core build or audit.
 
 - Randomised Hadamard rotation + nested 4-bit planes (any b-bit prefix is a valid quantiser).
-- Error-gated cascade search (schedule 1,2,4 bits, calibrated sigma_b, exact rerank).
+- Error-gated cascade search (schedule 1,2,4 bits, exact rerank). Gates: global `z*sigma_b`,
+  per-vector residual (`PerVector`, heuristic), Cauchy-Schwarz (`Deterministic`, sound).
+- LUT kernel (`src/lut.rs`): per-query byte tables give each plane's dot product with 32 lookups;
+  the cascade keeps each survivor's partial plane sums, so a stage reads only its new planes.
+  The scalar decode path (`quant::score`, `search_cascade`) is kept as the reference.
+- Each segment stores per-vector residual norms `||x - x_hat_b||`, b = 1..4.
 - MVCC snapshots: immutable segments, `RwLock<Arc<Snapshot>>`, single writer, compaction.
 
 ## Run
 
 ```
 cd benchmarks/prism
-cargo test --release                      # invariants I1-I4, nested, orthogonality, sigma
+cargo test --release                      # 12 tests: invariants, nested, sigma, LUT == reference, gates
 cargo clippy --release --all-targets -- -D warnings
-cargo run --release --bin prism-bench     # writes results/results.json
+cargo run --release --bin prism-bench     # ~2 min; writes results/results.json
 ```
 
-Set `PRISM_CPU="<model>"` to record the CPU in results.json.
+Set `PRISM_CPU="<model>"` to record the CPU. Old keys of results.json are unchanged; new data
+is under `"extra"` (kernel_timing, datasets, error_dist, gates, concurrency_repeats).
+`src_fnv1a64` covers every `.rs` under `src/` (including `src/bin/`).
+
+## Findings (synthetic data, 12-thread non-idle Windows box, single-thread timings)
+
+- Kernel: LUT cuts the cascade ~7x (scalar z=2 4.5 ms -> 0.61 ms p50; flat 4-bit LUT + rerank100
+  1.31 ms), but the
+  cascade does NOT beat a fair optimised f32 scan (0.55 ms) at n=20000, d=256. Bits read
+  did not turn into a time win here: the scan is cache-resident and compute-bound.
+- Error: the score error is close to Gaussian in the bulk (excess kurtosis -0.02..0.23) but
+  the tails are heavier than 3.29/3.89: max |e|/sigma is 5.2-7.1 over 20M pairs, so zero
+  misses over all pairs needs z ~ 7, far above the z=2..3 operating points.
+- Per-vector gate (delta=1e-3, h = r*sqrt(2 ln(2/delta)/P)): measured violation rate of
+  |s_hat - s| > h is 8e-5..5.5e-4 per pair (b=1 worst), below delta on these data but not
+  guaranteed (heuristic; depends on the rotation). Zero misses, but it reads more bits than
+  global z=3 (e.g. dataset b: 15.2M vs 11.4M) and sits between z=3 and z=4: no gain.
+- Deterministic gate (|s_hat - s| <= r): sound (0 violations) but prunes almost nothing at
+  d=256: stage 1 keeps all 20000 on datasets b-d and 17274 on a (19-20M bits vs ~5.4M).
+- Harder data costs bits: at z=2 the cascade reads 1.04-1.05 bits/coord (in-distribution
+  clustered, overlapping, n=100k) but 1.30 (isotropic) and 1.40 (OOD queries); at z=4, OOD
+  reads ~3.1 bits/coord. The ~1.77 bits of the numpy prototype is not reproduced.
+- Concurrency: writer ON vs OFF, 7 alternating trials, median p99 ratio 1.21 (min 1.12, max
+  1.34), reader throughput 5255 vs 6007 q/s. The writer costs readers ~12% throughput; the
+  ratio is consistently >1, so this is not just noise, but the writer is throttled (~1900 vec/s).
 
 ## Caveats
 
 - Synthetic data only (`"synthetic": true`); recall numbers say nothing about real embeddings.
-- Timings are from a non-idle machine; the decode loop is scalar (no LUT/SIMD), so the 4-bit
-  scan is slower than the f32 exact scan. Bits-read is the meaningful metric here.
-- No deletes in v0. Ids must be unique.
+- Timings come from a non-idle machine. Dataset time_p50 uses the first 200 queries only.
+- No deletes in v0. Ids must be unique. macOS and real-embedding runs are not done.

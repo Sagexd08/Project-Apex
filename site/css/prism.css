@@ -228,3 +228,5 @@ html.fx .bars:not(.rv-in) .bar i b{transform:scaleX(0)}
   .rv,.eqq .ch,.pp .eq pre .ln,.bars .bar i b{transition:none}
   .rv-pre{opacity:1;transform:none}
 }
+
+.tbl.wrapc table{min-width:760px}.tbl.wrapc td,.tbl.wrapc th{white-space:normal;vertical-align:top;line-height:1.4;padding-right:18px}.tbl.wrapc td:first-child{font-weight:600;min-width:150px}

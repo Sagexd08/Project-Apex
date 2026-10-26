@@ -1,7 +1,10 @@
 use prism::quant;
 use prism::rng::SplitMix64;
 use prism::rot::Rotation;
-use prism::search::{calibrate, search_cascade, search_exact, theory_sigma, Calib};
+use prism::search::{
+    calibrate, residuals, score_all, score_all_ref, search_cascade, search_cascade_lut, search_exact,
+    search_exact_fast, theory_sigma, Calib, Gate,
+};
 use prism::store::{Epoch, Store};
 use prism::util::{centres, mixture};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -187,4 +190,90 @@ fn mixture_cascade_recall_is_high_at_z3() {
         hit += got.iter().filter(|g| truth.iter().any(|t| t.0 == g.0)).count();
     }
     assert!(hit as f64 / 300.0 > 0.95, "recall {}", hit as f64 / 300.0);
+}
+
+#[test]
+fn lut_scores_equal_reference_decode() {
+    let d = 256;
+    let mut rng = SplitMix64::new(21);
+    let store = Store::new(Epoch::new(22, d, vec![1, 2, 4]));
+    store.commit(batch(&mut rng, d, 0, 300));
+    store.commit(batch(&mut rng, d, 300, 200));
+    let (ep, snap) = (store.epoch(), store.pin());
+    for _ in 0..5 {
+        let q = unit(&mut rng, d);
+        let fast = score_all(ep, &snap, &q, &[1, 2, 4]);
+        for (bi, b) in [1usize, 2, 4].into_iter().enumerate() {
+            let reference = score_all_ref(ep, &snap, &q, b);
+            assert_eq!(fast[bi].len(), 500);
+            for (f, r) in fast[bi].iter().zip(&reference) {
+                assert!((f - r).abs() < 1e-4, "b={b} lut {f} ref {r}");
+            }
+        }
+    }
+}
+
+#[test]
+fn exact_fast_matches_exact() {
+    let d = 100; // not a multiple of 8 in the padded sense of chunks: exercises the tail path
+    let mut rng = SplitMix64::new(23);
+    let store = Store::new(Epoch::new(24, d, vec![1, 2, 4]));
+    store.commit(batch(&mut rng, d, 0, 400));
+    let snap = store.pin();
+    for _ in 0..10 {
+        let q = unit(&mut rng, d);
+        let ids = |h: Vec<(u64, f32)>| h.into_iter().map(|x| x.0).collect::<Vec<_>>();
+        assert_eq!(ids(search_exact_fast(&snap, &q, 10)), ids(search_exact(&snap, &q, 10)));
+    }
+}
+
+#[test]
+fn stored_residual_matches_recomputation() {
+    let d = 128;
+    let mut rng = SplitMix64::new(25);
+    let store = Store::new(Epoch::new(26, d, vec![1, 2, 4]));
+    let b0 = batch(&mut rng, d, 0, 50);
+    store.commit(b0.clone());
+    store.commit(batch(&mut rng, d, 50, 50));
+    store.compact(usize::MAX); // residuals must survive a merge
+    let (ep, snap) = (store.epoch(), store.pin());
+    for b in 1..=4usize {
+        let r = residuals(&snap, b);
+        assert_eq!(r.len(), 100);
+        for ((_, v), stored) in b0.iter().zip(&r) {
+            let want = quant::residual(&ep.rotate(v), ep.half_range(), b);
+            assert!((want - stored).abs() < 1e-4, "b={b}");
+        }
+    }
+    let (r1, r4) = (residuals(&snap, 1), residuals(&snap, 4));
+    assert!(r1.iter().zip(&r4).all(|(a, b)| a > b), "residual must shrink with more bits");
+}
+
+#[test]
+fn deterministic_gate_never_misses_on_200_queries() {
+    let (d, n) = (64, 2000);
+    let mut rng = SplitMix64::new(27);
+    let store = Store::new(Epoch::new(28, d, vec![1, 2, 4]));
+    store.commit(batch(&mut rng, d, 0, n));
+    let (ep, snap) = (store.epoch(), store.pin());
+    let calib = Calib::theory(ep);
+    for _ in 0..200 {
+        let q = unit(&mut rng, d);
+        let (got, _) = search_cascade_lut(ep, &snap, &q, 10, &[1, 2, 4], Gate::Deterministic, &calib);
+        assert_eq!(got, search_exact(&snap, &q, 10));
+    }
+}
+
+#[test]
+fn lut_cascade_with_huge_z_equals_exact() {
+    let d = 64;
+    let mut rng = SplitMix64::new(29);
+    let store = Store::new(Epoch::new(30, d, vec![1, 2, 4]));
+    store.commit(batch(&mut rng, d, 0, 600));
+    let (ep, snap) = (store.epoch(), store.pin());
+    let calib = Calib::theory(ep);
+    let q = unit(&mut rng, d);
+    let (got, st) = search_cascade_lut(ep, &snap, &q, 10, &[1, 2, 4], Gate::Global(1e6), &calib);
+    assert_eq!(got, search_exact(&snap, &q, 10));
+    assert_eq!(st.reranks, 600);
 }

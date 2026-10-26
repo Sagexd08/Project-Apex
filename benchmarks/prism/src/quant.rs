@@ -83,3 +83,8 @@ fn score_n<const B: usize>(q: &[f32], planes: &[Vec<u64>; PLANES], base: usize, 
     }
     acc
 }
+
+/// Residual norm `||z - recon_b(z)||` of a rotated vector at `b` bits.
+pub fn residual(z: &[f32], s: f32, b: usize) -> f32 {
+    z.iter().map(|&x| (x - recon(idx4(x, s), b, s)).powi(2)).sum::<f32>().sqrt()
+}

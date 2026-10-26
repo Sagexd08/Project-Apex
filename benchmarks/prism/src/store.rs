@@ -49,6 +49,8 @@ pub struct Segment {
     pub(crate) ids: Vec<u64>,
     pub(crate) vecs: Vec<f32>,
     pub(crate) planes: [Vec<u64>; PLANES],
+    /// Residual norms, `PLANES` per vector: `resid[i * PLANES + b - 1] = ||x - x_hat_b||`.
+    pub(crate) resid: Vec<f32>,
     pub(crate) dim: usize,
     pub(crate) words: usize,
     lsn_min: u64,
@@ -61,6 +63,7 @@ impl Segment {
             ids: Vec::with_capacity(batch.len()),
             vecs: Vec::with_capacity(batch.len() * ep.dim),
             planes: Default::default(),
+            resid: Vec::with_capacity(batch.len() * PLANES),
             dim: ep.dim,
             words: ep.words,
             lsn_min: lsn,
@@ -70,7 +73,9 @@ impl Segment {
             assert_eq!(v.len(), ep.dim, "vector length != epoch dim");
             seg.ids.push(*id);
             seg.vecs.extend_from_slice(v);
-            quant::push_encoded(&ep.rot.apply(v), ep.s, &mut seg.planes);
+            let z = ep.rot.apply(v);
+            quant::push_encoded(&z, ep.s, &mut seg.planes);
+            seg.resid.extend((1..=PLANES).map(|b| quant::residual(&z, ep.s, b)));
         }
         seg
     }
@@ -80,6 +85,7 @@ impl Segment {
             ids: Vec::new(),
             vecs: Vec::new(),
             planes: Default::default(),
+            resid: Vec::new(),
             dim: parts[0].dim,
             words: parts[0].words,
             lsn_min: u64::MAX,
@@ -88,6 +94,7 @@ impl Segment {
         for p in parts {
             seg.ids.extend_from_slice(&p.ids);
             seg.vecs.extend_from_slice(&p.vecs);
+            seg.resid.extend_from_slice(&p.resid);
             for (dst, src) in seg.planes.iter_mut().zip(&p.planes) {
                 dst.extend_from_slice(src);
             }
