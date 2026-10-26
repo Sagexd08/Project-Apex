@@ -1,11 +1,15 @@
 //! Reusable conformance suite: every `AnnIndex` impl must pass `run`. `FlatIndex` is the oracle.
 //! Small data (60 x 8) so exact agreement with the oracle is required, even from ANN impls.
+//! NOTE: passing this suite does NOT make an ANN adapter acceptable: it must also override
+//! `search_filtered` (the default post-filters) and show filtered recall at low selectivity
+//! (docs/GATES.md, "ANN notes"). Small data cannot demonstrate that.
 use crate::{AnnIndex, FlatIndex, Hit};
 use atlas_core::{Metric, VectorId};
 use serde_json::json;
 use std::sync::{Arc, RwLock};
 
 pub type Boxed = Box<dyn AnnIndex + Send + Sync>;
+type Allow = fn(VectorId) -> bool;
 const DIM: usize = 8;
 const METRICS: [Metric; 3] = [Metric::Cosine, Metric::Dot, Metric::Euclidean];
 
@@ -117,9 +121,9 @@ pub fn run(make: impl Fn(usize) -> Boxed) {
     }
 
     // filtered search == oracle's filtered top-k, and never leaks a disallowed id
-    let filters: [(&str, fn(VectorId) -> bool); 3] = [
-        ("even", |id| id.0 % 2 == 0),
-        ("sparse", |id| id.0 % 17 == 0),
+    let filters: [(&str, Allow); 3] = [
+        ("even", |id| id.0.is_multiple_of(2)),
+        ("sparse", |id| id.0.is_multiple_of(17)),
         ("none", |_| false),
     ];
     for (name, allow) in filters {
@@ -191,6 +195,9 @@ mod tests {
         }
         fn insert(&mut self, id: VectorId, v: &[f32], m: Value) -> Result<(), AtlasError> {
             self.0.insert(id, v, m)
+        }
+        fn entries(&self) -> Vec<(VectorId, Vec<f32>, Value)> {
+            self.0.entries()
         }
         fn remove(&mut self, id: VectorId) -> bool {
             self.0.remove(id)

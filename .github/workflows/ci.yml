@@ -17,6 +17,9 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
+      - name: production graph has no test-only features or hooks
+        shell: bash
+        run: ci/check-prod-graph.sh
   coverage-deny:
     runs-on: ubuntu-latest
     steps:

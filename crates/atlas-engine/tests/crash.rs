@@ -7,8 +7,10 @@
 //! every acked write survives, no invented ids, same-id order never regresses behind an acked
 //! write, seq stays monotonic, and reopening twice yields identical state.
 //! `ATLAS_CRASH_ITERS` overrides the default of 100 iterations.
+mod common;
 use atlas_core::{Config, Metric, VectorId};
 use atlas_engine::Engine;
+use common::single_tenant_full;
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, BufReader};
@@ -45,7 +47,7 @@ fn crash_child() {
                 for i in 0u64.. {
                     let id = (i * 7 + t) % HOT_IDS;
                     let md = json!({"t": t, "i": i});
-                    match eng.insert(VectorId(id), &[t as f32; 4], md) {
+                    match eng.insert(&single_tenant_full(), VectorId(id), &[t as f32; 4], md) {
                         Ok(seq) => println!("ACK {seq} {id} {t} {i}"),
                         Err(_) => return,
                     }
@@ -80,7 +82,7 @@ struct Params {
 type Ack = (u64, u64, u64, u64); // seq, id, thread, iter
 
 fn snapshot(eng: &Engine) -> HashMap<u64, Value> {
-    eng.search(&[0.0; 4], 1000, Metric::Dot)
+    eng.search(&single_tenant_full(), &[0.0; 4], 1000, Metric::Dot)
         .unwrap()
         .into_iter()
         .map(|h| (h.id.0, h.metadata))
@@ -176,7 +178,12 @@ fn run_once(tag: &str, p: &Params) -> Result<(usize, usize), String> {
     let max_acked = acked.iter().map(|a| a.0).max().unwrap_or(0);
     // restart idempotency + monotonic seq
     let next = eng
-        .insert(VectorId(0), &[9.0; 4], json!({"t": 99, "i": 0}))
+        .insert(
+            &single_tenant_full(),
+            VectorId(0),
+            &[9.0; 4],
+            json!({"t": 99, "i": 0}),
+        )
         .map_err(|e| format!("post-recovery insert: {e}"))?;
     if next <= max_acked {
         return Err(format!(

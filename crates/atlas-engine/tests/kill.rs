@@ -1,7 +1,9 @@
 //! Hard-kill test: a child process inserts with acks and is killed mid-write;
 //! every id it acknowledged on stdout must be present after reopen.
+mod common;
 use atlas_core::{Config, Metric, VectorId};
 use atlas_engine::Engine;
+use common::single_tenant_full;
 use serde_json::json;
 use std::io::{BufRead, BufReader};
 use std::process::{Command, Stdio};
@@ -16,8 +18,13 @@ fn child_writer() {
     };
     let eng = Engine::open(dir, Config::new(4)).unwrap();
     for id in 0u64.. {
-        eng.insert(VectorId(id), &[id as f32; 4], json!(null))
-            .unwrap();
+        eng.insert(
+            &single_tenant_full(),
+            VectorId(id),
+            &[id as f32; 4],
+            json!(null),
+        )
+        .unwrap();
         println!("ACK {id}");
     }
 }
@@ -50,7 +57,7 @@ fn acked_ids_survive_hard_kill() {
 
     let eng = Engine::open(&dir, Config::reopen()).unwrap();
     let present: std::collections::HashSet<u64> = eng
-        .search(&[0.0; 4], eng.len(), Metric::Dot)
+        .search(&single_tenant_full(), &[0.0; 4], eng.len(), Metric::Dot)
         .unwrap()
         .iter()
         .map(|h| h.id.0)

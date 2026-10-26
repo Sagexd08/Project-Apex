@@ -1,0 +1,42 @@
+# Scratch consumer of the production API. Each `use_<name>` feature touches ONE test-only API.
+# Without `hooks` every one must fail to compile with an error naming that API; with `hooks` every
+# one must compile (so a typo cannot pass vacuously). Driven by ci/check-prod-graph.sh.
+[package]
+name = "hook-absence"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[dependencies]
+atlas-core = { path = "../../crates/atlas-core" }
+atlas-engine = { path = "../../crates/atlas-engine" }
+atlas-storage = { path = "../../crates/atlas-storage" }
+
+[features]
+hooks = ["atlas-engine/test-support", "atlas-storage/test-support", "atlas-core/test-auth"]
+use_fail_next_flush_handle = []
+use_fail_next_truncate_handle = []
+use_fail_next_zero_handle = []
+use_partial_write_handle = []
+use_fail_next_marker_handle = []
+use_die_after_marker_handle = []
+use_flush_delay_handle = []
+use_set_before_gate_hook = []
+use_open_with_fingerprint = []
+use_len = []
+use_is_empty = []
+use_for_test = []
+use_commit_hold_handle = []
+use_poison_detail = []
+use_poison_layer_counts = []
+use_bypass_engine_poison_check = []
+use_wal_fail_next_flush_handle = []
+use_wal_fail_next_truncate_handle = []
+use_wal_fail_next_zero_handle = []
+use_wal_partial_write_handle = []
+use_wal_fail_next_marker_handle = []
+use_wal_die_after_marker_handle = []
+use_wal_flush_delay_handle = []
+use_wal_commit_hold_handle = []

@@ -54,42 +54,17 @@ pub trait AnnIndex {
     }
     /// Insert or replace (same id, new vector/metadata).
     fn insert(&mut self, id: VectorId, v: &[f32], metadata: Value) -> Result<(), AtlasError>;
+    /// Every stored (id, vector, metadata), in no particular order.
+    fn entries(&self) -> Vec<(VectorId, Vec<f32>, Value)>;
     /// Returns whether the id was present.
     fn remove(&mut self, id: VectorId) -> bool;
     /// Top-k, best first; ties break by ascending id.
     fn search(&self, q: &[f32], k: usize, metric: Metric) -> Result<Vec<Hit>, AtlasError>;
-    /// Top-k among ids where `allow` is true. Default is exact (full search, then filter);
-    /// ANN impls should override with a real filtered walk / pre-filter.
-    fn search_filtered(
-        &self,
-        q: &[f32],
-        k: usize,
-        metric: Metric,
-        allow: &dyn Fn(VectorId) -> bool,
-    ) -> Result<Vec<Hit>, AtlasError> {
-        let mut hits = self.search(q, self.len(), metric)?;
-        hits.retain(|h| allow(h.id));
-        hits.truncate(k);
-        Ok(hits)
-    }
-}
-
-/// Pluggable nearest-neighbour index. A derived structure: the WAL is the source of truth and
-/// implementations are rebuilt from it on open (never trust persisted index files).
-pub trait AnnIndex {
-    fn dim(&self) -> usize;
-    fn len(&self) -> usize;
-    fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-    /// Insert or replace (same id, new vector/metadata).
-    fn insert(&mut self, id: VectorId, v: &[f32], metadata: Value) -> Result<(), AtlasError>;
-    /// Returns whether the id was present.
-    fn remove(&mut self, id: VectorId) -> bool;
-    /// Top-k, best first; ties break by ascending id.
-    fn search(&self, q: &[f32], k: usize, metric: Metric) -> Result<Vec<Hit>, AtlasError>;
-    /// Top-k among ids where `allow` is true. Default is exact (full search, then filter);
-    /// ANN impls should override with a real pre-filter / filtered walk.
+    /// Top-k among ids where `allow` is true. The default is exact but POST-filters (full
+    /// search, then filter): O(n) per query and NOT acceptable as the final ANN implementation.
+    /// ANN adapters MUST override it with filter-aware retrieval (pre-filter plus exact scan at
+    /// low selectivity, filtered graph walk otherwise) and demonstrate filtered recall against
+    /// the `FlatIndex` oracle (see docs/GATES.md, "ANN notes").
     fn search_filtered(
         &self,
         q: &[f32],
@@ -137,6 +112,15 @@ impl AnnIndex for FlatIndex {
             self.meta.push(metadata);
         }
         Ok(())
+    }
+
+    fn entries(&self) -> Vec<(VectorId, Vec<f32>, Value)> {
+        (0..self.ids.len())
+            .map(|i| {
+                let v = self.data[i * self.dim..(i + 1) * self.dim].to_vec();
+                (self.ids[i], v, self.meta[i].clone())
+            })
+            .collect()
     }
 
     fn remove(&mut self, id: VectorId) -> bool {

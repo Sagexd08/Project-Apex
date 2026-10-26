@@ -7,3 +7,10 @@ license.workspace = true
 [dependencies]
 atlas-core.workspace = true
 crc32fast.workspace = true
+
+[dev-dependencies]
+atlas-storage = { path = ".", features = ["test-support"] }
+
+[features]
+# Fault-injection hooks on Wal. Tests only; never enable in production builds.
+test-support = []

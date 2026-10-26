@@ -2,6 +2,12 @@
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
+mod auth;
+pub use auth::{
+    clip_echo, clip_text, AuthContext, Authenticator, EffectiveScope, KeyScope, KeyVerifier,
+    PermSet, Principal, TenantId,
+};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct VectorId(pub u64);
 
@@ -91,7 +97,7 @@ pub enum AtlasError {
     RecoveryRequired(String),
     #[error("OUTCOME_UNKNOWN: {0}")]
     OutcomeUnknown(String),
-    #[error("OP_ID_CONFLICT: operation id {0:?} was already used with a different payload")]
+    #[error("OP_ID_CONFLICT: operation id {0} was already used with a different payload")]
     OpIdConflict(String),
     #[error("INVALID_OP_ID: operation id must be 1..=128 bytes")]
     InvalidOpId,
@@ -107,6 +113,16 @@ pub enum AtlasError {
     WalClosed,
     #[error("CODEC: {0}")]
     Codec(String),
+    #[error("INVALID_TENANT: {0}")]
+    InvalidTenant(String),
+    #[error("FORBIDDEN: missing permission")]
+    Forbidden,
+    #[error("NOT_FOUND")]
+    NotFound,
+    #[error("INCOMPLETE: stream ended early after {emitted} records, output is not a complete result: {reason}")]
+    Incomplete { emitted: u64, reason: String },
+    #[error("INVALID_METADATA: {0}")]
+    InvalidMetadata(String),
     #[error("IO: {0}")]
     Io(#[from] std::io::Error),
 }
@@ -130,6 +146,11 @@ impl AtlasError {
             Self::MetaCorrupt(_) => "META_CORRUPT",
             Self::WalClosed => "WAL_CLOSED",
             Self::Codec(_) => "CODEC",
+            Self::InvalidTenant(_) => "INVALID_TENANT",
+            Self::Forbidden => "FORBIDDEN",
+            Self::NotFound => "NOT_FOUND",
+            Self::Incomplete { .. } => "INCOMPLETE",
+            Self::InvalidMetadata(_) => "INVALID_METADATA",
             Self::Io(_) => "IO",
         }
     }
@@ -186,6 +207,14 @@ mod tests {
             AtlasError::WalFlushFailed("x".into()),
             AtlasError::Codec("x".into()),
             AtlasError::RecordTooLarge { len: 2, max: 1 },
+            AtlasError::InvalidTenant("x".into()),
+            AtlasError::Forbidden,
+            AtlasError::NotFound,
+            AtlasError::Incomplete {
+                emitted: 1,
+                reason: "x".into(),
+            },
+            AtlasError::InvalidMetadata("x".into()),
             AtlasError::Io(std::io::Error::other("x")),
         ] {
             assert!(!e.code().is_empty());

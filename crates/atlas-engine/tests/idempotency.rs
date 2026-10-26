@@ -1,6 +1,8 @@
 //! Caller-supplied operation ids: retries must not double-apply.
+mod common;
 use atlas_core::{Config, Metric, RecoverMode, VectorId};
 use atlas_engine::Engine;
+use common::single_tenant_full;
 use serde_json::json;
 use std::path::PathBuf;
 use std::sync::atomic::Ordering::SeqCst;
@@ -13,7 +15,8 @@ fn tmp(n: &str) -> PathBuf {
 }
 
 fn plain(eng: &Engine, id: u64) -> u64 {
-    eng.insert(VectorId(id), &[1.0; 4], json!(null)).unwrap()
+    eng.insert(&single_tenant_full(), VectorId(id), &[1.0; 4], json!(null))
+        .unwrap()
 }
 
 fn op(
@@ -22,7 +25,7 @@ fn op(
     id: u64,
     md: serde_json::Value,
 ) -> Result<u64, atlas_core::AtlasError> {
-    eng.insert_op(op_id, VectorId(id), &[1.0; 4], md)
+    eng.insert_op(&single_tenant_full(), op_id, VectorId(id), &[1.0; 4], md)
 }
 
 #[test]
@@ -49,9 +52,15 @@ fn same_op_id_with_different_payload_is_an_explicit_conflict() {
     let e = op(&eng, "op-1", 1, json!({"v": 2})).unwrap_err();
     assert_eq!(e.code(), "OP_ID_CONFLICT");
     assert_eq!(
-        eng.insert_op("op-1", VectorId(2), &[1.0; 4], json!({"v": 1}))
-            .unwrap_err()
-            .code(),
+        eng.insert_op(
+            &single_tenant_full(),
+            "op-1",
+            VectorId(2),
+            &[1.0; 4],
+            json!({"v": 1})
+        )
+        .unwrap_err()
+        .code(),
         "OP_ID_CONFLICT"
     );
     drop(eng);
@@ -140,7 +149,12 @@ fn retry_after_outcome_unknown_is_safe_whether_or_not_the_record_survived() {
         "original seq, not re-applied"
     );
     assert_eq!(plain(&eng, 3), 3);
-    assert_eq!(eng.search(&[1.0; 4], 10, Metric::Dot).unwrap().len(), 3);
+    assert_eq!(
+        eng.search(&single_tenant_full(), &[1.0; 4], 10, Metric::Dot)
+            .unwrap()
+            .len(),
+        3
+    );
 }
 
 #[test]
@@ -160,14 +174,15 @@ fn engine_is_poisoned_after_outcome_unknown() {
             "WAL_FAILED"
         );
         assert_eq!(
-            eng.insert(VectorId(3), &[1.0; 4], json!(null))
+            eng.insert(&single_tenant_full(), VectorId(3), &[1.0; 4], json!(null))
                 .unwrap_err()
                 .code(),
             "WAL_FAILED"
         );
     }
     assert!(
-        eng.search(&[1.0; 4], 1, Metric::Dot).is_ok(),
+        eng.search(&single_tenant_full(), &[1.0; 4], 1, Metric::Dot)
+            .is_ok(),
         "reads still work"
     );
 }

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-exclude = ["benchmarks/ann-spike"]
+exclude = ["benchmarks/ann-spike", "ci/hook-absence"]
 members = ["crates/atlas-core", "crates/atlas-storage", "crates/atlas-index", "crates/atlas-engine"]
 
 [workspace.package]
@@ -12,7 +12,7 @@ license = "Apache-2.0"
 [workspace.dependencies]
 crc32fast = "=1.5.3"
 serde = { version = "=1.0.229", features = ["derive"] }
-serde_json = "=1.0.154"
+serde_json = { version = "=1.0.154", features = ["float_roundtrip"] }
 thiserror = "=2.0.21"
 atlas-core = { path = "crates/atlas-core" }
 atlas-storage = { path = "crates/atlas-storage" }

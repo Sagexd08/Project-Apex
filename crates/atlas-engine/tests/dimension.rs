@@ -1,5 +1,7 @@
+mod common;
 use atlas_core::{Config, Metric, VectorId};
 use atlas_engine::Engine;
+use common::single_tenant_full;
 use serde_json::json;
 
 fn tmp(n: &str) -> std::path::PathBuf {
@@ -12,7 +14,8 @@ fn tmp(n: &str) -> std::path::PathBuf {
 fn reopen_with_other_dimension_is_dimension_mismatch_not_wal_corrupt() {
     let dir = tmp("mismatch");
     let eng = Engine::open(&dir, Config::new(768)).unwrap();
-    eng.insert(VectorId(1), &[0.5; 768], json!(null)).unwrap();
+    eng.insert(&single_tenant_full(), VectorId(1), &[0.5; 768], json!(null))
+        .unwrap();
     drop(eng);
     assert_eq!(Engine::open(&dir, Config::new(768)).unwrap().len(), 1);
     let e = Engine::open(&dir, Config::new(384)).err().unwrap();
@@ -31,11 +34,17 @@ fn empty_db_dimension_is_persisted_too() {
 fn reopen_recovers_dimension_without_caller_supplying_it() {
     let dir = tmp("recover");
     let eng = Engine::open(&dir, Config::new(5)).unwrap();
-    eng.insert(VectorId(1), &[1.0; 5], json!(null)).unwrap();
+    eng.insert(&single_tenant_full(), VectorId(1), &[1.0; 5], json!(null))
+        .unwrap();
     drop(eng);
     let eng = Engine::open(&dir, Config::reopen()).unwrap();
     assert_eq!(eng.dim(), 5);
-    assert_eq!(eng.search(&[1.0; 5], 1, Metric::Dot).unwrap().len(), 1);
+    assert_eq!(
+        eng.search(&single_tenant_full(), &[1.0; 5], 1, Metric::Dot)
+            .unwrap()
+            .len(),
+        1
+    );
 }
 
 #[test]
@@ -63,7 +72,7 @@ fn create_requires_dimension_and_bad_meta_is_detected() {
     b[8] = 9; // version
     std::fs::write(&meta, &b).unwrap();
     assert_eq!(open_code(), "META_CORRUPT");
-    // wal without meta (legacy / damaged) is refused rather than guessed
+    // wal without meta (single_tenant_full / damaged) is refused rather than guessed
     std::fs::remove_file(&meta).unwrap();
     assert_eq!(open_code(), "INVALID_CONFIG");
 }

@@ -1,5 +1,7 @@
+mod common;
 use atlas_core::{Config, Durability, Metric, VectorId};
 use atlas_engine::Engine;
+use common::single_tenant_full;
 use serde_json::json;
 use std::path::PathBuf;
 use std::sync::atomic::Ordering;
@@ -54,7 +56,8 @@ fn fill(eng: &Engine, n: u64) -> Vec<(u64, Vec<f32>)> {
     (0..n)
         .map(|id| {
             let v = rng.vec();
-            eng.insert(VectorId(id), &v, json!({ "i": id })).unwrap();
+            eng.insert(&single_tenant_full(), VectorId(id), &v, json!({ "i": id }))
+                .unwrap();
             (id, v)
         })
         .collect()
@@ -63,7 +66,7 @@ fn fill(eng: &Engine, n: u64) -> Vec<(u64, Vec<f32>)> {
 const METRICS: [Metric; 3] = [Metric::Cosine, Metric::Dot, Metric::Euclidean];
 
 fn ids(eng: &Engine, q: &[f32], m: Metric) -> Vec<u64> {
-    eng.search(q, 5, m)
+    eng.search(&single_tenant_full(), q, 5, m)
         .unwrap()
         .iter()
         .map(|h| h.id.0)
@@ -79,7 +82,14 @@ fn search_matches_bruteforce_and_survives_reopen() {
     let queries: Vec<_> = (0..10).map(|_| rng.vec()).collect();
     let before: Vec<_> = queries
         .iter()
-        .flat_map(|q| METRICS.map(|m| (ids(&eng, q, m), eng.search(q, 5, m).unwrap())))
+        .flat_map(|q| {
+            METRICS.map(|m| {
+                (
+                    ids(&eng, q, m),
+                    eng.search(&single_tenant_full(), q, 5, m).unwrap(),
+                )
+            })
+        })
         .collect();
     for q in &queries {
         for m in METRICS {
@@ -91,7 +101,14 @@ fn search_matches_bruteforce_and_survives_reopen() {
     assert_eq!(eng.len(), 200);
     let after: Vec<_> = queries
         .iter()
-        .flat_map(|q| METRICS.map(|m| (ids(&eng, q, m), eng.search(q, 5, m).unwrap())))
+        .flat_map(|q| {
+            METRICS.map(|m| {
+                (
+                    ids(&eng, q, m),
+                    eng.search(&single_tenant_full(), q, 5, m).unwrap(),
+                )
+            })
+        })
         .collect();
     assert_eq!(before, after);
     assert_eq!(after[0].1[0].metadata, json!({ "i": after[0].1[0].id.0 }));
@@ -101,10 +118,14 @@ fn search_matches_bruteforce_and_survives_reopen() {
 fn dimension_mismatch_is_rejected_and_not_logged() {
     let dir = tmp("dim");
     let eng = Engine::open(&dir, Config::new(DIM)).unwrap();
-    let e = eng.insert(VectorId(1), &[1.0], json!(null)).unwrap_err();
+    let e = eng
+        .insert(&single_tenant_full(), VectorId(1), &[1.0], json!(null))
+        .unwrap_err();
     assert_eq!(e.code(), "INVALID_VECTOR_DIMENSION");
     assert_eq!(
-        eng.search(&[1.0], 1, Metric::Dot).unwrap_err().code(),
+        eng.search(&single_tenant_full(), &[1.0], 1, Metric::Dot)
+            .unwrap_err()
+            .code(),
         "INVALID_VECTOR_DIMENSION"
     );
     assert!(eng.is_empty());
@@ -112,7 +133,8 @@ fn dimension_mismatch_is_rejected_and_not_logged() {
     assert!(Engine::open(&dir, Config::new(DIM)).unwrap().is_empty());
     // reopening with a different dim is refused as a config error
     let eng = Engine::open(&dir, Config::new(DIM)).unwrap();
-    eng.insert(VectorId(1), &[0.5; DIM], json!(null)).unwrap();
+    eng.insert(&single_tenant_full(), VectorId(1), &[0.5; DIM], json!(null))
+        .unwrap();
     drop(eng);
     assert_eq!(
         Engine::open(&dir, Config::new(3)).err().unwrap().code(),
@@ -129,8 +151,13 @@ fn concurrent_group_commit_inserts_all_survive_reopen() {
             let eng = eng.clone();
             std::thread::spawn(move || {
                 for i in 0..25u64 {
-                    eng.insert(VectorId(t * 100 + i), &[t as f32; DIM], json!(null))
-                        .unwrap();
+                    eng.insert(
+                        &single_tenant_full(),
+                        VectorId(t * 100 + i),
+                        &[t as f32; DIM],
+                        json!(null),
+                    )
+                    .unwrap();
                 }
             })
         })
@@ -142,7 +169,7 @@ fn concurrent_group_commit_inserts_all_survive_reopen() {
     let eng = Engine::open(&dir, Config::new(DIM)).unwrap();
     assert_eq!(eng.len(), 200);
     let got: std::collections::HashSet<u64> = eng
-        .search(&[1.0; DIM], 200, Metric::Dot)
+        .search(&single_tenant_full(), &[1.0; DIM], 200, Metric::Dot)
         .unwrap()
         .iter()
         .map(|h| h.id.0)
@@ -157,18 +184,20 @@ fn failed_flush_returns_err_and_record_is_absent_after_reopen() {
         let mut cfg = Config::new(DIM);
         cfg.durability = durability;
         let eng = Engine::open(&dir, cfg.clone()).unwrap();
-        eng.insert(VectorId(1), &[1.0; DIM], json!(null)).unwrap();
+        eng.insert(&single_tenant_full(), VectorId(1), &[1.0; DIM], json!(null))
+            .unwrap();
         eng.fail_next_flush_handle().store(true, Ordering::SeqCst);
         let e = eng
-            .insert(VectorId(2), &[2.0; DIM], json!(null))
+            .insert(&single_tenant_full(), VectorId(2), &[2.0; DIM], json!(null))
             .unwrap_err();
         assert_eq!(e.code(), "WAL_FLUSH_FAILED");
         assert_eq!(eng.len(), 1, "failed commit must not be applied");
-        eng.insert(VectorId(3), &[3.0; DIM], json!(null)).unwrap();
+        eng.insert(&single_tenant_full(), VectorId(3), &[3.0; DIM], json!(null))
+            .unwrap();
         drop(eng);
         let eng = Engine::open(&dir, cfg).unwrap();
         let mut got: Vec<u64> = eng
-            .search(&[1.0; DIM], 10, Metric::Dot)
+            .search(&single_tenant_full(), &[1.0; DIM], 10, Metric::Dot)
             .unwrap()
             .iter()
             .map(|h| h.id.0)
@@ -176,4 +205,37 @@ fn failed_flush_returns_err_and_record_is_absent_after_reopen() {
         got.sort();
         assert_eq!(got, vec![1, 3]);
     }
+}
+
+#[test]
+fn custom_index_is_rebuilt_from_wal_and_filters() {
+    use atlas_engine::BoxedIndex;
+    use atlas_index::FlatIndex;
+    let dir = tmp("custom-index");
+    let mk = |d| Box::new(FlatIndex::new(d)) as BoxedIndex;
+    {
+        let e = Engine::open_with_index(&dir, Config::new(2), mk).unwrap();
+        for i in 0..4u64 {
+            e.insert(
+                &single_tenant_full(),
+                VectorId(i),
+                &[i as f32, 1.0],
+                json!(null),
+            )
+            .unwrap();
+        }
+    }
+    let e = Engine::open_with_index(&dir, Config::new(2), mk).unwrap();
+    assert_eq!(e.len(), 4);
+    let allow = |id: VectorId| id.0.is_multiple_of(2);
+    let hits = e
+        .search_filtered(
+            &single_tenant_full(),
+            &[1.0, 1.0],
+            5,
+            Metric::Cosine,
+            &allow,
+        )
+        .unwrap();
+    assert!(hits.len() == 2 && hits.iter().all(|h| allow(h.id)));
 }

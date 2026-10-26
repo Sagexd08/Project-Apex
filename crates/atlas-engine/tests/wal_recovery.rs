@@ -1,6 +1,8 @@
 //! Slice 2: fault injection through the engine and explicit recovery.
+mod common;
 use atlas_core::{Config, Metric, RecoverMode, VectorId};
 use atlas_engine::Engine;
+use common::single_tenant_full;
 use serde_json::json;
 use std::path::PathBuf;
 use std::sync::atomic::Ordering::SeqCst;
@@ -13,7 +15,7 @@ fn tmp(n: &str) -> PathBuf {
 
 fn ids(eng: &Engine) -> Vec<u64> {
     let mut v: Vec<u64> = eng
-        .search(&[1.0; 4], 100, Metric::Dot)
+        .search(&single_tenant_full(), &[1.0; 4], 100, Metric::Dot)
         .unwrap()
         .iter()
         .map(|h| h.id.0)
@@ -23,7 +25,7 @@ fn ids(eng: &Engine) -> Vec<u64> {
 }
 
 fn put(eng: &Engine, id: u64) -> Result<u64, atlas_core::AtlasError> {
-    eng.insert(VectorId(id), &[1.0; 4], json!(null))
+    eng.insert(&single_tenant_full(), VectorId(id), &[1.0; 4], json!(null))
 }
 
 #[test]
@@ -95,15 +97,33 @@ fn repair_without_marker_is_a_plain_open_and_corrupt_marker_is_refused() {
 fn same_id_updates_replay_in_seq_order_and_nothing_applies_twice() {
     let dir = tmp("semantics");
     let eng = Engine::open(&dir, Config::new(4)).unwrap();
-    eng.insert(VectorId(1), &[1.0; 4], json!({"v": 1})).unwrap();
-    eng.insert(VectorId(2), &[1.0; 4], json!({"v": 1})).unwrap();
-    eng.insert(VectorId(1), &[1.0; 4], json!({"v": 2})).unwrap();
+    eng.insert(
+        &single_tenant_full(),
+        VectorId(1),
+        &[1.0; 4],
+        json!({"v": 1}),
+    )
+    .unwrap();
+    eng.insert(
+        &single_tenant_full(),
+        VectorId(2),
+        &[1.0; 4],
+        json!({"v": 1}),
+    )
+    .unwrap();
+    eng.insert(
+        &single_tenant_full(),
+        VectorId(1),
+        &[1.0; 4],
+        json!({"v": 2}),
+    )
+    .unwrap();
     drop(eng);
     for _ in 0..2 {
         let eng = Engine::open(&dir, Config::reopen()).unwrap();
         assert_eq!(eng.len(), 2);
         let hit = |id| {
-            eng.search(&[1.0; 4], 10, Metric::Dot)
+            eng.search(&single_tenant_full(), &[1.0; 4], 10, Metric::Dot)
                 .unwrap()
                 .into_iter()
                 .find(|h| h.id == VectorId(id))

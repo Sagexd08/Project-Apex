@@ -1,10 +1,12 @@
+mod common;
 use atlas_core::{Config, Metric, VectorId};
 use atlas_engine::Engine;
+use common::single_tenant_full;
 use serde_json::{json, Value};
 use std::sync::Arc;
 
 fn meta_of(eng: &Engine, id: u64) -> Value {
-    eng.search(&[0.0; 4], 100, Metric::Dot)
+    eng.search(&single_tenant_full(), &[0.0; 4], 100, Metric::Dot)
         .unwrap()
         .into_iter()
         .find(|h| h.id == VectorId(id))
@@ -26,8 +28,13 @@ fn repeated_id_updates_apply_in_wal_order() {
                         .map(|i| {
                             let tag = json!({"t": t, "i": i});
                             (
-                                eng.insert(VectorId(7), &[t as f32; 4], tag.clone())
-                                    .unwrap(),
+                                eng.insert(
+                                    &single_tenant_full(),
+                                    VectorId(7),
+                                    &[t as f32; 4],
+                                    tag.clone(),
+                                )
+                                .unwrap(),
                                 tag,
                             )
                         })

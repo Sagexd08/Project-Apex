@@ -10,3 +10,12 @@ atlas-storage.workspace = true
 atlas-index.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+
+[dev-dependencies]
+atlas-core = { workspace = true, features = ["test-auth"] }
+atlas-engine = { path = ".", features = ["test-support"] }
+
+[features]
+# Exposes Engine::len (cross-tenant total) and the fault-injection hooks. Tests only; never
+# enable in production builds.
+test-support = ["atlas-storage/test-support"]

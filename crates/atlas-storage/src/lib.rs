@@ -22,9 +22,13 @@ use atlas_core::{AtlasError, Config, Durability};
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+#[cfg(any(test, feature = "test-support"))]
+use std::sync::atomic::AtomicU64;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::Arc;
+#[cfg(any(test, feature = "test-support"))]
+use std::sync::{Condvar, Mutex};
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
@@ -51,16 +55,165 @@ struct Req {
     reply: Reply,
 }
 
+/// Test-only (feature `test-support`) deterministic synchronisation for the committer: a
+/// "hold before write" latch and a counter of requests handed to it, so a test controls batch
+/// composition without wall-clock assumptions. The latch is armed for ONE commit: the committer
+/// blocks at the start of that commit (batch already assembled, nothing written) until
+/// `release`. Every wait here is a deadlock safeguard, not a timing assumption.
+#[cfg(any(test, feature = "test-support"))]
+#[derive(Default)]
+pub struct CommitHold {
+    armed: AtomicBool,
+    st: Mutex<HoldState>,
+    cv: Condvar,
+}
+
+#[cfg(any(test, feature = "test-support"))]
+#[derive(Default)]
+struct HoldState {
+    held: bool,
+    released: bool,
+    enqueued: usize,
+}
+
+/// A hold that is never released frees itself after this long (deadlock safeguard).
+#[cfg(any(test, feature = "test-support"))]
+const HOLD_SAFEGUARD: Duration = Duration::from_secs(60);
+
+#[cfg(any(test, feature = "test-support"))]
+impl CommitHold {
+    fn state(&self) -> std::sync::MutexGuard<'_, HoldState> {
+        self.st.lock().unwrap_or_else(|p| p.into_inner())
+    }
+    /// The next commit blocks (before writing) until `release`.
+    pub fn arm(&self) {
+        let mut g = self.state();
+        (g.held, g.released) = (false, false);
+        drop(g);
+        self.armed.store(true, Ordering::SeqCst);
+    }
+    /// Wait until the committer is blocked at the hold. False on timeout (a hang, not a result).
+    pub fn wait_held(&self, limit: Duration) -> bool {
+        let g = self.state();
+        let (g, _) = self
+            .cv
+            .wait_timeout_while(g, limit, |s| !s.held)
+            .unwrap_or_else(|p| p.into_inner());
+        g.held
+    }
+    pub fn release(&self) {
+        self.state().released = true;
+        self.cv.notify_all();
+    }
+    /// Requests handed to the committer so far (counted right after the send).
+    pub fn enqueued(&self) -> usize {
+        self.state().enqueued
+    }
+    /// Wait until at least `n` requests were handed over. False on timeout.
+    pub fn wait_enqueued(&self, n: usize, limit: Duration) -> bool {
+        let g = self.state();
+        let (g, _) = self
+            .cv
+            .wait_timeout_while(g, limit, |s| s.enqueued < n)
+            .unwrap_or_else(|p| p.into_inner());
+        g.enqueued >= n
+    }
+    fn note_enqueued(&self) {
+        self.state().enqueued += 1;
+        self.cv.notify_all();
+    }
+    fn hold_point(&self) {
+        if !self.armed.swap(false, Ordering::SeqCst) {
+            return;
+        }
+        let mut g = self.state();
+        g.held = true;
+        self.cv.notify_all();
+        let _ = self
+            .cv
+            .wait_timeout_while(g, HOLD_SAFEGUARD, |s| !s.released);
+    }
+}
+
+/// Fault-injection state. The real one exists only with `test-support` (or in unit tests);
+/// production builds get a zero-sized stub whose `take_*` are constant `false`, so no hook
+/// state, handle or setter is reachable from a release artifact.
+#[cfg(any(test, feature = "test-support"))]
+#[derive(Default, Clone)]
+struct Faults {
+    fail_flush: Arc<AtomicBool>,
+    fail_truncate: Arc<AtomicBool>,
+    fail_zero: Arc<AtomicBool>,
+    partial_write: Arc<AtomicBool>,
+    fail_marker: Arc<AtomicBool>,
+    die_after_marker: Arc<AtomicBool>,
+    flush_delay_ms: Arc<AtomicU64>,
+    hold: Arc<CommitHold>,
+}
+
+#[cfg(any(test, feature = "test-support"))]
+impl Faults {
+    fn hold_point(&self) {
+        self.hold.hold_point();
+    }
+    fn take_fail_flush(&self) -> bool {
+        self.fail_flush.swap(false, Ordering::SeqCst)
+    }
+    fn take_fail_truncate(&self) -> bool {
+        self.fail_truncate.swap(false, Ordering::SeqCst)
+    }
+    fn take_fail_zero(&self) -> bool {
+        self.fail_zero.swap(false, Ordering::SeqCst)
+    }
+    fn take_partial_write(&self) -> bool {
+        self.partial_write.swap(false, Ordering::SeqCst)
+    }
+    fn take_fail_marker(&self) -> bool {
+        self.fail_marker.swap(false, Ordering::SeqCst)
+    }
+    fn take_die_after_marker(&self) -> bool {
+        self.die_after_marker.swap(false, Ordering::SeqCst)
+    }
+    fn flush_delay_ms(&self) -> u64 {
+        self.flush_delay_ms.load(Ordering::SeqCst)
+    }
+}
+
+#[cfg(not(any(test, feature = "test-support")))]
+#[derive(Default, Clone)]
+struct Faults;
+
+#[cfg(not(any(test, feature = "test-support")))]
+impl Faults {
+    fn hold_point(&self) {}
+    fn take_fail_flush(&self) -> bool {
+        false
+    }
+    fn take_fail_truncate(&self) -> bool {
+        false
+    }
+    fn take_fail_zero(&self) -> bool {
+        false
+    }
+    fn take_partial_write(&self) -> bool {
+        false
+    }
+    fn take_fail_marker(&self) -> bool {
+        false
+    }
+    fn take_die_after_marker(&self) -> bool {
+        false
+    }
+    fn flush_delay_ms(&self) -> u64 {
+        0
+    }
+}
+
 pub struct Wal {
     tx: Option<Sender<Req>>,
     handle: Option<JoinHandle<()>>,
-    fail_next_flush: Arc<AtomicBool>,
-    fail_next_truncate: Arc<AtomicBool>,
-    fail_next_zero: Arc<AtomicBool>,
-    partial_write: Arc<AtomicBool>,
-    fail_next_marker: Arc<AtomicBool>,
-    die_after_marker: Arc<AtomicBool>,
-    flush_delay_ms: Arc<AtomicU64>,
+    #[cfg(any(test, feature = "test-support"))]
+    faults: Faults,
     failed: Arc<AtomicBool>,
     max_record_len: u32,
 }
@@ -217,6 +370,18 @@ impl Wal {
         cfg: &Config,
         applier: Applier,
     ) -> Result<(Wal, Replayed), AtlasError> {
+        Self::open_with_failed_flag(path, cfg, applier, Arc::new(AtomicBool::new(false)))
+    }
+
+    /// Like `open`, with a caller-owned Failed flag. Setting it (e.g. from the `applier` when an
+    /// applied record is rejected downstream) puts the WAL in the Failed state: the committer
+    /// rejects every request that has not been written yet with `WAL_FAILED` and stops.
+    pub fn open_with_failed_flag(
+        path: &Path,
+        cfg: &Config,
+        applier: Applier,
+        failed: Arc<AtomicBool>,
+    ) -> Result<(Wal, Replayed), AtlasError> {
         let dir = path.parent().unwrap_or_else(|| Path::new("."));
         handle_recovery_marker(path, dir, cfg.recover_mode)?;
         let existed = path.exists();
@@ -280,14 +445,7 @@ impl Wal {
             Durability::SyncPerCommit => 1,
             Durability::GroupCommit => cfg.max_batch.max(1),
         };
-        let fail_flush = Arc::new(AtomicBool::new(false));
-        let fail_truncate = Arc::new(AtomicBool::new(false));
-        let failed = Arc::new(AtomicBool::new(false));
-        let fail_zero = Arc::new(AtomicBool::new(false));
-        let partial_write = Arc::new(AtomicBool::new(false));
-        let fail_marker = Arc::new(AtomicBool::new(false));
-        let die_after_marker = Arc::new(AtomicBool::new(false));
-        let flush_delay_ms = Arc::new(AtomicU64::new(0));
+        let faults = Faults::default();
         let (tx, rx) = channel();
         let committer = Committer {
             file,
@@ -295,13 +453,7 @@ impl Wal {
             next_seq,
             max_batch,
             window: cfg.batch_window,
-            fail_flush: fail_flush.clone(),
-            fail_truncate: fail_truncate.clone(),
-            fail_zero: fail_zero.clone(),
-            partial_write: partial_write.clone(),
-            fail_marker: fail_marker.clone(),
-            die_after_marker: die_after_marker.clone(),
-            flush_delay_ms: flush_delay_ms.clone(),
+            faults: faults.clone(),
             dir: dir.to_path_buf(),
             failed: failed.clone(),
             applier,
@@ -310,13 +462,8 @@ impl Wal {
         let wal = Wal {
             tx: Some(tx),
             handle: Some(handle),
-            fail_next_flush: fail_flush,
-            fail_next_truncate: fail_truncate,
-            fail_next_zero: fail_zero,
-            partial_write,
-            fail_next_marker: fail_marker,
-            die_after_marker,
-            flush_delay_ms,
+            #[cfg(any(test, feature = "test-support"))]
+            faults,
             failed,
             max_record_len: cfg.max_record_len,
         };
@@ -324,45 +471,59 @@ impl Wal {
     }
 
     /// Test hook: the next flush fails once (after the write, before it counts as durable).
+    #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn fail_next_flush_handle(&self) -> Arc<AtomicBool> {
-        self.fail_next_flush.clone()
+        self.faults.fail_flush.clone()
     }
 
     /// Test hook: the next rollback truncate fails once.
+    #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn fail_next_truncate_handle(&self) -> Arc<AtomicBool> {
-        self.fail_next_truncate.clone()
+        self.faults.fail_truncate.clone()
     }
 
     /// Test hook: the next best-effort header zeroing fails once.
+    #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn fail_next_zero_handle(&self) -> Arc<AtomicBool> {
-        self.fail_next_zero.clone()
+        self.faults.fail_zero.clone()
     }
 
     /// Test hook: the next batch write is interrupted after half its bytes.
+    #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn partial_write_handle(&self) -> Arc<AtomicBool> {
-        self.partial_write.clone()
+        self.faults.partial_write.clone()
     }
 
     /// Test hook: the next recovery-marker write fails once.
+    #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn fail_next_marker_handle(&self) -> Arc<AtomicBool> {
-        self.fail_next_marker.clone()
+        self.faults.fail_marker.clone()
     }
 
     /// Test hook: simulate process death right after the marker is written during rollback.
+    #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn die_after_marker_handle(&self) -> Arc<AtomicBool> {
-        self.die_after_marker.clone()
+        self.faults.die_after_marker.clone()
     }
 
     /// Test hook: milliseconds to sleep before every `sync_all` (widens the pending window).
+    #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn flush_delay_handle(&self) -> Arc<AtomicU64> {
-        self.flush_delay_ms.clone()
+        self.faults.flush_delay_ms.clone()
+    }
+
+    /// Test hook: the committer hold latch and queued-request counter (see `CommitHold`).
+    #[cfg(any(test, feature = "test-support"))]
+    #[doc(hidden)]
+    pub fn commit_hold_handle(&self) -> Arc<CommitHold> {
+        self.faults.hold.clone()
     }
 
     /// Blocks until the record is durable and applied; returns its seq.
@@ -389,6 +550,8 @@ impl Wal {
             .ok_or(AtlasError::WalClosed)?
             .send(Req { payload, reply })
             .map_err(|_| closed())?;
+        #[cfg(any(test, feature = "test-support"))]
+        self.faults.hold.note_enqueued();
         rx.recv().map_err(|_| closed())?
     }
 }
@@ -417,13 +580,7 @@ struct Committer {
     next_seq: u64,
     max_batch: usize,
     window: Duration,
-    fail_flush: Arc<AtomicBool>,
-    fail_truncate: Arc<AtomicBool>,
-    fail_zero: Arc<AtomicBool>,
-    partial_write: Arc<AtomicBool>,
-    fail_marker: Arc<AtomicBool>,
-    die_after_marker: Arc<AtomicBool>,
-    flush_delay_ms: Arc<AtomicU64>,
+    faults: Faults,
     dir: std::path::PathBuf,
     failed: Arc<AtomicBool>,
     applier: Applier,
@@ -455,12 +612,12 @@ impl Committer {
     /// `Unknown` means the on-disk state of the failed batch could not be established: the
     /// writer gets OUTCOME_UNKNOWN, which does NOT promise the batch is absent after restart.
     fn rollback(&mut self) -> Rollback {
-        let marker_ok = !self.fail_marker.swap(false, Ordering::SeqCst)
-            && write_marker(&self.dir, self.len).is_ok();
-        if marker_ok && self.die_after_marker.swap(false, Ordering::SeqCst) {
+        let marker_ok =
+            !self.faults.take_fail_marker() && write_marker(&self.dir, self.len).is_ok();
+        if marker_ok && self.faults.take_die_after_marker() {
             return Rollback::Unknown; // test hook: simulated process death after the marker
         }
-        let truncated = !self.fail_truncate.swap(false, Ordering::SeqCst)
+        let truncated = !self.faults.take_fail_truncate()
             && self
                 .file
                 .set_len(self.len)
@@ -472,7 +629,7 @@ impl Committer {
             }
             return Rollback::Restored;
         }
-        let zeroed = !self.fail_zero.swap(false, Ordering::SeqCst)
+        let zeroed = !self.faults.take_fail_zero()
             && self
                 .file
                 .seek(SeekFrom::Start(self.len))
@@ -490,6 +647,14 @@ impl Committer {
 
     /// Returns false if the WAL entered the Failed state.
     fn commit(&mut self, batch: Vec<Req>) -> bool {
+        self.faults.hold_point();
+        // Failed (possibly set by the applier after the previous batch): write nothing new.
+        if self.failed.load(Ordering::SeqCst) {
+            for r in batch {
+                let _ = r.reply.send(Err(AtlasError::WalFailed));
+            }
+            return false;
+        }
         let mut buf = Vec::new();
         for (i, r) in batch.iter().enumerate() {
             let seq = self.next_seq + i as u64;
@@ -505,7 +670,7 @@ impl Committer {
             buf.extend_from_slice(&h);
             buf.extend_from_slice(&r.payload);
         }
-        let write = if self.partial_write.swap(false, Ordering::SeqCst) {
+        let write = if self.faults.take_partial_write() {
             self.file
                 .write_all(&buf[..buf.len() / 2])
                 .and_then(|_| Err(std::io::Error::other("injected partial write")))
@@ -513,10 +678,10 @@ impl Committer {
             self.file.write_all(&buf)
         };
         let res = write.and_then(|_| {
-            if self.fail_flush.swap(false, Ordering::SeqCst) {
+            if self.faults.take_fail_flush() {
                 return Err(std::io::Error::other("injected flush failure"));
             }
-            let delay = self.flush_delay_ms.load(Ordering::SeqCst);
+            let delay = self.faults.flush_delay_ms();
             if delay > 0 {
                 std::thread::sleep(Duration::from_millis(delay));
             }
@@ -533,7 +698,10 @@ impl Committer {
                 for (i, r) in batch.into_iter().enumerate() {
                     let _ = r.reply.send(Ok(first + i as u64));
                 }
-                true
+                // The applier may have set Failed (poison): stop now, in a controlled way. Dropping
+                // the receiver wakes every queued request (they see Failed) and nothing more is
+                // written; `Wal::drop` joins this thread.
+                !self.failed.load(Ordering::SeqCst)
             }
             Err(e) => {
                 let outcome = self.rollback();
