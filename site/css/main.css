@@ -52,10 +52,6 @@ h2{font-size:var(--t-h2);line-height:1;letter-spacing:-.025em}
 @keyframes mq{to{transform:translateX(-100%)}}
 
 /* minimap: static thumbnail, no scan sweep */
-.minimap{position:fixed;top:20px;right:20px;width:118px;height:68px;border-radius:8px;background:#2c2c2b;z-index:79;overflow:hidden;display:none;opacity:0}
-@media(min-width:1100px){.minimap{display:block}}
-.minimap i{position:absolute;display:block;border-radius:1px}
-.minimap .vp{position:absolute;left:2px;right:2px;border:1px solid var(--accent);border-radius:3px;will-change:transform}
 
 /* ---------- buttons, odometer label, hold ---------- */
 .btn{position:relative;display:inline-flex;align-items:center;font-family:var(--mono);text-transform:uppercase;font-size:15px;line-height:1;padding:19px 28px;border-radius:10px;background:var(--black);color:var(--white);overflow:hidden;will-change:transform;user-select:none;-webkit-tap-highlight-color:transparent}

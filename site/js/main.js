@@ -1,7 +1,7 @@
-// Orchestrator: Lenis -> ScrollTrigger, hero stage timeline, dividers, reveals, counters, nav, minimap.
+// Orchestrator: Lenis -> ScrollTrigger, hero stage timeline, dividers, reveals, counters, nav.
 import { createSpiral } from './spiral.js';
 import { createDivider, createGlobe } from './ascii.js';
-import { buildOdoLabels, createNumber, initHold, initMagnetic, initDrawer, createMinimap, typeLines } from './ui.js';
+import { buildOdoLabels, createNumber, initHold, initMagnetic, initDrawer, typeLines } from './ui.js';
 
 const { gsap, ScrollTrigger, Lenis } = window;
 gsap.registerPlugin(ScrollTrigger);
@@ -111,8 +111,8 @@ const boot = async () => {
     tl.fromTo(nav, { yPercent: -150, autoAlpha: 1 }, { yPercent: 0, duration: 1.1 }, 0.2)
       .to(lines, { yPercent: 0, duration: 1.3, stagger: 0.11 }, 0.25)
       .fromTo(ins, { y: 22, opacity: 0 }, { y: 0, opacity: 1, duration: 1, stagger: 0.09 }, 0.45)
-      .fromTo('.minimap', { opacity: 0 }, { opacity: 1, duration: 1 }, 1.0);
-  } else { gsap.set(nav, { autoAlpha: 1 }); gsap.set('.minimap', { opacity: 1 }); }
+;
+  } else { gsap.set(nav, { autoAlpha: 1 }); }
 
   createSpiral($('#gl'), { ticker: gsap.ticker, reduce }).then((sp) => {
     spiral = sp;
@@ -185,13 +185,7 @@ navLinks.forEach((a) => {
 });
 if (!sticky) ScrollTrigger.create({ trigger: '#reveal', start: 'top 55%', end: 'bottom 55%', onToggle: (s) => navProblem?.classList.toggle('on', s.isActive) });
 
-/* ---------- minimap ---------- */
-const mm = createMinimap($('#minimap'));
-let mmTimer;
-const rebuildSoon = () => { clearTimeout(mmTimer); mmTimer = setTimeout(mm.rebuild, 250); };
-ScrollTrigger.addEventListener('refresh', rebuildSoon);
-ScrollTrigger.create({ start: 0, end: 'max', onUpdate: mm.move });
-addEventListener('load', () => { mm.rebuild(); ScrollTrigger.refresh(); });
+addEventListener('load', () => ScrollTrigger.refresh());
 
 /* ---------- hold to dive: cursor chip over the hero ---------- */
 const chip = $('#chip');
