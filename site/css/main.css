@@ -277,3 +277,41 @@ html.static .chip{display:none}
 .ring-cta h2{max-width:18ch;margin:0 auto 32px}
 .ring-cta .btns{justify-content:center}
 .ring-gl{display:none}
+
+/* benchmarks: three cards with live visuals */
+.bhead{max-width:760px;margin-bottom:clamp(36px,5vw,64px)}
+.bhead .lede{margin:22px 0 18px}
+.lnk{display:inline-flex;gap:8px;font-size:var(--t-lead);color:var(--black);text-decoration:underline;text-underline-offset:5px;text-decoration-thickness:1px}
+.lnk span{transition:transform .35s var(--ease)}.lnk:hover span{transform:translateX(6px)}
+.bgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,2vw,28px)}
+.bcard{display:flex;flex-direction:column;overflow:clip;border:1px solid #d6d2c8;border-radius:18px;background:rgba(255,255,255,.45);transition:transform .5s var(--ease),border-color .3s,box-shadow .5s var(--ease)}
+.bcard:hover{transform:translateY(-6px);border-color:var(--black);box-shadow:0 24px 50px -28px rgba(0,0,0,.45)}
+.viz{position:relative;aspect-ratio:4/3;background:var(--black);color:var(--off);overflow:hidden}
+.viz svg{position:absolute;inset:0;width:100%;height:100%}
+.viz .axes path{fill:none;stroke:var(--line);stroke-width:1.5}.viz .gridl{stroke-dasharray:2 7;stroke-width:1}
+.viz .ghostline{fill:none;stroke:var(--off);stroke-width:2;stroke-dasharray:3 9;stroke-linecap:round;opacity:.55;animation:march 2.4s linear infinite}
+.viz .ghostline.b{stroke:var(--accent);animation-duration:3.1s;animation-direction:reverse}
+.viz .tick text{fill:var(--mid);font:11px var(--mono);letter-spacing:.06em}
+.viz .bars rect{fill:none;stroke:var(--off);stroke-width:1.2;stroke-dasharray:4 6;opacity:.55;animation:march 3s linear infinite}
+.viz .bars rect:nth-child(2n){animation-duration:4s;animation-direction:reverse}
+@keyframes march{to{stroke-dashoffset:-48}}
+.stamp{position:absolute;right:14px;top:14px;padding:5px 10px;border:1px solid var(--line);border-radius:999px;font:12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--mid)}
+#vizMem{display:grid;grid-template-columns:repeat(20,1fr);gap:4px;padding:clamp(14px,2vw,26px);align-content:center}
+#vizMem i{aspect-ratio:1;border-radius:2px;background:#33322f;transition:background .3s}
+#vizMem i.on{background:var(--accent)}
+.bbody{padding:22px 24px 26px;display:flex;flex-direction:column;gap:10px}
+.bbody h3{font-size:clamp(20px,1.7vw,24px);font-weight:500;letter-spacing:-.02em}
+.bbody p{color:var(--grey);line-height:1.5;font-size:15px}.bbody strong{color:var(--black);font-weight:500}
+.bbody .bnum{font-size:clamp(34px,3.4vw,52px);font-weight:500;letter-spacing:-.04em;line-height:1;color:var(--black);font-variant-numeric:tabular-nums}
+.bnum small{display:block;font:12px var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--grey);margin-top:8px}
+.tagpill{align-self:flex-start;padding:4px 10px;border-radius:999px;border:1px solid #bdb9ae;font:12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--grey)}
+.tagpill.ok{background:var(--black);border-color:var(--black);color:var(--off)}
+.btable{margin-top:clamp(28px,4vw,48px);border-top:1px solid #d6d2c8}
+.btable summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:20px 0;font:var(--t-cap) var(--mono);text-transform:uppercase;letter-spacing:.04em}
+.btable summary::-webkit-details-marker{display:none}
+.btable summary i{width:12px;height:12px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);transition:transform .4s var(--ease)}
+.btable[open] summary i{transform:rotate(-135deg)}
+.btable .bench{margin-top:6px}
+@media(max-width:1000px){.bgrid{grid-template-columns:repeat(2,1fr)}.bgrid .bcard:last-child{grid-column:1/-1}}
+@media(max-width:640px){.bgrid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.viz .ghostline,.viz .bars rect{animation:none}.bcard{transition:none}}

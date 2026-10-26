@@ -221,3 +221,18 @@ if (sticky && chip && lenis) {
   };
   addEventListener('pointerup', end); addEventListener('pointercancel', end);
 }
+
+/* ---------- benchmarks: memory grid fills in once on view ---------- */
+const vm = $('#vizMem');
+if (vm) {
+  const cells = Array.from({ length: 240 }, () => document.createElement('i'));
+  vm.append(...cells);
+  if (reduce) cells.forEach((c) => c.classList.add('on'));
+  else ScrollTrigger.create({
+    trigger: vm, start: 'top 80%', once: true,
+    onEnter: () => {
+      const o = { v: 0 };
+      gsap.to(o, { v: cells.length, duration: 2.2, ease: 'power2.inOut', onUpdate: () => { const n = Math.floor(o.v); for (let i = 0; i < n; i++) cells[i].classList.add('on'); } });
+    },
+  });
+}

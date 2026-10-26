@@ -176,19 +176,55 @@
 
   <!-- benchmarks -->
   <section class="s cream" id="benchmarks" aria-labelledby="bench-h" style="padding-top:0">
-    <p class="mono lbl" data-rv>Benchmarks</p>
-    <h2 id="bench-h" data-rv>No search benchmarks yet.</h2>
-    <div class="two">
-      <div data-rv>
-        <p class="lede">No search benchmark has been run, so this page makes no speed claims and no comparison with other databases. When benchmarks exist, each result will list the dataset, hardware, build settings and the commands to reproduce it.</p>
-        <div class="measured">
-          <p class="mono">Measured so far</p>
-          <p class="mnum"><span data-count="1000000">1,000,000</span><small>operation-map entries</small></p>
-          <p>Windows, release build, log replay: 1,322 B retained per entry and a 1.34 GB peak working set. This is a memory test of replay. <strong>It says nothing about search speed.</strong></p>
+    <div class="bhead">
+      <p class="mono lbl" data-rv>Benchmarks</p>
+      <h2 id="bench-h" data-rv>No search benchmarks yet.</h2>
+      <p class="lede" data-rv>No search benchmark has been run, so this page makes no speed claims and no comparison with other databases. When benchmarks exist, each result will list the dataset, hardware, build settings and the commands to reproduce it.</p>
+      <a class="lnk" href="#bench-table" data-rv>See every planned measurement <span aria-hidden="true">→</span></a>
+    </div>
+    <div class="bgrid">
+      <article class="bcard" data-rv>
+        <div class="viz" id="vizMem" role="img" aria-label="Grid of 240 squares filling in, standing for one million operation-map entries"></div>
+        <div class="bbody">
+          <span class="tagpill ok">Measured</span>
+          <h3>Memory during log replay</h3>
+          <p class="bnum"><span data-count="1000000">1,000,000</span><small>operation-map entries</small></p>
+          <p>Windows, release build: 1,322 B retained per entry and a 1.34 GB peak working set. <strong>This says nothing about search speed.</strong></p>
         </div>
-      </div>
-      <div data-rv>
-        <table class="bench">
+      </article>
+      <article class="bcard" data-rv>
+        <div class="viz" role="img" aria-label="Empty latency and recall chart with a dashed placeholder line and no data">
+          <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <g class="axes"><path d="M44 24V252H376"/><path d="M44 196H376M44 140H376M44 84H376" class="gridl"/></g>
+            <path class="ghostline" d="M44 232C92 226 128 214 176 188S268 118 376 84"/>
+            <path class="ghostline b" d="M44 240C100 238 150 230 200 214S300 160 376 140"/>
+            <g class="tick"><text x="44" y="276">0</text><text x="376" y="276" text-anchor="end">QPS</text><text x="12" y="30">ms</text></g>
+          </svg>
+          <span class="stamp">Not run</span>
+        </div>
+        <div class="bbody">
+          <span class="tagpill">Not run</span>
+          <h3>Latency and recall</h3>
+          <p>Query latency at p50, p95 and p99, and recall@10 against exact-search ground truth, measured together on one dataset and one machine.</p>
+        </div>
+      </article>
+      <article class="bcard" data-rv>
+        <div class="viz" role="img" aria-label="Empty throughput bars with no data">
+          <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <g class="bars"><rect x="44" y="48" width="300" height="26" rx="4"/><rect x="44" y="102" width="220" height="26" rx="4"/><rect x="44" y="156" width="260" height="26" rx="4"/><rect x="44" y="210" width="150" height="26" rx="4"/></g>
+          </svg>
+          <span class="stamp">Not run</span>
+        </div>
+        <div class="bbody">
+          <span class="tagpill">Not run</span>
+          <h3>Throughput and recovery</h3>
+          <p>Queries per second, ingestion rate, peak memory, filtered recall, and how long recovery takes after a crash and restart.</p>
+        </div>
+      </article>
+    </div>
+    <details class="btable" id="bench-table" data-rv>
+      <summary><span>Planned measurements</span><i aria-hidden="true"></i></summary>
+      <table class="bench">
           <caption class="mono">Planned measurements</caption>
           <thead><tr><th scope="col">Metric</th><th scope="col">Project Apex</th><th scope="col">Baseline</th><th scope="col">Conditions</th></tr></thead>
           <tbody>
@@ -201,9 +237,8 @@
             <tr><th scope="row">Recovery after a crash</th><td>Not run</td><td>n/a</td><td>Crash, restart, retry</td></tr>
           </tbody>
         </table>
-        <p class="fine dk">Comparisons will use the same hardware, data, query mix, concurrency and recall target, and name the product versions and settings.</p>
-      </div>
-    </div>
+      <p class="fine dk">Comparisons will use the same hardware, data, query mix, concurrency and recall target, and name the product versions and settings.</p>
+    </details>
   </section>
 
   <!-- where it fits -->
