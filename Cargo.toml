@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+exclude = ["benchmarks/ann-spike"]
+members = ["crates/atlas-core", "crates/atlas-storage", "crates/atlas-index", "crates/atlas-engine"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+
+# Exact pins (see docs/DEPS.md).
+[workspace.dependencies]
+crc32fast = "=1.5.3"
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.154"
+thiserror = "=2.0.21"
+atlas-core = { path = "crates/atlas-core" }
+atlas-storage = { path = "crates/atlas-storage" }
+atlas-index = { path = "crates/atlas-index" }

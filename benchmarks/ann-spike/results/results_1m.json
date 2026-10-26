@@ -1,0 +1,271 @@
+{
+  "chosen_expansion_search": 128,
+  "chosen_reaches_recall_0_95": true,
+  "concurrent": [
+    {
+      "n": 3000,
+      "p50_ms": 1.0956,
+      "p95_ms": 1.9017000000000002,
+      "p99_ms": 2.5441000000000003,
+      "qps": 3304.7716606576737,
+      "threads": 4
+    },
+    {
+      "n": 3000,
+      "p50_ms": 1.8399,
+      "p95_ms": 3.9433999999999996,
+      "p99_ms": 12.7631,
+      "qps": 5143.989702418481,
+      "threads": 12
+    }
+  ],
+  "damaged_file_probes": [
+    {
+      "case": "intact",
+      "crashed": false,
+      "exit_ok": true,
+      "stdout": "LOAD_OK size=5000"
+    },
+    {
+      "case": "truncated_half",
+      "crashed": false,
+      "exit_ok": true,
+      "stdout": "LOAD_ERR Failed to read vectors"
+    },
+    {
+      "case": "truncated_to_header_64B",
+      "crashed": false,
+      "exit_ok": true,
+      "stdout": "LOAD_ERR Failed to read vectors"
+    },
+    {
+      "case": "empty_file",
+      "crashed": false,
+      "exit_ok": true,
+      "stdout": "LOAD_ERR Failed to read 32-bit dimensions of the matrix"
+    },
+    {
+      "case": "middle_bytes_flipped",
+      "crashed": false,
+      "exit_ok": true,
+      "stdout": "LOAD_OK size=5000"
+    }
+  ],
+  "data": {
+    "centers": 1024,
+    "generator": "clustered gaussian mixture",
+    "metric": "cosine",
+    "normalized": true,
+    "sigma": 0.3499999940395355
+  },
+  "dim": 768,
+  "expansion_search_sweep": [
+    {
+      "expansion_search": 16,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.3921,
+        "p95_ms": 0.5910000000000001,
+        "p99_ms": 0.8085
+      },
+      "recall_at_10": 0.6511
+    },
+    {
+      "expansion_search": 32,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.5438,
+        "p95_ms": 0.8352,
+        "p99_ms": 1.1023
+      },
+      "recall_at_10": 0.8065999999999947
+    },
+    {
+      "expansion_search": 64,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.7039000000000001,
+        "p95_ms": 1.209,
+        "p99_ms": 1.8085
+      },
+      "recall_at_10": 0.9165999999999951
+    },
+    {
+      "expansion_search": 128,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 1.0093,
+        "p95_ms": 1.73,
+        "p99_ms": 2.4204
+      },
+      "recall_at_10": 0.9640999999999981
+    },
+    {
+      "expansion_search": 256,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 1.2625,
+        "p95_ms": 2.205,
+        "p99_ms": 2.947
+      },
+      "recall_at_10": 0.9808999999999989
+    },
+    {
+      "expansion_search": 512,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 1.6478000000000002,
+        "p95_ms": 2.9955,
+        "p99_ms": 4.0241
+      },
+      "recall_at_10": 0.991299999999999
+    }
+  ],
+  "filtered": [
+    {
+      "expansion_search": 128,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 1.3191,
+        "p95_ms": 2.2349,
+        "p99_ms": 2.8419
+      },
+      "recall_at_10": 0.9795999999999988,
+      "selectivity": "50%"
+    },
+    {
+      "expansion_search": 128,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 3.5461,
+        "p95_ms": 5.5303,
+        "p99_ms": 7.1646
+      },
+      "recall_at_10": 0.9942999999999992,
+      "selectivity": "10%"
+    },
+    {
+      "expansion_search": 128,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 40.2013,
+        "p95_ms": 49.7449,
+        "p99_ms": 54.4426
+      },
+      "recall_at_10": 0.9914999999999987,
+      "selectivity": "1%"
+    },
+    {
+      "expansion_search": 128,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 337.8524,
+        "p95_ms": 417.6671,
+        "p99_ms": 459.9553
+      },
+      "recall_at_10": 0.993699999999999,
+      "selectivity": "0.1%"
+    },
+    {
+      "expansion_search": 512,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 1.9185999999999999,
+        "p95_ms": 3.0125,
+        "p99_ms": 4.0407
+      },
+      "recall_at_10": 0.9924999999999988,
+      "selectivity": "50%"
+    },
+    {
+      "expansion_search": 512,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 12.6137,
+        "p95_ms": 16.7423,
+        "p99_ms": 19.2515
+      },
+      "recall_at_10": 0.9942999999999992,
+      "selectivity": "10%"
+    },
+    {
+      "expansion_search": 512,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 115.7087,
+        "p95_ms": 135.4678,
+        "p99_ms": 149.7421
+      },
+      "recall_at_10": 0.9960999999999994,
+      "selectivity": "1%"
+    },
+    {
+      "expansion_search": 512,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 923.6691000000001,
+        "p95_ms": 1069.2676000000001,
+        "p99_ms": 1190.9107
+      },
+      "recall_at_10": 0.9966999999999995,
+      "selectivity": "0.1%"
+    }
+  ],
+  "ground_truth_secs": 18.4614494,
+  "index": {
+    "build_add_secs_parallel": 203.63147800000007,
+    "connectivity": 16,
+    "expansion_add": 128,
+    "insert_throughput_vps_parallel": 4910.83210622279,
+    "memory_usage_mb": 4343.631286621094,
+    "quantization": "f32",
+    "size": 1000000
+  },
+  "insert_throughput_vps_single_thread_20k": 826.3166039174232,
+  "k": 10,
+  "mode": "full",
+  "n": 1000000,
+  "persistence": {
+    "file_mb": 3071.360740661621,
+    "identical_after_load": true,
+    "identical_after_view": true,
+    "load_secs": 4.1020963,
+    "save_secs": 14.2620563,
+    "view_secs": 0.1164265
+  },
+  "queries": 1000,
+  "rss": [
+    {
+      "peak_rss_mb": 11.70703125,
+      "phase": "start",
+      "rss_mb": 11.625
+    },
+    {
+      "peak_rss_mb": 61.08203125,
+      "phase": "after_ground_truth",
+      "rss_mb": 13.1953125
+    },
+    {
+      "peak_rss_mb": 3225.12109375,
+      "phase": "after_build",
+      "rss_mb": 3178.953125
+    },
+    {
+      "peak_rss_mb": 3301.0,
+      "phase": "after_search",
+      "rss_mb": 3179.359375
+    },
+    {
+      "peak_rss_mb": 3301.0,
+      "phase": "after_load",
+      "rss_mb": 3179.49609375
+    },
+    {
+      "peak_rss_mb": 3301.0,
+      "phase": "end",
+      "rss_mb": 30.09375
+    }
+  ],
+  "seed": 42,
+  "threads_available": 12
+}

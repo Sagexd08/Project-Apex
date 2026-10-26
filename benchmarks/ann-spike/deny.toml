@@ -1,0 +1,10 @@
+[graph]
+all-features = true
+
+[licenses]
+# Zlib is needed only by foldhash (via usearch -> hashbrown); NOT in the core allow-list, needs user acceptance
+allow = ["Apache-2.0", "MIT", "Unicode-3.0", "Zlib"]
+confidence-threshold = 0.9
+
+[advisories]
+version = 2

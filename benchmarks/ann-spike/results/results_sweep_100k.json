@@ -1,0 +1,666 @@
+{
+  "data": {
+    "centers": 1024,
+    "generator": "clustered gaussian mixture",
+    "metric": "cosine",
+    "normalized": true,
+    "sigma": 0.3499999940395355
+  },
+  "dim": 768,
+  "ground_truth_secs": 1.6954421,
+  "k": 10,
+  "mode": "sweep",
+  "n": 100000,
+  "queries": 1000,
+  "rss": [
+    {
+      "peak_rss_mb": 11.703125,
+      "phase": "start",
+      "rss_mb": 11.62109375
+    },
+    {
+      "peak_rss_mb": 61.015625,
+      "phase": "after_ground_truth",
+      "rss_mb": 13.51171875
+    },
+    {
+      "peak_rss_mb": 387.5078125,
+      "phase": "end",
+      "rss_mb": 13.60546875
+    }
+  ],
+  "seed": 42,
+  "sweep": [
+    {
+      "build_secs": 5.6957279,
+      "connectivity": 8,
+      "expansion_add": 64,
+      "expansion_search": 16,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.115,
+        "p95_ms": 0.2195,
+        "p99_ms": 0.32449999999999996
+      },
+      "recall_at_10": 0.6912999999999966
+    },
+    {
+      "build_secs": 5.6957279,
+      "connectivity": 8,
+      "expansion_add": 64,
+      "expansion_search": 32,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.1603,
+        "p95_ms": 0.314,
+        "p99_ms": 0.4417
+      },
+      "recall_at_10": 0.792999999999997
+    },
+    {
+      "build_secs": 5.6957279,
+      "connectivity": 8,
+      "expansion_add": 64,
+      "expansion_search": 64,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.2297,
+        "p95_ms": 0.46509999999999996,
+        "p99_ms": 0.5754
+      },
+      "recall_at_10": 0.8713999999999975
+    },
+    {
+      "build_secs": 5.6957279,
+      "connectivity": 8,
+      "expansion_add": 64,
+      "expansion_search": 128,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.4247,
+        "p95_ms": 0.7868,
+        "p99_ms": 1.0114
+      },
+      "recall_at_10": 0.9356999999999971
+    },
+    {
+      "build_secs": 5.6957279,
+      "connectivity": 8,
+      "expansion_add": 64,
+      "expansion_search": 256,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.8706999999999999,
+        "p95_ms": 1.4113,
+        "p99_ms": 2.0057
+      },
+      "recall_at_10": 0.9614999999999966
+    },
+    {
+      "build_secs": 11.330606199999998,
+      "connectivity": 8,
+      "expansion_add": 128,
+      "expansion_search": 16,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.1439,
+        "p95_ms": 0.248,
+        "p99_ms": 0.3173
+      },
+      "recall_at_10": 0.7591999999999959
+    },
+    {
+      "build_secs": 11.330606199999998,
+      "connectivity": 8,
+      "expansion_add": 128,
+      "expansion_search": 32,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.1897,
+        "p95_ms": 0.3986,
+        "p99_ms": 0.7015
+      },
+      "recall_at_10": 0.8733999999999988
+    },
+    {
+      "build_secs": 11.330606199999998,
+      "connectivity": 8,
+      "expansion_add": 128,
+      "expansion_search": 64,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.2563,
+        "p95_ms": 0.5009,
+        "p99_ms": 0.6343
+      },
+      "recall_at_10": 0.9513999999999995
+    },
+    {
+      "build_secs": 11.330606199999998,
+      "connectivity": 8,
+      "expansion_add": 128,
+      "expansion_search": 128,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.4936,
+        "p95_ms": 0.8402000000000001,
+        "p99_ms": 1.1796
+      },
+      "recall_at_10": 0.9886999999999996
+    },
+    {
+      "build_secs": 11.330606199999998,
+      "connectivity": 8,
+      "expansion_add": 128,
+      "expansion_search": 256,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 1.0742,
+        "p95_ms": 1.6071,
+        "p99_ms": 2.1168
+      },
+      "recall_at_10": 0.9976999999999996
+    },
+    {
+      "build_secs": 25.8079642,
+      "connectivity": 8,
+      "expansion_add": 256,
+      "expansion_search": 16,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.132,
+        "p95_ms": 0.2304,
+        "p99_ms": 0.2876
+      },
+      "recall_at_10": 0.8012999999999955
+    },
+    {
+      "build_secs": 25.8079642,
+      "connectivity": 8,
+      "expansion_add": 256,
+      "expansion_search": 32,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.1763,
+        "p95_ms": 0.3302,
+        "p99_ms": 0.4326
+      },
+      "recall_at_10": 0.917299999999999
+    },
+    {
+      "build_secs": 25.8079642,
+      "connectivity": 8,
+      "expansion_add": 256,
+      "expansion_search": 64,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.27149999999999996,
+        "p95_ms": 0.5637,
+        "p99_ms": 0.8126
+      },
+      "recall_at_10": 0.9721000000000001
+    },
+    {
+      "build_secs": 25.8079642,
+      "connectivity": 8,
+      "expansion_add": 256,
+      "expansion_search": 128,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.5517,
+        "p95_ms": 0.9286,
+        "p99_ms": 1.2005
+      },
+      "recall_at_10": 0.9974
+    },
+    {
+      "build_secs": 25.8079642,
+      "connectivity": 8,
+      "expansion_add": 256,
+      "expansion_search": 256,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 1.1231,
+        "p95_ms": 1.6191,
+        "p99_ms": 2.5159000000000002
+      },
+      "recall_at_10": 0.9995
+    },
+    {
+      "build_secs": 8.593941099999999,
+      "connectivity": 16,
+      "expansion_add": 64,
+      "expansion_search": 16,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.16440000000000002,
+        "p95_ms": 0.2722,
+        "p99_ms": 0.34600000000000003
+      },
+      "recall_at_10": 0.8959999999999964
+    },
+    {
+      "build_secs": 8.593941099999999,
+      "connectivity": 16,
+      "expansion_add": 64,
+      "expansion_search": 32,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.22269999999999998,
+        "p95_ms": 0.37310000000000004,
+        "p99_ms": 0.5117999999999999
+      },
+      "recall_at_10": 0.9470999999999988
+    },
+    {
+      "build_secs": 8.593941099999999,
+      "connectivity": 16,
+      "expansion_add": 64,
+      "expansion_search": 64,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.2752,
+        "p95_ms": 0.5146999999999999,
+        "p99_ms": 0.6338
+      },
+      "recall_at_10": 0.9809999999999991
+    },
+    {
+      "build_secs": 8.593941099999999,
+      "connectivity": 16,
+      "expansion_add": 64,
+      "expansion_search": 128,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.5282,
+        "p95_ms": 0.8490000000000001,
+        "p99_ms": 1.0997999999999999
+      },
+      "recall_at_10": 0.9936999999999991
+    },
+    {
+      "build_secs": 8.593941099999999,
+      "connectivity": 16,
+      "expansion_add": 64,
+      "expansion_search": 256,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 1.1795,
+        "p95_ms": 1.6859,
+        "p99_ms": 2.083
+      },
+      "recall_at_10": 0.9946999999999991
+    },
+    {
+      "build_secs": 19.3470032,
+      "connectivity": 16,
+      "expansion_add": 128,
+      "expansion_search": 16,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.2208,
+        "p95_ms": 0.3322,
+        "p99_ms": 0.4261
+      },
+      "recall_at_10": 0.9478999999999959
+    },
+    {
+      "build_secs": 19.3470032,
+      "connectivity": 16,
+      "expansion_add": 128,
+      "expansion_search": 32,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.299,
+        "p95_ms": 0.43679999999999997,
+        "p99_ms": 0.5445
+      },
+      "recall_at_10": 0.9897999999999996
+    },
+    {
+      "build_secs": 19.3470032,
+      "connectivity": 16,
+      "expansion_add": 128,
+      "expansion_search": 64,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.4125,
+        "p95_ms": 0.5967,
+        "p99_ms": 0.7506999999999999
+      },
+      "recall_at_10": 0.9961999999999999
+    },
+    {
+      "build_secs": 19.3470032,
+      "connectivity": 16,
+      "expansion_add": 128,
+      "expansion_search": 128,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.6964,
+        "p95_ms": 1.1280999999999999,
+        "p99_ms": 1.7405000000000002
+      },
+      "recall_at_10": 0.9991999999999999
+    },
+    {
+      "build_secs": 19.3470032,
+      "connectivity": 16,
+      "expansion_add": 128,
+      "expansion_search": 256,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 1.5533000000000001,
+        "p95_ms": 2.0888,
+        "p99_ms": 2.577
+      },
+      "recall_at_10": 0.9991999999999999
+    },
+    {
+      "build_secs": 44.763150399999994,
+      "connectivity": 16,
+      "expansion_add": 256,
+      "expansion_search": 16,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.2161,
+        "p95_ms": 0.3262,
+        "p99_ms": 0.4068
+      },
+      "recall_at_10": 0.9635999999999962
+    },
+    {
+      "build_secs": 44.763150399999994,
+      "connectivity": 16,
+      "expansion_add": 256,
+      "expansion_search": 32,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.3128,
+        "p95_ms": 0.4768,
+        "p99_ms": 0.6627
+      },
+      "recall_at_10": 0.9972999999999996
+    },
+    {
+      "build_secs": 44.763150399999994,
+      "connectivity": 16,
+      "expansion_add": 256,
+      "expansion_search": 64,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.4885999999999999,
+        "p95_ms": 0.6832,
+        "p99_ms": 0.8365
+      },
+      "recall_at_10": 0.9992
+    },
+    {
+      "build_secs": 44.763150399999994,
+      "connectivity": 16,
+      "expansion_add": 256,
+      "expansion_search": 128,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.8831000000000001,
+        "p95_ms": 1.1712,
+        "p99_ms": 1.5278
+      },
+      "recall_at_10": 0.9992
+    },
+    {
+      "build_secs": 44.763150399999994,
+      "connectivity": 16,
+      "expansion_add": 256,
+      "expansion_search": 256,
+      "index_memory_mb": 528.7650146484375,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 1.9135,
+        "p95_ms": 2.4699,
+        "p99_ms": 3.2342
+      },
+      "recall_at_10": 0.9992
+    },
+    {
+      "build_secs": 9.858849600000001,
+      "connectivity": 32,
+      "expansion_add": 64,
+      "expansion_search": 16,
+      "index_memory_mb": 560.7649536132812,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.2019,
+        "p95_ms": 0.32430000000000003,
+        "p99_ms": 0.42260000000000003
+      },
+      "recall_at_10": 0.9448999999999967
+    },
+    {
+      "build_secs": 9.858849600000001,
+      "connectivity": 32,
+      "expansion_add": 64,
+      "expansion_search": 32,
+      "index_memory_mb": 560.7649536132812,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.28390000000000004,
+        "p95_ms": 0.5128,
+        "p99_ms": 0.7699
+      },
+      "recall_at_10": 0.9868999999999997
+    },
+    {
+      "build_secs": 9.858849600000001,
+      "connectivity": 32,
+      "expansion_add": 64,
+      "expansion_search": 64,
+      "index_memory_mb": 560.7649536132812,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.3817,
+        "p95_ms": 0.6798000000000001,
+        "p99_ms": 0.8796
+      },
+      "recall_at_10": 0.9963999999999997
+    },
+    {
+      "build_secs": 9.858849600000001,
+      "connectivity": 32,
+      "expansion_add": 64,
+      "expansion_search": 128,
+      "index_memory_mb": 560.7649536132812,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.6539999999999999,
+        "p95_ms": 1.0103,
+        "p99_ms": 1.3905
+      },
+      "recall_at_10": 0.9980999999999998
+    },
+    {
+      "build_secs": 9.858849600000001,
+      "connectivity": 32,
+      "expansion_add": 64,
+      "expansion_search": 256,
+      "index_memory_mb": 560.7649536132812,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 1.4822,
+        "p95_ms": 2.1742,
+        "p99_ms": 2.7663
+      },
+      "recall_at_10": 0.9980999999999998
+    },
+    {
+      "build_secs": 28.4623073,
+      "connectivity": 32,
+      "expansion_add": 128,
+      "expansion_search": 16,
+      "index_memory_mb": 560.7649536132812,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.3011,
+        "p95_ms": 0.4296,
+        "p99_ms": 0.5542
+      },
+      "recall_at_10": 0.9714999999999965
+    },
+    {
+      "build_secs": 28.4623073,
+      "connectivity": 32,
+      "expansion_add": 128,
+      "expansion_search": 32,
+      "index_memory_mb": 560.7649536132812,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.39399999999999996,
+        "p95_ms": 0.5324,
+        "p99_ms": 0.6627
+      },
+      "recall_at_10": 0.9974999999999998
+    },
+    {
+      "build_secs": 28.4623073,
+      "connectivity": 32,
+      "expansion_add": 128,
+      "expansion_search": 64,
+      "index_memory_mb": 560.7649536132812,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.5902000000000001,
+        "p95_ms": 0.7912,
+        "p99_ms": 0.9878
+      },
+      "recall_at_10": 0.9997
+    },
+    {
+      "build_secs": 28.4623073,
+      "connectivity": 32,
+      "expansion_add": 128,
+      "expansion_search": 128,
+      "index_memory_mb": 560.7649536132812,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.9836999999999999,
+        "p95_ms": 1.289,
+        "p99_ms": 1.6980000000000002
+      },
+      "recall_at_10": 0.9997
+    },
+    {
+      "build_secs": 28.4623073,
+      "connectivity": 32,
+      "expansion_add": 128,
+      "expansion_search": 256,
+      "index_memory_mb": 560.7649536132812,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 2.1308,
+        "p95_ms": 2.7397,
+        "p99_ms": 3.4079
+      },
+      "recall_at_10": 0.9997
+    },
+    {
+      "build_secs": 63.75272030000001,
+      "connectivity": 32,
+      "expansion_add": 256,
+      "expansion_search": 16,
+      "index_memory_mb": 560.7649536132812,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.3367,
+        "p95_ms": 0.4744,
+        "p99_ms": 0.5766
+      },
+      "recall_at_10": 0.9729999999999961
+    },
+    {
+      "build_secs": 63.75272030000001,
+      "connectivity": 32,
+      "expansion_add": 256,
+      "expansion_search": 32,
+      "index_memory_mb": 560.7649536132812,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.524,
+        "p95_ms": 0.7133,
+        "p99_ms": 0.8861
+      },
+      "recall_at_10": 0.9979999999999997
+    },
+    {
+      "build_secs": 63.75272030000001,
+      "connectivity": 32,
+      "expansion_add": 256,
+      "expansion_search": 64,
+      "index_memory_mb": 560.7649536132812,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 0.8024,
+        "p95_ms": 1.0541,
+        "p99_ms": 1.8857
+      },
+      "recall_at_10": 0.9994
+    },
+    {
+      "build_secs": 63.75272030000001,
+      "connectivity": 32,
+      "expansion_add": 256,
+      "expansion_search": 128,
+      "index_memory_mb": 560.7649536132812,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 1.4581,
+        "p95_ms": 1.9767000000000001,
+        "p99_ms": 2.7367
+      },
+      "recall_at_10": 0.9994
+    },
+    {
+      "build_secs": 63.75272030000001,
+      "connectivity": 32,
+      "expansion_add": 256,
+      "expansion_search": 256,
+      "index_memory_mb": 560.7649536132812,
+      "latency_single_thread": {
+        "n": 1000,
+        "p50_ms": 3.0261,
+        "p95_ms": 3.979,
+        "p99_ms": 5.3356
+      },
+      "recall_at_10": 0.9994
+    }
+  ],
+  "threads_available": 12
+}
