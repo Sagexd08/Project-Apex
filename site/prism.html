@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prism: research draft for agent memory | Project Apex</title>
+<meta name="description" content="Prism is a research draft for vector storage that agents can read and write at the same time: nested bit planes, an error-gated search cascade and snapshots tied to the write-ahead log. Simulation results only.">
+<meta property="og:title" content="Prism: one stored code, any precision, a snapshot per reader">
+<meta property="og:description" content="A research draft from Project Apex. Abstract, manifesto, paper, algorithm and an interactive lab. Synthetic-data results, not a comparison with other systems.">
+<meta name="theme-color" content="#232323">
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta property="og:image" content="https://project-apex-db.vercel.app/assets/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/prism.css">
+</head>
+<body class="pp">
+<a class="skip" href="#main">Skip to content</a>
+<div class="progress" id="progress"></div>
+
+<nav class="nav" id="nav" aria-label="Primary">
+  <ul>
+    <li><a class="logo" href="index.html" aria-label="Project Apex home"></a></li>
+    <li><a class="nl" href="#abstract">Abstract</a></li>
+    <li><a class="nl" href="#manifesto">Manifesto</a></li>
+    <li><a class="nl" href="#lab">Lab</a></li>
+    <li><a class="nl" href="#algorithm">Algorithm</a></li>
+    <li><a class="nl" href="#paper">Paper</a></li>
+    <li><a class="nl" href="#evidence">Evidence<i class="ping"></i></a></li>
+  </ul>
+  <div class="ticker" aria-hidden="true">
+    <span>Research draft · Synthetic data · Not a comparison with other systems ·</span>
+    <span>Research draft · Synthetic data · Not a comparison with other systems ·</span>
+  </div>
+</nav>
+
+<main id="main">
+  <header class="p-hero dark" id="top">
+    <canvas class="rain" id="rain" aria-hidden="true"></canvas>
+    <div>
+      <div class="status-row"><span class="tag acc">Research draft</span><span class="tag">Simulation only</span><span class="tag">Open source</span></div>
+      <h1>One stored code. Any precision.</h1>
+      <p class="lead">Prism is a proposal for vector storage that an agent can read and write at the same time. Each vector is stored once as four bit planes. A search reads one bit for everything, then more bits for the few vectors still in contention. Every reader sees one named point in the write-ahead log.</p>
+      <div class="btns">
+        <a class="btn" href="#abstract"><span class="odo">Read the abstract</span></a>
+        <a class="btn line" href="#lab"><span class="odo">Open the lab</span></a>
+      </div>
+      <p class="fine">Results on this page come from synthetic data on one machine. Nothing here compares Prism with another database. The numbers are in the evidence section with the code that made them.</p>
+    </div>
+    <div class="stack" aria-hidden="true">
+      <div class="pl"><span>plane 1 · sign bit</span></div>
+      <div class="pl"><span>plane 2</span></div>
+      <div class="pl"><span>plane 3</span></div>
+      <div class="pl"><span>plane 4</span></div>
+      <p class="cap">Hover: planes separate</p>
+    </div>
+  </header>
+
+  <div class="ribbon-wrap"><div class="ribbon" aria-hidden="true">
+    <div><span>θ̂ = π·H/d</span><span>σ_b ≈ C/(√(3P)·2^b)</span><span>B = n·m₁ + n₁·m₂ + n₂·m₃</span><span>z ≥ √(2 ln(2(k+1)S/δ))</span><span>V(ℓ) = { r : lsn(r) ≤ ℓ }</span><span>cos θ = ⟨q,x⟩</span></div>
+    <div><span>θ̂ = π·H/d</span><span>σ_b ≈ C/(√(3P)·2^b)</span><span>B = n·m₁ + n₁·m₂ + n₂·m₃</span><span>z ≥ √(2 ln(2(k+1)S/δ))</span><span>V(ℓ) = { r : lsn(r) ≤ ℓ }</span><span>cos θ = ⟨q,x⟩</span></div>
+  </div></div>
+
+  <section class="kpis dark" aria-label="Headline measurements">
+    <div class="kpi"><b data-count="1.06" data-dec="2">1.06</b><span>bits read per coordinate per vector at z = 3. A flat 4-bit scan reads 4.</span></div>
+    <div class="kpi"><b data-count="3.8" data-dec="1" data-suf="×">3.8×</b><span>fewer bits than a flat 4-bit scan, with the exact top 10 returned.</span></div>
+    <div class="kpi"><b data-count="1000" data-dec="0" data-suf=" / 1000">1000 / 1000</b><span>queries returned all ten true neighbours at z = 3 on synthetic data.</span></div>
+    <div class="kpi warn"><b data-count="4.4" data-dec="1" data-suf=" ms">4.4 ms</b><span>per query for the cascade, against 3.7 ms for an exact float scan. Not faster yet.</span></div>
+  </section>
+
+  <section class="eqband dark" aria-label="Core equations">
+    <p class="mono lbl" style="text-align:center">The four equations that carry the idea</p>
+    <div class="eqstage" id="eqstage">
+      <div class="eqq on" data-eq="θ̂ = π · H / d"><p class="cap">Bits to angle</p></div>
+      <div class="eqq" data-eq="σ_b = C / (√(3P) · 2^b)"><p class="cap">Each bit halves the error</p></div>
+      <div class="eqq" data-eq="ŝ + zσ ≥ τ − zσ"><p class="cap">The gate</p></div>
+      <div class="eqq" data-eq="V(ε, ℓ) = { r : lsn(r) ≤ ℓ }"><p class="cap">A snapshot</p></div>
+    </div>
+    <div class="dots" id="eqdots" role="tablist" aria-label="Choose equation"></div>
+  </section>
+
+  <!-- abstract -->
+  <section class="s cream" id="abstract" aria-labelledby="abstract-h">
+    <div class="wrap abs-grid">
+      <div>
+        <p class="mono lbl">Abstract</p>
+        <h2 id="abstract-h">What this is, in one paragraph.</h2>
+        <button class="btn copy" id="copy-abs" type="button"><span class="odo">Copy abstract</span></button>
+      </div>
+      <div class="abs-box"><div id="abs-text"><p>Agentic workloads read and write the same vector store within milliseconds of each other, and published measurements show tail latency inflating when inserts run during queries. We describe Prism, a storage layout for that case. Each vector is rotated by a seeded randomized Hadamard transform and stored once as four nested bit planes, so the quantizer has no trained state and cannot drift as the data changes. A query runs an error-gated cascade: it scores every vector with one bit and reads further planes only for candidates that can still reach the top k. Readers search immutable snapshots pinned to a write-ahead-log position, so a reader never waits for a writer and never sees a partial write.</p>
+          <p>In a Rust reference implementation on synthetic data (20,000 vectors, 256 dimensions, 1,000 queries), a gate width of z = 3 returned the exact top 10 for every query while reading about 1.06 bits per coordinate per vector, against 4 for a flat 4-bit scan; at z = 2 recall@10 was 0.998. The saving in bits read did not become a saving in time in our scalar implementation (4.4 ms per query against 3.7 ms for an exact float scan), and the concurrent-write experiment was inconclusive. We state the open problems: a provable gate width, real embedding data, and an optimized scoring kernel.</p></div></div>
+    </div>
+  </section>
+
+  <!-- manifesto -->
+  <section class="s dark" id="manifesto" aria-labelledby="manifesto-h">
+    <div class="wrap">
+      <p class="mono lbl">Manifesto</p>
+      <h2 id="manifesto-h">Memory fast enough to disappear.</h2>
+      <p class="grey" style="margin-bottom:44px">A statement of direction. Anything not measured in the evidence section is a belief, and we say so.</p>
+      <div class="mf">
+        <article><b>001 /</b><div><h3>Agents write while they read.</h3><p>Most storage was built to load in bulk, index, then query for a long time. An agent loop reads, acts and writes within milliseconds. Storage that makes writes wait for reads, or the reverse, becomes the slowest step in the loop.</p></div></article>
+        <article><b>002 /</b><div><h3>Nothing to train means nothing to drift.</h3><p>A compressor learned from yesterday’s data is wrong about tomorrow’s. A fixed random rotation has no opinion about the data, so it cannot go out of date, and a new vector can be encoded the moment it arrives.</p></div></article>
+        <article><b>003 /</b><div><h3>Pay for precision only when the question needs it.</h3><p>Most of a corpus is plainly irrelevant to a given query, and one bit is enough to say so. Spend more bits only on the few vectors still in the running.</p></div></article>
+        <article><b>004 /</b><div><h3>A reader never waits for a writer, and never sees half a write.</h3><p>Every read happens against a named position in the log. The same question at the same position gives the same answer, so a surprising result can be replayed and explained.</p></div></article>
+        <article><b>005 /</b><div><h3>Say what was measured.</h3><p>Every number carries its data, its machine and a checksum of the code that produced it. A number from synthetic data says so. A claim without a measurement is a goal, and we label it as one.</p></div></article>
+        <article><b>006 /</b><div><h3>Keep it open.</h3><p>The reference implementation, the benchmark and the raw results are public, so anyone can disagree with us with evidence.</p></div></article>
+      </div>
+      <div class="vision">
+        <div><p class="mono lbl">What it is for</p><p>A person running an agent on their own machine, with their own data, who should not need a cluster to give that agent a memory. A small team that wants retrieval it can reason about and replay. A research community that deserves an open reference for the read-while-writing case, not only the static one.</p></div>
+        <div><p class="mono lbl">What would make us wrong</p><p>If bytes saved do not become time saved on real hardware. If real embeddings are far less friendly than our synthetic clusters. If the gate misses neighbours more often than its tuning suggests. If an existing system already gives the same result. We will publish the outcome either way.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- lab -->
+  <section class="s cream" id="lab" aria-labelledby="lab-h">
+    <div class="wrap">
+      <p class="mono lbl">Lab</p>
+      <h2 id="lab-h">Try the three ideas.</h2>
+      <p class="grey">These widgets run the model from the paper in your browser. They show how the mechanism behaves. They are not measurements; the measurements are in the evidence section.</p>
+
+      <div class="lab" aria-labelledby="lab1-h">
+        <h3 id="lab1-h">1. Why one bit can rank neighbours</h3>
+        <p class="grey" style="margin-bottom:22px">A random hyperplane separates two vectors with probability θ/π. Orange lines are hyperplanes that separate q from x, seen in the plane they span.</p>
+        <div class="lab-grid">
+          <svg class="geo" id="geo" viewBox="0 0 320 320" role="img" aria-label="Unit circle with two vectors and random hyperplanes"></svg>
+          <div class="ctrl">
+            <label for="theta"><span>Angle between q and x <b id="theta-v">60°</b></span><input id="theta" type="range" min="5" max="175" step="1" value="60"></label>
+            <label for="dim">Dimension <select id="dim"><option>128</option><option selected>256</option><option>768</option><option>1024</option></select></label>
+            <button class="btn ghost" id="resample" type="button"><span class="odo">Draw new hyperplanes</span></button>
+            <dl class="read">
+              <div><dt>Expected disagree θ/π</dt><dd id="o-p">0.333</dd></div>
+              <div><dt>Observed of 64</dt><dd id="o-obs">0.000</dd></div>
+              <div><dt>Std of θ̂</dt><dd id="o-sd">0°</dd></div>
+              <div><dt>Std of cos θ̂</dt><dd id="o-sc">0.000</dd></div>
+            </dl>
+          </div>
+        </div>
+      </div>
+
+      <div class="lab" aria-labelledby="lab2-h">
+        <h3 id="lab2-h">2. The error-gated cascade</h3>
+        <p class="grey" style="margin-bottom:22px">4,000 vectors whose similarity to the query follows a bell curve. Orange squares are the true top ten. Bright dots survive the stage you are viewing; faint dots were dropped. A red square means a true neighbour was wrongly dropped.</p>
+        <div class="lab-grid">
+          <canvas id="cascade" width="760" height="420" role="img" aria-label="Scatter of vectors by similarity showing which survive each stage"></canvas>
+          <div class="ctrl">
+            <label for="z"><span>Gate width z <b id="z-v">2.0</b></span><input id="z" type="range" min="0.5" max="4" step="0.1" value="2"></label>
+            <div><p class="mono" style="margin-bottom:8px">Bit schedule</p><div class="seg" id="sched"><button type="button" data-s="1-2-4" aria-pressed="true">1 → 2 → 4</button><button type="button" data-s="1-4" aria-pressed="false">1 → 4</button><button type="button" data-s="2-4" aria-pressed="false">2 → 4</button><button type="button" data-s="4" aria-pressed="false">4 only</button></div></div>
+            <div><p class="mono" style="margin-bottom:8px">View after stage</p><div class="seg" id="stage-view"><button type="button" data-v="0" aria-pressed="false">1st</button><button type="button" data-v="1" aria-pressed="false">2nd</button><button type="button" data-v="99" aria-pressed="true">Last</button></div></div>
+            <button class="btn ghost" id="reseed" type="button"><span class="odo">New random corpus</span></button>
+            <dl class="read">
+              <div><dt>Left after stage 1</dt><dd id="r-s1">0</dd></div>
+              <div><dt>After stage 2</dt><dd id="r-s2">0</dd></div>
+              <div><dt>After stage 3</dt><dd id="r-s3">0</dd></div>
+              <div><dt>Bits/vector (new / prefix)</dt><dd id="r-bits">0</dd></div>
+              <div><dt>Gate window</dt><dd id="r-win">0</dd></div>
+              <div><dt>Runs missing a neighbour</dt><dd id="r-miss">0%</dd></div>
+            </dl>
+          </div>
+        </div>
+        <p class="note-m">Model: similarity ~ N(0, 0.25²), error std = C / (√(3P)·2^b) with C = 3, P = 256, errors perfectly correlated across stages. Miss rate is over 100 simulated corpora.</p>
+      </div>
+
+      <div class="lab" aria-labelledby="lab3-h">
+        <h3 id="lab3-h">3. A snapshot per reader</h3>
+        <p class="grey" style="margin-bottom:22px">The writer commits numbered log positions. A reader pinned to a position sees exactly the commits up to it, however many arrive afterwards.</p>
+        <div class="lab-grid">
+          <div class="tl" id="tl" aria-live="polite"></div>
+          <div class="ctrl">
+            <div class="seg">
+              <button class="btn" id="tl-commit" type="button"><span class="odo">Commit</span></button>
+              <button class="btn ghost" id="tl-play" type="button"><span class="odo">Play writer</span></button>
+            </div>
+            <div class="seg">
+              <button class="btn ghost" id="tl-repin" type="button"><span class="odo">Re-pin reader B</span></button>
+              <button class="btn ghost" id="tl-reset" type="button"><span class="odo">Reset</span></button>
+            </div>
+            <dl class="read">
+              <div><dt>Writer at</dt><dd id="tl-lsn">6</dd></div>
+              <div><dt>Reader A sees up to</dt><dd id="tl-a">3</dd></div>
+              <div><dt>Reader B sees up to</dt><dd id="tl-b">6</dd></div>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- algorithm -->
+  <section class="s dark" id="algorithm" aria-labelledby="algorithm-h">
+    <div class="wrap">
+      <p class="mono lbl">Algorithm</p>
+      <h2 id="algorithm-h">The mathematics, end to end.</h2>
+      <p class="grey">Full derivations, with assumptions, are in <a class="u" href="https://github.com/Sagexd08/Project-Apex/blob/research/prism/docs/prism/MATH_AND_ALGORITHM.md">docs/prism/MATH_AND_ALGORITHM.md</a>. The essentials:</p>
+      <div class="eqs" style="margin-top:36px">
+        <div class="eq"><h3>Angle from bits</h3><pre>θ̂ = π · H / d
+std(θ̂) = π · √( p(1−p) / d ),  p = θ/π
+std(cos θ̂) ≈ sin θ · std(θ̂)</pre><p>A random hyperplane separates two unit vectors with probability θ/π. The Hamming distance H over d bits estimates the angle.</p></div>
+        <div class="eq"><h3>Rotation makes data look alike</h3><pre>z = (H·D₃)(H·D₂)(H·D₁) x / P^{3/2}
+coordinate ≈ N(0, 1/d)
+cost O(P log P), state = a seed</pre><p>Three rounds of random signs and a fast Walsh-Hadamard transform stand in for a Haar rotation. The assumption is tested, not proved.</p></div>
+        <div class="eq"><h3>Nested quantizer</h3><pre>Δ_b = 2C / (√P · 2^b)
+idx_b = idx_4 &gt;&gt; (4 − b)
+σ_b ≈ C / (√(3P) · 2^b)</pre><p>One stored 4-bit code gives every lower precision. Each extra bit halves the score error, and the error does not depend on the data.</p></div>
+        <div class="eq"><h3>The gate</h3><pre>keep c  iff  ŝ(c) + zσ ≥ τ − zσ
+provable: z ≥ √(2 ln(2(k+1)S/δ))
+k=10, S=3, δ=0.01  →  z ≈ 4.2</pre><p>The lemma is conditional on bounded errors. The provable width costs most of the saving, which is the main open problem.</p></div>
+        <div class="eq"><h3>Cost</h3><pre>B = n·m₁ + n₁·m₂ + n₂·m₃   (bits)
+n_j ≈ k + n·g(t)·2zσ_j
+floor: B ≥ n bits per query</pre><p>Survivors beyond k shrink in proportion to σ. Prism speeds up a scan; it does not remove it.</p></div>
+        <div class="eq"><h3>Snapshots</h3><pre>V(ε, ℓ) = { r : lsn(r) ≤ ℓ }
+I1 repeatable   I2 no torn read
+I3 monotonic    I4 compaction-safe</pre><p>Segments are immutable. A commit publishes a new snapshot pointer; a reader clones the pointer and never locks again.</p></div>
+      </div>
+      <div class="code">ENCODE(x):  z = rotate(x, seed)
+            idx = clamp(floor((z + s) / Δ₄), 0, 15)
+            store 4 bit planes + full vector (for rerank)
+
+SEARCH(q, k, schedule, z, snapshot):
+    rq   = rotate(q, seed);  cand = all vectors in snapshot
+    for each b in schedule:
+        est  = score(rq, cand, planes up to b)
+        τ    = k-th largest of est
+        cand = { c : est[c] + zσ_b ≥ τ − zσ_b }
+    return top-k of cand by exact cosine</div>
+    </div>
+  </section>
+
+  <!-- paper -->
+  <section class="s cream paper" id="paper" aria-labelledby="paper-h">
+    <div class="wrap">
+      <p class="mono lbl">Paper</p>
+      <h2 id="paper-h">The research paper.</h2>
+      <p class="grey" style="margin-bottom:34px">Condensed here. The full text is <a class="u" href="https://github.com/Sagexd08/Project-Apex/blob/research/prism/docs/prism/PAPER.md">docs/prism/PAPER.md</a>.</p>
+      <details open><summary><span class="q">1 /</span><span>Introduction</span></summary><div class="body"><p>An agent reads, acts, writes and reads again within milliseconds. A query over n vectors is mostly a question of how many bytes cross memory, and the store changes while it is queried. Other work reports P99 latency rising roughly 280% to 345% under concurrent inserts (arXiv 2606.08950) and data-dependent quantizers degrading or needing rebuilds under updates (arXiv 2512.18335). We have not reproduced these.</p><p>Prism rests on three observations: a random rotation makes any unit vector look the same, so the quantizer needs no training; a uniform quantizer’s codes nest, so bit planes serve every precision; and one bit is enough to reject most of a corpus.</p></div></details>
+      <details><summary><span class="q">2 /</span><span>Related work</span></summary><div class="body"><p>Random hyperplane signs estimate angles (Goemans and Williamson; Charikar). Randomized Hadamard transforms give fast rotations (Ailon and Chazelle). TurboQuant rotates, quantizes per coordinate and adds a 1-bit residual transform for unbiased inner products. RaBitQ gives a 1-bit code with a theoretical error bound that supports reliable reranking. Multi-stage filtering is a standard idea.</p><p>Our claim is narrower: nested planes, a multi-stage gate and log-pinned snapshots, evaluated for read-while-write. A fuller related-work pass could shrink it. We read abstracts and summaries, so every citation needs checking against the primary text.</p></div></details>
+      <details><summary><span class="q">3 /</span><span>Design</span></summary><div class="body"><p>Rotate with three rounds of random signs and a Walsh-Hadamard transform. Clip at C/√P, quantize each coordinate to 16 levels, and store the four index bits as four planes; plane one is the sign bit. Keep full-precision vectors for the final rerank on a slower tier.</p><p>Search scores everything at one bit, keeps candidates whose score plus zσ can still reach the k-th best minus zσ, reads the next plane for the survivors, and reranks the last few exactly. Writers seal immutable segments and publish a new snapshot; readers clone the pointer and never lock again.</p></div></details>
+      <details><summary><span class="q">4 /</span><span>Analysis</span></summary><div class="body"><p>Score error has variance about Δ²/12, so σ_b ≈ C/(√(3P)·2^b): each extra bit halves it, and the data does not enter. If every true top-k item and one witness have error within zσ, no top-k item is dropped. A union bound needs z near 4.2 for a 1% failure budget at k = 10 over three stages. Bits read are n·m₁ + n₁·m₂ + n₂·m₃, with a floor of n bits per query, so Prism accelerates a scan and does not remove it.</p></div></details>
+      <details><summary><span class="q">5 /</span><span>Evaluation</span></summary><div class="body"><p>20,000 vectors, d = 256, 50 Gaussian clusters, 1,000 queries from the same mixture, k = 10. At z = 3 the cascade returned the exact top 10 for every query while reading 1.06 bits per coordinate against 4 for a flat 4-bit scan. At z = 2 recall@10 was 0.998 with 1.7% of queries missing a neighbour. Measured σ matched the formula within 13% at one bit and within 3% at four. Reconstruction error was within about 3% on shifted data. The tables are in the evidence section.</p></div></details>
+      <details><summary><span class="q">6 /</span><span>What cuts against us</span></summary><div class="body"><p>The cascade was slower than an exact float scan (4.4 ms against 3.7 ms at the median). Bits read did not predict time in a scalar implementation. The concurrent-write ratio of 0.56 means noise on a busy machine exceeded any writer effect, so it shows nothing about the snapshot design except that the invariants held.</p><p>Stage one kept about 399 vectors because the data has clusters of that size and queries sit inside them. An earlier prototype whose queries sat in different clusters read 1.77 bits. We believe the query distribution explains it, from reading the two scripts, and did not re-run to confirm. Real embeddings may fall anywhere in that range.</p></div></details>
+      <details><summary><span class="q">7 /</span><span>Next</span></summary><div class="body"><p>A lookup-table and SIMD scoring kernel and a re-measurement of time. Per-vector error bounds in place of a calibrated σ. Real embedding sets and hard query distributions. A quiet-machine concurrent benchmark. A partitioning index in front, deletes, filtered search and a PrismIndex for the Atlas AnnIndex trait. Baselines on identical hardware: flat float, product quantization, RaBitQ and a TurboQuant-style scheme.</p></div></details>
+    </div>
+  </section>
+
+  <!-- evidence -->
+  <section class="s dark" id="evidence" aria-labelledby="evidence-h">
+    <div class="wrap">
+      <p class="mono lbl">Evidence</p>
+      <h2 id="evidence-h">What was measured.</h2>
+      <p class="grey">Loaded from <code>data/prism-results.json</code>, written by the Rust benchmark in <code>benchmarks/prism</code>.</p>
+      <div id="evidence-root" aria-live="polite"><p class="grey" style="margin-top:30px">Loading results…</p></div>
+    </div>
+  </section>
+
+  <!-- limits -->
+  <section class="s cream" id="limits" aria-labelledby="limits-h">
+    <div class="wrap">
+      <p class="mono lbl">Limits</p>
+      <h2 id="limits-h">Where this is weak.</h2>
+      <div class="lim lim-c">
+        <ul>
+          <li>All data is synthetic. Real embeddings have different spectra and different neighbour structure.</li>
+          <li>The gate width is calibrated on the data, not proved. The provable width removes most of the saving.</li>
+          <li>The scan floor is one bit per vector. Beating it needs a partitioning index in front.</li>
+        </ul>
+        <ul>
+          <li>Timings come from one machine that was not idle, and there is no comparison with another database.</li>
+          <li>Deletes, filtered search and integration with the Atlas <code>AnnIndex</code> trait are not built.</li>
+          <li>Multi-stage filtering and rotation-based quantization already exist. The new part is the packaging with snapshots, and a related-work pass could narrow it.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="foot-top">
+      <p class="brand"><span class="logo" aria-hidden="true"></span>Project Apex · Prism</p>
+      <nav class="fnav mono" aria-label="Footer">
+        <a href="index.html">Home</a><a href="#abstract">Abstract</a><a href="#manifesto">Manifesto</a><a href="#paper">Paper</a><a href="#evidence">Evidence</a><a href="https://github.com/Sagexd08/Project-Apex/tree/research/prism/benchmarks/prism">Source</a>
+      </nav>
+    </div>
+    <div class="row2 mono"><span>Open source. Written in Rust.</span><span>Research draft</span></div>
+  </footer>
+</main>
+
+<script src="js/prism.js"></script>
+<script src="js/prism-evidence.js"></script>
+</body>
+</html>
