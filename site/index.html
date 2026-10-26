@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Project Apex: open-source database for AI agent memory</title>
+<meta name="description" content="Project Apex is an open-source database written in Rust. It logs every write, keeps tenants' data separate, and applies a retried write once. Early development, not ready for production.">
+<meta property="og:title" content="Project Apex: a database for AI agent memory">
+<meta property="og:description" content="Open source, written in Rust. Write-ahead log, tenant scoping and idempotent writes. Early development.">
+<meta name="theme-color" content="#232323">
+<script>document.documentElement.className='js';setTimeout(function(){if(!window.__ready)document.documentElement.className=''},3500)</script>
+<link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/main.css">
+<noscript><style>.reveal{visibility:visible;clip-path:none}</style></noscript>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="progress" id="progress"></div>
+
+<nav class="nav" id="nav" aria-label="Primary">
+  <ul>
+    <li><a class="logo" href="#top" aria-label="Project Apex, back to top"></a></li>
+    <li><a class="nl" href="#problem" data-p=".5">Problem</a></li>
+    <li><a class="nl" href="#product">Features</a></li>
+    <li><a class="nl" href="#benchmarks">Benchmarks</a></li>
+    <li><a class="nl" href="#repo">Source</a></li>
+    <li><a class="nl" href="#status">Status<i class="ping"></i></a></li>
+    <li><a class="nl" href="#faq">FAQ</a></li>
+  </ul>
+  <div class="ticker" aria-hidden="true">
+    <span>Early development · Not ready for production · Open source · Written in Rust ·</span>
+    <span>Early development · Not ready for production · Open source · Written in Rust ·</span>
+  </div>
+</nav>
+<div class="minimap" id="minimap" aria-hidden="true"></div>
+<div class="chip" id="chip" aria-hidden="true">Click &amp; hold</div>
+
+<main id="main">
+  <!-- hero -> hold or scroll to dive -> circle opens at the centre -> problem -->
+  <div class="stage" id="top">
+    <div class="vp">
+      <div class="gl" id="gl"><canvas aria-hidden="true"></canvas></div>
+
+      <div class="hero-copy" id="copy">
+        <p class="mono" data-in>Open-source database for AI agents</p>
+        <h1><span class="ln"><span>A database for</span></span><span class="ln"><span>agent memory.</span></span></h1>
+        <p class="lead" data-in>Project Apex writes every change to a log, keeps each tenant’s records separate, and applies a retried write once. It is written in Rust and in early development.</p>
+        <div class="btns" data-in>
+          <a class="btn" data-hold href="#repo"><span class="odo">View the source</span></a>
+          <a class="btn" data-hold href="#status"><span class="odo">What’s done</span><i class="ping"></i></a>
+        </div>
+        <p class="fine" data-in>Not ready for production. No speed claims until benchmarks exist.</p>
+      </div>
+      <a class="cue" href="#problem" data-p=".5"><i aria-hidden="true"><b></b><b></b><b></b></i><span class="mo">Scroll to dive in</span><span class="rm">Scroll down</span></a>
+
+      <section class="reveal" id="reveal" aria-labelledby="problem-h">
+        <div class="rl">
+          <p class="mono lbl">The problem</p>
+          <h2 id="problem-h">Where agent memory goes wrong.</h2>
+          <p class="sub">An agent that runs for days has to remember earlier work, keep one user’s data apart from another’s, and cope with a request that may or may not have been applied. Most projects write that logic themselves.</p>
+          <div class="big">
+            <div class="num" id="bigNum" role="img"></div>
+            <div class="unit"><span id="bigUnit"></span><b id="bigTag">pieces</b></div>
+          </div>
+          <p class="cap" id="bigCap">Parts you usually wire together yourself</p>
+        </div>
+        <div class="ledger" id="ledger">
+          <div class="roll" id="roll">
+            <div class="hd mono"><span>Typical setup</span><span>Five parts, written by hand</span></div>
+
+            <div class="grp" data-n="05" data-unit="" data-tag="pieces" data-cap="Parts you usually wire together yourself">
+              <p class="mono"><span>What you assemble</span><span>by hand</span></p>
+              <div class="row"><span>Vector index</span><span class="v">01</span></div>
+              <div class="row"><span>Metadata tables</span><span class="v">02</span></div>
+              <div class="row"><span>Application code</span><span class="v">03</span></div>
+              <div class="row"><span>Retry logic</span><span class="v">04</span></div>
+              <div class="row"><span>Custom persistence</span><span class="v">05</span></div>
+            </div>
+
+            <div class="grp" data-n="01" data-unit="" data-tag="problem" data-cap="Memory spread across systems">
+              <p class="mono"><span>Problem 01</span><span>Storage</span></p>
+              <h3>Memory spread across systems</h3>
+              <p class="para">Conversation history, records, embeddings and application state live in different places, so finding what an agent needs means querying several of them.</p>
+            </div>
+
+            <div class="grp" data-n="02" data-unit="" data-tag="problem" data-cap="Retried requests">
+              <p class="mono"><span>Problem 02</span><span>Writes</span></p>
+              <h3>Retried requests</h3>
+              <p class="para">When a network call times out, the caller can’t tell whether the write happened. Sending it again may store it twice.</p>
+            </div>
+
+            <div class="grp" data-n="03" data-unit="" data-tag="problem" data-cap="Who can see what">
+              <p class="mono"><span>Problem 03</span><span>Scope</span></p>
+              <h3>Who can see what</h3>
+              <p class="para">A similarity search returns the nearest records whether or not this user or task should see them. The restriction has to be added by hand.</p>
+            </div>
+
+            <div class="grp" data-n="04" data-unit="" data-tag="problem" data-cap="Finding out why">
+              <p class="mono"><span>Problem 04</span><span>Debugging</span></p>
+              <h3>Finding out why</h3>
+              <p class="para">When retrieval returns something unexpected, you need a record of what was written, and when, to work out why.</p>
+            </div>
+
+            <p class="note">Project Apex puts the log, scoping and retry handling in the database instead of in application code.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <canvas class="ascii-div" data-from="#f1eee7" data-to="#232323" aria-hidden="true"></canvas>
+
+  <!-- features -->
+  <section class="s dark" id="product" aria-labelledby="product-h">
+    <div class="feat-wrap">
+      <div class="globe" aria-hidden="true"><canvas id="globe"></canvas></div>
+      <div class="feat-head">
+        <p class="mono lbl" data-rv>Features</p>
+        <h2 id="product-h" data-rv>What Project Apex does.</h2>
+        <p data-rv>It is an embedded storage engine in Rust, split into four crates: core, storage, index and engine.</p>
+      </div>
+      <div class="feats">
+        <article class="feat" style="--c:1" data-rv><h3><b>001</b> / Durable writes</h3><p class="t">A log of every write.</p><p>Each record is appended to a write-ahead log with a CRC32 checksum. On startup the log is replayed to rebuild state. If the log is corrupt, opening fails with <code>WAL_CORRUPT</code> instead of skipping records.</p></article>
+        <article class="feat" style="--c:6" data-rv><h3><b>002</b> / Tenant isolation</h3><p class="t">Each query runs in a scope.</p><p>The scope is the caller’s permissions intersected with the key. Tests check that a query never returns another tenant’s records, including when an index panics.</p></article>
+        <article class="feat" style="--c:2" data-rv><h3><b>003</b> / Idempotent writes</h3><p class="t">A retry is applied once.</p><p>A retried write with the same operation id and identical bytes takes effect once. If the outcome of a commit can’t be determined, the caller gets <code>OUTCOME_UNKNOWN</code> instead of a guess.</p></article>
+        <article class="feat" style="--c:7" data-rv><h3><b>004</b> / Swappable index</h3><p class="t">Exact search today.</p><p>Search goes through an <code>AnnIndex</code> trait. The brute-force <code>FlatIndex</code> returns exact results and is the reference any approximate index has to match. No approximate index is wired in yet.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <canvas class="ascii-div" data-from="#232323" data-to="#f1eee7" aria-hidden="true"></canvas>
+
+  <!-- how it is built -->
+  <section class="s cream" id="principles" aria-labelledby="prin-h">
+    <p class="mono lbl" data-rv>Design</p>
+    <h2 id="prin-h" data-rv>How it is built.</h2>
+    <div class="prin">
+      <article data-rv><h3><b>01</b> / The log comes first</h3><p>The write-ahead log is the source of truth. The index is rebuilt from it on startup and is never trusted from disk.</p></article>
+      <article data-rv><h3><b>02</b> / Isolation has its own tests</h3><p>Tenant boundaries are covered by tests for concurrent tenants, a panicking index and replay after a crash.</p></article>
+      <article data-rv><h3><b>03</b> / Numbers come with conditions</h3><p>Latency, recall, throughput and memory are reported together, with the dataset, hardware and build settings used.</p></article>
+      <article data-rv><h3><b>04</b> / Evidence is tied to a snapshot</h3><p>Each test result is recorded against a digest of the source. Change a file and the old result no longer counts until it is re-run.</p></article>
+    </div>
+  </section>
+
+  <!-- the actual repo -->
+  <section class="s cream" id="repo" aria-labelledby="repo-h" style="padding-top:0">
+    <div class="repo-head">
+      <p class="mono lbl" data-rv>Source</p>
+      <h2 id="repo-h" data-rv>This is the actual repo.</h2>
+    </div>
+    <div class="ide" id="ide" data-rv role="img" aria-label="Editor showing the AnnIndex trait from crates/atlas-index/src/lib.rs and a verify run: 141 tests passed">
+      <div class="bar"><i></i><i></i><i></i><span>project apex — crates/atlas-index/src/lib.rs</span></div>
+      <div class="tree" aria-hidden="true">
+        <div class="d">▾ crates</div><div class="i1 f">▸ atlas-core</div><div class="i1 f">▸ atlas-storage</div>
+        <div class="i1 d">▾ atlas-index</div><div class="i2 a">lib.rs</div><div class="i2 f">conformance.rs</div>
+        <div class="i1 f">▸ atlas-engine</div>
+        <div class="f">▸ ci</div><div class="d">▾ docs</div><div class="i1 f">GATES.md</div><div class="i1 f">SECURITY.md</div><div class="f">▸ scripts</div>
+      </div>
+      <div class="code" aria-hidden="true">
+        <div class="ln"><b>47</b><span class="c">/// Pluggable nearest-neighbour index. A derived structure: the WAL is the source of truth</span></div>
+        <div class="ln"><b>48</b><span class="c">/// and implementations are rebuilt from it on open (never trust persisted index files).</span></div>
+        <div class="ln"><b>49</b><span><span class="k">pub trait</span> <span class="t2">AnnIndex</span> {</span></div>
+        <div class="ln"><b>50</b><span>    <span class="k">fn</span> dim(&amp;<span class="k">self</span>) -&gt; <span class="t2">usize</span>;</span></div>
+        <div class="ln"><b>51</b><span>    <span class="k">fn</span> len(&amp;<span class="k">self</span>) -&gt; <span class="t2">usize</span>;</span></div>
+        <div class="ln"><b>55</b><span>    <span class="c">/// Insert or replace (same id, new vector/metadata).</span></span></div>
+        <div class="ln"><b>56</b><span>    <span class="k">fn</span> insert(&amp;<span class="k">mut self</span>, id: VectorId, v: &amp;[<span class="t2">f32</span>], metadata: Value) -&gt; Result&lt;(), AtlasError&gt;;</span></div>
+        <div class="ln"><b>61</b><span>    <span class="c">/// Top-k, best first; ties break by ascending id.</span></span></div>
+        <div class="ln"><b>62</b><span>    <span class="k">fn</span> search(&amp;<span class="k">self</span>, q: &amp;[<span class="t2">f32</span>], k: <span class="t2">usize</span>, metric: Metric) -&gt; Result&lt;Vec&lt;Hit&gt;, AtlasError&gt;;</span></div>
+        <div class="ln"><b>65</b><span>    <span class="c">/// ... NOT acceptable as the final ANN implementation. ANN adapters MUST override</span></span></div>
+        <div class="ln"><b>66</b><span>    <span class="c">/// it with filter-aware retrieval and demonstrate filtered recall vs the FlatIndex oracle.</span></span></div>
+        <div class="ln"><b>68</b><span>    <span class="k">fn</span> search_filtered(&amp;<span class="k">self</span>, q: &amp;[<span class="t2">f32</span>], k: <span class="t2">usize</span>, metric: Metric, allow: &amp;<span class="k">dyn</span> Fn(VectorId) -&gt; <span class="t2">bool</span>) -&gt; ...</span></div>
+      </div>
+      <div class="term" id="term" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <!-- benchmarks -->
+  <section class="s cream" id="benchmarks" aria-labelledby="bench-h" style="padding-top:0">
+    <p class="mono lbl" data-rv>Benchmarks</p>
+    <h2 id="bench-h" data-rv>No search benchmarks yet.</h2>
+    <div class="two">
+      <div data-rv>
+        <p class="lede">No search benchmark has been run, so this page makes no speed claims and no comparison with other databases. When benchmarks exist, each result will list the dataset, hardware, build settings and the commands to reproduce it.</p>
+        <div class="measured">
+          <p class="mono">Measured so far</p>
+          <p class="mnum"><span data-count="1000000">1,000,000</span><small>operation-map entries</small></p>
+          <p>Windows, release build, log replay: 1,322 B retained per entry and a 1.34 GB peak working set. This is a memory test of replay. <strong>It says nothing about search speed.</strong></p>
+        </div>
+      </div>
+      <div data-rv>
+        <table class="bench">
+          <caption class="mono">Planned measurements</caption>
+          <thead><tr><th scope="col">Metric</th><th scope="col">Project Apex</th><th scope="col">Baseline</th><th scope="col">Conditions</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Query latency p50 / p95 / p99</th><td>Not run</td><td>Not run</td><td>Hardware, dataset</td></tr>
+            <tr><th scope="row">Recall@10</th><td>Not run</td><td>Not run</td><td>Exact-search ground truth</td></tr>
+            <tr><th scope="row">Queries per second</th><td>Not run</td><td>Not run</td><td>Concurrency, query mix</td></tr>
+            <tr><th scope="row">Ingestion throughput</th><td>Not run</td><td>Not run</td><td>Dataset, batch size</td></tr>
+            <tr><th scope="row">Peak process memory</th><td>Not run</td><td>Not run</td><td>Measurement method</td></tr>
+            <tr><th scope="row">Filtered recall@10</th><td>Not run</td><td>Not run</td><td>Filter selectivity</td></tr>
+            <tr><th scope="row">Recovery after a crash</th><td>Not run</td><td>n/a</td><td>Crash, restart, retry</td></tr>
+          </tbody>
+        </table>
+        <p class="fine dk">Comparisons will use the same hardware, data, query mix, concurrency and recall target, and name the product versions and settings.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- where it fits -->
+  <section class="s cream" id="fit" aria-labelledby="fit-h" style="padding-top:0">
+    <p class="mono lbl" data-rv>Where it fits</p>
+    <h2 id="fit-h" data-rv>A storage layer, not a framework.</h2>
+    <p class="lede wide" data-rv>Project Apex stores and retrieves data. It is not a model, an agent framework or a hosted service, so it sits next to whatever you already use.</p>
+    <div class="cols3">
+      <article data-rv><h3>Try it if</h3><p>You want a database that logs every write, scopes queries by tenant and applies retries once, and you are happy to read the source and report problems.</p></article>
+      <article data-rv><h3>Stay with PostgreSQL if</h3><p>You need relational queries, transactions or a vector index that works today. pgvector covers exact and approximate search.</p></article>
+      <article data-rv><h3>Stay with your vector database if</h3><p>You need approximate search at scale now. Project Apex has no approximate index wired in yet.</p></article>
+    </div>
+  </section>
+
+  <canvas class="ascii-div" data-from="#f1eee7" data-to="#232323" aria-hidden="true"></canvas>
+
+  <!-- contributing + status + faq -->
+  <section class="s dark" id="open" aria-labelledby="open-h">
+    <p class="mono lbl" data-rv>Contributing</p>
+    <h2 id="open-h" data-rv>Where help is useful.</h2>
+    <p class="lede wide lt" data-rv>Project Apex is open source. These are the contributions that help most right now.</p>
+    <div class="cols4">
+      <article data-rv><h3>Report a bug</h3><p>Include the steps to reproduce it and the platform you ran it on.</p></article>
+      <article data-rv><h3>Add a failure test</h3><p>A crash, a retry or a tenant mix-up that the current tests don’t cover.</p></article>
+      <article data-rv><h3>Write a benchmark</h3><p>A dataset and query mix you care about, with a script others can run.</p></article>
+      <article data-rv><h3>Check the claims</h3><p>Read <code>docs/GATES.md</code> and point out anything the evidence doesn’t support.</p></article>
+    </div>
+  </section>
+
+  <section class="s dark" id="status" aria-labelledby="st-h" style="padding-top:0">
+    <p class="mono lbl" data-rv>Status</p>
+    <h2 id="st-h" data-rv>Early development.</h2>
+    <p class="lede wide lt" data-rv>The log, recovery and tenant isolation are implemented and tested. The approximate index, filtered search, macOS support and a capacity policy for the operation map are not done. Do not use it for anything that matters yet.</p>
+    <div class="tracks">
+      <div class="track light" data-rv><span class="pill">Planned for the first release</span><h3>Scope</h3><ul><li>Exact FlatIndex search</li><li>Tenant isolation</li><li>Process-kill durability</li><li>Operation-map quota fix</li><li>CI on three operating systems</li></ul></div>
+      <div class="track" data-rv><span class="pill open">Not done</span><h3>Open items</h3><ul><li>Capacity policy for the operation map and tenant partitions: blocks production use</li><li>Approximate index and filtered-search acceptance</li><li>macOS: untested</li><li>Power loss: tests kill the process, which is not the same</li><li>Peak-memory run on Linux</li></ul></div>
+    </div>
+    <div class="cards dk">
+      <article class="card" data-rv><span class="mono">Test run · Windows</span><b class="n"><span data-count="141">141</span> passed</b><p>0 failed, 2 ignored. Production dependency graph: 54 checks pass.</p><code>source digest 3cdaf426a42aef0a7e9133052d3d69df</code></article>
+      <article class="card" data-rv><span class="mono">Test run · Linux (Docker)</span><b class="n"><span data-count="141">141</span> passed</b><p>Same digest and counts. The kill test shows the directory opened, then fsync.</p><code>source digest 3cdaf426…</code></article>
+      <article class="card" data-rv><span class="mono">Independent review</span><b class="n">Not done</b><p>Required for this exact digest.</p><span class="pill open">Open</span></article>
+    </div>
+
+    <div class="faq-grid" id="faq">
+      <h2 data-rv>Questions</h2>
+      <div class="faq" data-rv>
+        <details><summary><span class="q">Q.001 /</span><span>What is Project Apex?</span></summary><div class="ans"><div><p>An open-source database in Rust for storing and searching the data AI agents produce.</p></div></div></details>
+        <details><summary><span class="q">Q.002 /</span><span>Is it faster than pgvector or Qdrant?</span></summary><div class="ans"><div><p>Unknown. No search benchmark has been run.</p></div></div></details>
+        <details><summary><span class="q">Q.003 /</span><span>Can I use it in production?</span></summary><div class="ans"><div><p>No. See the status section for what is missing.</p></div></div></details>
+        <details><summary><span class="q">Q.004 /</span><span>Does it do approximate nearest-neighbour search?</span></summary><div class="ans"><div><p>Not yet. Search is exact (brute force). An approximate index is planned, and it has to match the exact results before it ships.</p></div></div></details>
+        <details><summary><span class="q">Q.005 /</span><span>What happens on power loss?</span></summary><div class="ans"><div><p>Not tested. The durability tests kill the process, which is not the same as losing power.</p></div></div></details>
+        <details><summary><span class="q">Q.006 /</span><span>Which platforms work?</span></summary><div class="ans"><div><p>Windows and Linux are tested. macOS is not.</p></div></div></details>
+        <details><summary><span class="q">Q.007 /</span><span>How do I run it?</span></summary><div class="ans"><div><p>It is an embedded library that runs inside your own process. There is no server yet.</p></div></div></details>
+        <details><summary><span class="q">Q.008 /</span><span>Why another database?</span></summary><div class="ans"><div><p>To find out whether putting the log, tenant scoping and retry handling in the database is simpler than writing them in application code.</p></div></div></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- closing: rings return around a circle -->
+  <section class="ring-cta" id="cta" aria-labelledby="cta-h">
+    <div class="ring-gl" id="gl2"><canvas aria-hidden="true"></canvas></div>
+    <div class="ring-disc" id="ringDisc">
+      <h2 id="cta-h">Read the source and try to break it.</h2>
+      <div class="btns">
+        <a class="btn" data-hold href="#repo"><span class="odo">View the source</span></a>
+        <a class="btn ghost" data-hold href="#open"><span class="odo">Contribute</span></a>
+      </div>
+    </div>
+  </section>
+
+  <canvas class="ascii-div" data-from="#232323" data-to="#f1eee7" aria-hidden="true"></canvas>
+
+  <footer class="foot">
+    <div class="foot-top">
+      <p class="brand"><span class="logo" aria-hidden="true"></span>Project Apex</p>
+      <nav class="fnav mono" aria-label="Footer">
+        <a href="#product">Features</a><a href="#benchmarks">Benchmarks</a><a href="#repo">Source</a><a href="#status">Status</a><a href="#faq">FAQ</a>
+      </nav>
+    </div>
+    <div class="row2 mono"><span>Open source. Written in Rust.</span><span>Early development</span></div>
+  </footer>
+</main>
+
+<!-- learn more: widget + drawer dialog -->
+<div class="widget">
+  <span class="w-label"><span class="odo">Learn more</span></span>
+  <button class="w-btn" id="w-btn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="drawer" aria-label="Learn more about Project Apex. Press and hold to open.">
+    <svg viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="25"/></svg><span class="plus" aria-hidden="true">+</span>
+  </button>
+</div>
+<div class="scrim" id="scrim"></div>
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="d-title">
+  <div class="d-tabs" id="d-tabs" role="tablist" aria-label="About Project Apex">
+    <button role="tab" aria-selected="true" aria-controls="p1" id="t1">001 / What it is</button>
+    <button role="tab" aria-selected="false" aria-controls="p2" id="t2" tabindex="-1">002 / Reading the evidence</button>
+    <button role="tab" aria-selected="false" aria-controls="p3" id="t3" tabindex="-1">003 / What isn’t done</button>
+  </div>
+  <div class="d-body">
+    <button class="d-close" id="d-close" type="button">Close <span aria-hidden="true">×</span></button>
+    <p class="mono" id="d-title">README / Project Apex</p>
+    <div class="pane on" id="p1" role="tabpanel" aria-labelledby="t1">
+      <h2>A database for agent memory.</h2>
+      <p>Project Apex writes every change to a write-ahead log and rebuilds its index from that log when it starts. Queries run inside a tenant scope, and a retried write with the same id and the same bytes is applied once.</p>
+      <p>It is an embedded Rust library. There is no server and no approximate index yet.</p>
+    </div>
+    <div class="pane" id="p2" role="tabpanel" aria-labelledby="t2">
+      <h2>Each result belongs to one snapshot.</h2>
+      <p>Test runs, Linux runs and reviews are recorded against a digest of the source. If a file changes, the earlier result is out of date until it is re-run. <code>docs/GATES.md</code> lists what each digest has and hasn’t been checked for.</p>
+      <p>Killing the process in a test is not the same as losing power, and a missing result is never counted as a pass.</p>
+    </div>
+    <div class="pane" id="p3" role="tabpanel" aria-labelledby="t3">
+      <h2>Open items.</h2>
+      <p>The capacity policy for the operation map is unresolved and blocks production use. The approximate index and filtered-search acceptance, macOS testing, a power-loss test and the independent review of the current digest are not done.</p>
+      <p>There are no speed comparisons with other databases because no search benchmark has been run.</p>
+    </div>
+  </div>
+</div>
+
+<script src="vendor/gsap.min.js"></script>
+<script src="vendor/ScrollTrigger.min.js"></script>
+<script src="vendor/lenis.min.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

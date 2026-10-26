@@ -1,0 +1,19 @@
+{
+  "agent": "lean-orchestrator",
+  "env": {
+    "GATEGUARD_EXEMPT_GLOBS": "docs/**,scripts/**,ci/**,CLAUDE.md,.claude/**",
+    "CLAUDE_CODE_GOAL_CHECKIN_MINUTES": "0"
+  },
+  "enabledPlugins": {
+    "product-skills@claude-code-skills": false,
+    "marketing-skills@claude-code-skills": false,
+    "ra-qm-skills@claude-code-skills": false,
+    "pm-skills@claude-code-skills": false,
+    "c-level-skills@claude-code-skills": false,
+    "business-growth-skills@claude-code-skills": false,
+    "finance-skills@claude-code-skills": false,
+    "self-improving-agent@claude-code-skills": false,
+    "treg@treg": false,
+    "superpowers@superpowers-dev": false
+  }
+}
