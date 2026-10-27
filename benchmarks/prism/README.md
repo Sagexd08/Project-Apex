@@ -15,10 +15,16 @@ Std-only Rust, no unsafe, detached workspace. Not part of the Atlas core build o
 
 ```
 cd benchmarks/prism
-cargo test --release                      # 12 tests: invariants, nested, sigma, LUT == reference, gates
+cargo test --release                      # 14 tests: invariants, nested, sigma, LUT == reference, gates
 cargo clippy --release --all-targets -- -D warnings
 cargo run --release --bin prism-bench     # ~2 min; writes results/results.json
+cargo run --release --bin prism-timing    # ~9 min; interleaved timing, writes results/timing_interleaved.json
 ```
+
+`prism-timing [--n 20000,100000,400000] [--reps 20] [--queries 200]` times the exact scans, a flat 4-bit LUT and
+the cascade in a rotating order per query, repeated, and reports each kernel's p50 ratio to the faster exact scan with a
+bootstrap 95% interval and recall against exact. Results record the command, an LF-normalized source digest
+(`src_fnv1a64_lf`) and a dataset checksum (`dataset_fnv1a64`). Raw bytes digest `src_fnv1a64` depends on line endings.
 
 Set `PRISM_CPU="<model>"` to record the CPU. Old keys of results.json are unchanged; new data
 is under `"extra"` (kernel_timing, datasets, error_dist, gates, concurrency_repeats).
@@ -26,10 +32,11 @@ is under `"extra"` (kernel_timing, datasets, error_dist, gates, concurrency_repe
 
 ## Findings (synthetic data, 12-thread non-idle Windows box, single-thread timings)
 
-- Kernel: LUT cuts the cascade ~7x (scalar z=2 4.5 ms -> 0.61 ms p50; flat 4-bit LUT + rerank100
-  1.31 ms), but the
-  cascade does NOT beat a fair optimised f32 scan (0.55 ms) at n=20000, d=256. Bits read
-  did not turn into a time win here: the scan is cache-resident and compute-bound.
+- Kernel: LUT cuts the cascade ~7x (scalar z=2 4.5 ms -> 0.61 ms p50 in the first run). A single sequential
+  run could not separate it from the optimised f32 scan (sign flipped between two runs). The interleaved
+  run (`prism-timing`, see docs/prism/STAGE_D_REPRODUCTION.md D.5) measured the cascade at 0.62-0.70 of the
+  faster exact scan at n = 20k, 100k and 400k, intervals excluding 1, recall at z=3 equal to 1.0. Still synthetic,
+  one thread, machine not idle, exact baseline not hand-written SIMD: an observation, not a speed claim.
 - Error: the score error is close to Gaussian in the bulk (excess kurtosis -0.02..0.23) but
   the tails are heavier than 3.29/3.89: max |e|/sigma is 5.2-7.1 over 20M pairs, so zero
   misses over all pairs needs z ~ 7, far above the z=2..3 operating points.

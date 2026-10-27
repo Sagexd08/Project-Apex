@@ -1,0 +1,101 @@
+    Finished `release` profile [optimized] target(s) in 0.06s
+     Running `target\release\prism-bench.exe`
+== 1. sigma_b (measured vs C/(sqrt(3P)2^b)) and MSE (orig vs shifted)
+b=1 sigma 0.06102 theory 0.05413 ratio 1.127 | mse orig 0.85572 shifted 0.83519
+b=2 sigma 0.02718 theory 0.02706 ratio 1.004 | mse orig 0.18926 shifted 0.18801
+b=4 sigma 0.00696 theory 0.00677 ratio 1.028 | mse orig 0.01229 shifted 0.01197
+== 2. flat fixed rerank_n=100
+bits=1 recall@10 0.7701
+bits=2 recall@10 0.7797
+bits=4 recall@10 0.9983
+== 3. cascade [1,2,4]
+ z    recall  miss   bitsPfx(M) bitsInc(M) surv1   surv2   surv3  rerank(mean/p95)
+1.0  0.8559  0.786  5.4/5.5  5.3/5.3  328 141 35  34.7/47
+1.5  0.9771  0.210  5.6/5.6  5.4/5.4  394 269 66  66.1/88
+2.0  0.9982  0.017  5.7/5.7  5.4/5.4  399 356 107  106.7/139
+2.5  0.9999  0.001  5.7/5.8  5.4/5.4  399 390 154  153.8/196
+3.0  1.0000  0.000  5.7/5.8  5.4/5.5  399 398 204  204.0/251
+4.0  1.0000  0.000  5.7/5.8  5.4/5.5  399 399 296  296.2/341
+(full 4-bit scan = 20.5M bits/query)
+== 4. wall-clock per query, single thread (machine not idle)
+exact_scan       p50 4.764 ms  p95 6.328 ms
+flat4_rerank100  p50 9.671 ms  p95 12.154 ms
+cascade_z2       p50 4.241 ms  p95 5.056 ms
+cascade_z3       p50 4.481 ms  p95 5.304 ms
+== 5. concurrency (5s, 4 readers, cascade z=2)
+writer OFF p50/95/99 4.65/7.29/12.02 ms | ON 6.07/8.91/14.12 ms | writes 1867 vec/s (93 commits/s) | jitter p99 ratio 1.17
+== X1. kernel timing, single thread, 1000 queries after 20 warm-up
+exact_scan_ref         p50 4.531 ms  p95 5.299 ms
+exact_scan_opt         p50 0.630 ms  p95 0.826 ms
+flat4_lut_rerank100    p50 1.341 ms  p95 1.734 ms
+cascade_lut_z2         p50 0.667 ms  p95 0.871 ms
+cascade_lut_z3         p50 0.814 ms  p95 1.319 ms
+cascade_scalar_z2      p50 4.437 ms  p95 5.208 ms
+== X2 a_clustered_in_distribution: n=20000 nq=1000 sigma_b [0.061019547, 0.02717768, 0.0137003595, 0.006957208]
+z=1.5 recall 0.9771 miss 0.210 bitsInc 5.36M surv [394, 269, 66] rr 66.1/88 t50 0.72 ms (first 200 q)
+z=2.0 recall 0.9982 miss 0.017 bitsInc 5.40M surv [399, 356, 107] rr 106.7/139 t50 0.57 ms (first 200 q)
+z=2.5 recall 0.9999 miss 0.001 bitsInc 5.42M surv [399, 390, 154] rr 153.8/196 t50 0.64 ms (first 200 q)
+z=3.0 recall 1.0000 miss 0.000 bitsInc 5.43M surv [399, 398, 204] rr 204.0/251 t50 0.74 ms (first 200 q)
+z=4.0 recall 1.0000 miss 0.000 bitsInc 5.43M surv [399, 399, 296] rr 296.2/341 t50 0.81 ms (first 200 q)
+  err b=1: kurt 0.23 q99.9 3.49 q99.99 4.05 max 5.33 sigma | per-vector bound violated 11088 of 20000000 (5.54e-4), mean h 0.2253, deterministic violated 0
+  err b=2: kurt -0.01 q99.9 3.29 q99.99 3.89 max 5.60 sigma | per-vector bound violated 1700 of 20000000 (8.50e-5), mean h 0.1060, deterministic violated 0
+  err b=4: kurt 0.05 q99.9 3.36 q99.99 4.12 max 7.11 sigma | per-vector bound violated 2093 of 20000000 (1.05e-4), mean h 0.0270, deterministic violated 0
+  gate global_z3              recall 1.0000 miss 0.000 bitsInc 5.43M surv [399, 398, 204] rr 204.0/251
+  gate global_z4              recall 1.0000 miss 0.000 bitsInc 5.43M surv [399, 399, 296] rr 296.2/341
+  gate per_vector_delta1e-3   recall 1.0000 miss 0.000 bitsInc 5.43M surv [399, 399, 285] rr 285.3/332
+  gate deterministic          recall 1.0000 miss 0.000 bitsInc 19.08M surv [20000, 17274, 399] rr 399.4/435
+== X2 b_clustered_ood_queries: n=20000 nq=1000 sigma_b [0.05801446, 0.027296187, 0.01370805, 0.0069438852]
+z=1.5 recall 0.9711 miss 0.248 bitsInc 5.93M surv [2064, 547, 45] rr 45.1/65 t50 1.27 ms (first 200 q)
+z=2.0 recall 0.9982 miss 0.018 bitsInc 7.17M surv [5142, 1429, 75] rr 74.7/112 t50 1.46 ms (first 200 q)
+z=2.5 recall 1.0000 miss 0.000 bitsInc 9.09M surv [9568, 2967, 114] rr 114.4/173 t50 1.76 ms (first 200 q)
+z=3.0 recall 1.0000 miss 0.000 bitsInc 11.39M surv [14096, 5199, 169] rr 169.3/259 t50 2.12 ms (first 200 q)
+z=4.0 recall 1.0000 miss 0.000 bitsInc 15.67M surv [19145, 11032, 343] rr 342.7/542 t50 2.47 ms (first 200 q)
+  err b=1: kurt -0.02 q99.9 3.26 q99.99 3.85 max 5.46 sigma | per-vector bound violated 1582 of 20000000 (7.91e-5), mean h 0.2253, deterministic violated 0
+  err b=2: kurt -0.02 q99.9 3.26 q99.99 3.84 max 5.80 sigma | per-vector bound violated 1513 of 20000000 (7.56e-5), mean h 0.1060, deterministic violated 0
+  err b=4: kurt 0.02 q99.9 3.31 q99.99 3.95 max 6.32 sigma | per-vector bound violated 1660 of 20000000 (8.30e-5), mean h 0.0270, deterministic violated 0
+  gate global_z3              recall 1.0000 miss 0.000 bitsInc 11.39M surv [14096, 5199, 169] rr 169.3/259
+  gate global_z4              recall 1.0000 miss 0.000 bitsInc 15.67M surv [19145, 11032, 343] rr 342.7/542
+  gate per_vector_delta1e-3   recall 1.0000 miss 0.000 bitsInc 15.23M surv [18861, 10319, 318] rr 318.3/498
+  gate deterministic          recall 1.0000 miss 0.000 bitsInc 20.48M surv [20000, 20000, 13777] rr 13776.9/16845
+== X2 c_isotropic_gaussian: n=20000 nq=1000 sigma_b [0.057707783, 0.027190236, 0.013674672, 0.006940359]
+z=1.5 recall 0.9812 miss 0.170 bitsInc 5.69M surv [1542, 343, 30] rr 30.2/42 t50 1.09 ms (first 200 q)
+z=2.0 recall 0.9989 miss 0.011 bitsInc 6.66M surv [4171, 918, 45] rr 44.5/65 t50 1.23 ms (first 200 q)
+z=2.5 recall 1.0000 miss 0.000 bitsInc 8.32M surv [8419, 2031, 63] rr 63.3/91 t50 1.78 ms (first 200 q)
+z=3.0 recall 1.0000 miss 0.000 bitsInc 10.47M surv [13194, 3856, 88] rr 88.5/127 t50 1.71 ms (first 200 q)
+z=4.0 recall 1.0000 miss 0.000 bitsInc 14.84M surv [18987, 9485, 167] rr 166.6/234 t50 2.13 ms (first 200 q)
+  err b=1: kurt -0.02 q99.9 3.28 q99.99 3.86 max 5.46 sigma | per-vector bound violated 1586 of 20000000 (7.93e-5), mean h 0.2251, deterministic violated 0
+  err b=2: kurt -0.01 q99.9 3.28 q99.99 3.87 max 5.83 sigma | per-vector bound violated 1615 of 20000000 (8.07e-5), mean h 0.1061, deterministic violated 0
+  err b=4: kurt 0.02 q99.9 3.32 q99.99 3.97 max 6.19 sigma | per-vector bound violated 1547 of 20000000 (7.73e-5), mean h 0.0271, deterministic violated 0
+  gate global_z3              recall 1.0000 miss 0.000 bitsInc 10.47M surv [13194, 3856, 88] rr 88.5/127
+  gate global_z4              recall 1.0000 miss 0.000 bitsInc 14.84M surv [18987, 9485, 167] rr 166.6/234
+  gate per_vector_delta1e-3   recall 1.0000 miss 0.000 bitsInc 14.42M surv [18689, 8829, 156] rr 156.0/220
+  gate deterministic          recall 1.0000 miss 0.000 bitsInc 20.48M surv [20000, 20000, 11959] rr 11959.1/13029
+== X2 d_overlapping_clusters_noise1.5: n=20000 nq=1000 sigma_b [0.058130354, 0.027247796, 0.013695299, 0.006948194]
+z=1.5 recall 0.9945 miss 0.052 bitsInc 5.25M surv [247, 124, 25] rr 25.4/34 t50 0.88 ms (first 200 q)
+z=2.0 recall 1.0000 miss 0.000 bitsInc 5.32M surv [376, 203, 34] rr 34.0/46 t50 0.97 ms (first 200 q)
+z=2.5 recall 1.0000 miss 0.000 bitsInc 5.42M surv [605, 280, 44] rr 44.0/60 t50 0.96 ms (first 200 q)
+z=3.0 recall 1.0000 miss 0.000 bitsInc 5.63M surv [1286, 344, 56] rr 55.9/74 t50 1.14 ms (first 200 q)
+z=4.0 recall 1.0000 miss 0.000 bitsInc 6.97M surv [6258, 480, 85] rr 85.4/111 t50 1.40 ms (first 200 q)
+  err b=1: kurt -0.01 q99.9 3.29 q99.99 3.88 max 5.41 sigma | per-vector bound violated 2027 of 20000000 (1.01e-4), mean h 0.2252, deterministic violated 0
+  err b=2: kurt -0.01 q99.9 3.28 q99.99 3.86 max 5.18 sigma | per-vector bound violated 1540 of 20000000 (7.70e-5), mean h 0.1061, deterministic violated 0
+  err b=4: kurt 0.02 q99.9 3.33 q99.99 3.98 max 6.79 sigma | per-vector bound violated 1636 of 20000000 (8.18e-5), mean h 0.0271, deterministic violated 0
+  gate global_z3              recall 1.0000 miss 0.000 bitsInc 5.63M surv [1286, 344, 56] rr 55.9/74
+  gate global_z4              recall 1.0000 miss 0.000 bitsInc 6.97M surv [6258, 480, 85] rr 85.4/111
+  gate per_vector_delta1e-3   recall 1.0000 miss 0.000 bitsInc 6.70M surv [5254, 458, 82] rr 81.5/105
+  gate deterministic          recall 1.0000 miss 0.000 bitsInc 20.48M surv [20000, 20000, 497] rr 497.5/793
+== X2 e_clustered_n100000_nq200: n=100000 nq=200 sigma_b [0.061133314, 0.02730473, 0.013715292, 0.006995556]
+z=1.5 recall 0.9545 miss 0.380 bitsInc 26.54M surv [1917, 886, 119] rr 119.0/165 t50 6.15 ms (first 200 q)
+z=2.0 recall 0.9970 miss 0.025 bitsInc 26.87M surv [1997, 1487, 238] rr 237.9/325 t50 7.53 ms (first 200 q)
+z=2.5 recall 1.0000 miss 0.000 bitsInc 27.06M surv [2000, 1850, 402] rr 402.1/538 t50 6.47 ms (first 200 q)
+z=3.0 recall 1.0000 miss 0.000 bitsInc 27.12M surv [2000, 1974, 611] rr 611.2/786 t50 6.90 ms (first 200 q)
+z=4.0 recall 1.0000 miss 0.000 bitsInc 27.14M surv [2000, 2000, 1108] rr 1107.5/1323 t50 8.34 ms (first 200 q)
+== X5. concurrency repeats: 7 x (OFF,ON), 3s each, 4 readers, LUT cascade z=2
+trial 0: p99 OFF 7.126 ON 11.724 ratio 1.65 | qps OFF 2628 ON 2520 | writes 599 vec/s
+trial 1: p99 OFF 15.609 ON 15.350 ratio 0.98 | qps OFF 2376 ON 2239 | writes 1782 vec/s
+trial 2: p99 OFF 5.456 ON 12.566 ratio 2.30 | qps OFF 3035 ON 2119 | writes 976 vec/s
+trial 3: p99 OFF 14.600 ON 8.899 ratio 0.61 | qps OFF 2626 ON 2398 | writes 1817 vec/s
+trial 4: p99 OFF 4.946 ON 5.360 ratio 1.08 | qps OFF 3555 ON 3095 | writes 1718 vec/s
+trial 5: p99 OFF 4.780 ON 1.491 ratio 0.31 | qps OFF 3714 ON 4640 | writes 1902 vec/s
+trial 6: p99 OFF 1.656 ON 4.764 ratio 2.88 | qps OFF 5286 ON 3350 | writes 1636 vec/s
+median p99 ratio 1.08 (min 0.31, max 2.88); median qps OFF 3035 ON 2520
+wrote C:\Desktop\Project Apex\benchmarks\prism/results/results.json
