@@ -240,3 +240,13 @@ html.fx .bars:not(.rv-in) .bar i b{transform:scaleX(0)}
 }
 
 .tbl.wrapc table{min-width:760px}.tbl.wrapc td,.tbl.wrapc th{white-space:normal;vertical-align:top;line-height:1.4;padding-right:18px}.tbl.wrapc td:first-child{font-weight:600;min-width:150px}
+
+/* algorithm panels: two filled columns, readable size, visible on the dark section */
+.algo-pair{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:18px;margin:22px 0}
+.algo{margin:0;background:var(--black);border:1px solid var(--line);border-radius:12px;padding:20px 22px;box-shadow:0 30px 80px -30px rgba(0,0,0,.6)}
+.algo figcaption{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--off);margin-bottom:14px;display:flex;gap:10px;align-items:baseline}
+.algo figcaption .mono{color:var(--accent)}
+.algo pre{margin:0;overflow-x:auto;font-weight:600;font-size:15px;line-height:1.7;color:var(--off);white-space:pre}
+.algo pre i{font-style:normal;color:var(--accent)}
+.algo p{margin:14px 0 0;font-size:13.5px;line-height:1.55;color:#b9b6ac;white-space:normal}
+@media(max-width:860px){.algo-pair{grid-template-columns:1fr}.algo pre{font-size:13px}}

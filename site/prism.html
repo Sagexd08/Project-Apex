@@ -252,17 +252,20 @@ floor: B ≥ n bits per query</pre><p>Survivors beyond k shrink in proportion to
 I1 repeatable   I2 no torn read
 I3 monotonic    I4 compaction-safe</pre><p>Segments are immutable. A commit publishes a new snapshot pointer; a reader clones the pointer and never locks again.</p></div>
       </div>
-      <div class="code">ENCODE(x):  z = rotate(x, seed)
-            idx = clamp(floor((z + s) / Δ₄), 0, 15)
-            store 4 bit planes + full vector (for rerank)
-
-SEARCH(q, k, schedule, z, snapshot):
-    rq   = rotate(q, seed);  cand = all vectors in snapshot
-    for each b in schedule:
-        est  = score(rq, cand, planes up to b)
-        τ    = k-th largest of est
-        cand = { c : est[c] + zσ_b ≥ τ − zσ_b }
-    return top-k of cand by exact cosine</div>
+      <div class="algo-pair">
+        <figure class="algo"><figcaption><span class="mono">01</span> Encode once, at write time</figcaption><pre><code><i>z</i>   = rotate(x, seed)
+<i>idx</i> = clamp(floor((z + s) / Δ₄), 0, 15)
+store  4 bit planes
+       + full vector (for rerank)</code></pre><p>A seeded rotation, then one 4-bit code per coordinate. Lower precisions are prefixes of it.</p></figure>
+        <figure class="algo"><figcaption><span class="mono">02</span> Search a snapshot, stage by stage</figcaption><pre><code>SEARCH(q, k, schedule, z, snapshot):
+  rq   = rotate(q, seed)
+  cand = all vectors in snapshot
+  for each b in schedule:
+    est  = score(rq, cand, planes up to b)
+    τ    = k-th largest of est
+    cand = { c : est[c] + zσ_b ≥ τ − zσ_b }
+  return top-k of cand by exact cosine</code></pre><p>Each stage reads one more bit per coordinate, but only for the survivors.</p></figure>
+      </div>
     </div>
   </section>
 
