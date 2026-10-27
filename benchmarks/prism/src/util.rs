@@ -106,3 +106,51 @@ pub fn isotropic(rng: &mut SplitMix64, n: usize, d: usize) -> Vec<Vec<f32>> {
         })
         .collect()
 }
+
+/// Drop each carriage return that directly precedes a newline, so a digest names content, not a checkout.
+pub fn fold_crlf(b: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(b.len());
+    for (i, &c) in b.iter().enumerate() {
+        if c == b'\r' && b.get(i + 1) == Some(&b'\n') {
+            continue;
+        }
+        out.push(c);
+    }
+    out
+}
+
+fn rs_files_in(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
+    for e in std::fs::read_dir(dir).expect("read src dir") {
+        let p = e.expect("dir entry").path();
+        if p.is_dir() {
+            rs_files_in(&p, out);
+        } else if p.extension().is_some_and(|x| x == "rs") {
+            out.push(p);
+        }
+    }
+}
+
+/// FNV-1a 64 over every `.rs` file under `dir` in sorted path order, with CRLF folded to LF.
+pub fn src_digest_lf(dir: &std::path::Path) -> u64 {
+    let mut names = Vec::new();
+    rs_files_in(dir, &mut names);
+    names.sort();
+    let mut all = Vec::new();
+    for n in names {
+        all.extend(fold_crlf(&std::fs::read(n).expect("read file")));
+    }
+    fnv1a(&all)
+}
+
+/// FNV-1a 64 over the little-endian bytes of every `f32` in every set, in order.
+pub fn dataset_digest(sets: &[&[Vec<f32>]]) -> u64 {
+    let mut bytes = Vec::new();
+    for set in sets {
+        for v in set.iter() {
+            for x in v {
+                bytes.extend_from_slice(&x.to_le_bytes());
+            }
+        }
+    }
+    fnv1a(&bytes)
+}

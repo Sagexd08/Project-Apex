@@ -3,7 +3,7 @@ use prism::rng::SplitMix64;
 use prism::rot::Rotation;
 use prism::search::{
     calibrate, residuals, score_all, score_all_ref, search_cascade, search_cascade_lut, search_exact,
-    search_exact_fast, theory_sigma, Calib, Gate,
+    search_exact_fast, search_exact_stream, theory_sigma, Calib, Gate,
 };
 use prism::store::{Epoch, Store};
 use prism::util::{centres, mixture};
@@ -276,4 +276,30 @@ fn lut_cascade_with_huge_z_equals_exact() {
     let (got, st) = search_cascade_lut(ep, &snap, &q, 10, &[1, 2, 4], Gate::Global(1e6), &calib);
     assert_eq!(got, search_exact(&snap, &q, 10));
     assert_eq!(st.reranks, 600);
+}
+
+#[test]
+fn fold_crlf_names_content_not_checkout() {
+    assert_eq!(prism::util::fold_crlf(b"a\r\nb\nc\r"), b"a\nb\nc\r".to_vec());
+}
+
+#[test]
+fn exact_stream_matches_exact_fast_including_ties() {
+    let d = 64;
+    let mut rng = SplitMix64::new(31);
+    let store = Store::new(Epoch::new(32, d, vec![1, 2, 4]));
+    let mut b = batch(&mut rng, d, 0, 300);
+    let dup = b[0].1.clone();
+    for i in 0..20u64 {
+        b.push((1000 + i, dup.clone())); // exact score ties
+    }
+    store.commit(b);
+    let snap = store.pin();
+    for _ in 0..10 {
+        let q = unit(&mut rng, d);
+        for k in [1usize, 10, 400] {
+            assert_eq!(search_exact_stream(&snap, &q, k), search_exact_fast(&snap, &q, k), "k={k}");
+        }
+    }
+    assert_eq!(search_exact_stream(&snap, &dup, 5), search_exact_fast(&snap, &dup, 5));
 }

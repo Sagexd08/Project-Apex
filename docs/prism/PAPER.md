@@ -105,7 +105,7 @@ Values as recorded in `results.json` under `wall_clock` (Measured; the file does
 | cascade z = 2 | 3.45 | 4.14 |
 | cascade z = 3 | 5.70 | 14.54 |
 
-Section 6.6 repeats the comparison against an optimised exact scan (0.55 ms), and the cascade does not beat it. We make no speed claim.
+Section 6.6 repeats the comparison against an optimised exact scan (0.55 ms), and in that run the cascade did not beat it. A re-run on a busy machine reversed the sign (docs/prism/STAGE_D_REPRODUCTION.md), so the comparison is inconclusive. We make no speed claim.
 
 ### 6.5 Concurrent writes (single run)
 
@@ -133,7 +133,7 @@ After section 6.1 to 6.5 we added a lookup-table scoring kernel with incremental
 | cascade lookup, z = 3 | 0.66 | 0.86 |
 | cascade scalar, z = 2 | 4.54 | 5.63 |
 
-The kernel makes the cascade about 7 times faster than the scalar version. It does not beat an optimised exact float scan, which at this size fits in cache. Our earlier comparison in 6.4 used the plain exact scan and was not a fair baseline.
+The kernel makes the cascade about 7 times faster than the scalar version. It was not shown to beat an optimised exact float scan (the sign reversed between two runs; see STAGE_D_REPRODUCTION.md), which at this size fits in cache. Our earlier comparison in 6.4 used the plain exact scan and was not a fair baseline.
 
 **Harder data** (cascade, z = 2; bits per coordinate per vector; time over the first 200 queries):
 
@@ -153,7 +153,7 @@ The cascade keeps its saving on data without cluster structure, but a conservati
 
 ## 7. Limitations
 
-All data is synthetic. The gate width is calibrated, and the provable alternatives cost most of the saving on hard data (6.6). The scan floor is one bit per vector. The lookup-table cascade is not faster than an optimised exact scan at 20,000 vectors, and larger n and SIMD are untested. A concurrent writer raises median P99 by about 21% and cuts reader throughput by about 12%. There are no deletes, no filtered search and no integration with the Atlas `AnnIndex` trait. There is no comparison with RaBitQ, product quantization, HNSW or any database. Timing is from one non-idle machine whose CPU model was not recorded.
+All data is synthetic. The gate width is calibrated, and the provable alternatives cost most of the saving on hard data (6.6). The scan floor is one bit per vector. Whether the lookup-table cascade is faster than an optimised exact scan at 20,000 vectors is inconclusive (the sign reversed between two runs), and larger n and SIMD are untested. A concurrent writer raises median P99 by about 21% and cuts reader throughput by about 12%. There are no deletes, no filtered search and no integration with the Atlas `AnnIndex` trait. There is no comparison with RaBitQ, product quantization, HNSW or any database. Timing is from one non-idle machine whose CPU model was not recorded.
 
 ## 8. Future work
 

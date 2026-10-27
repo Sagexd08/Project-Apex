@@ -34,7 +34,7 @@ A proposed goal, not a claim: an open-source vector database that agents can use
 
 ## What Prism is trying to show, and what would make us wrong
 
-Thesis (Proposed): nested bit planes plus log-pinned snapshots can improve the memory, recall and latency trade-off when a store is read while it is written. So far one synthetic benchmark shows bits read fall to about 1.06 per coordinate, and shows no time saving over an optimised exact scan.
+Thesis (Proposed): nested bit planes plus log-pinned snapshots can improve the memory, recall and latency trade-off when a store is read while it is written. So far one synthetic benchmark shows bits read fall to about 1.06 per coordinate, and shows no established time saving over an optimised exact scan (inconclusive: the sign reversed between two runs).
 
 The thesis fails if:
 

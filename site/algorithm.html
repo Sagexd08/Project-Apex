@@ -89,7 +89,7 @@
 <tr><td>Fewer bits read than a flat 4-bit scan</td><td>about 3.8 times</td><td><span class="badge b-measured">Measured</span></td></tr>
 <tr><td>Queries with all ten true neighbours at z = 3</td><td>1000 of 1000</td><td><span class="badge b-measured">Measured</span> an observation on one set, not a guarantee</td></tr>
 <tr><td>Bits read with the deterministic, provable bound</td><td>about 3.7 to 4.0</td><td><span class="badge b-measured">Measured</span> almost no pruning</td></tr>
-<tr><td>Time per query, cascade versus optimised exact scan</td><td>0.61 ms versus 0.55 ms</td><td><span class="badge b-measured">Measured</span> <b>not faster yet</b></td></tr></tbody></table></div>
+<tr><td>Time per query, cascade versus optimised exact scan</td><td>0.61 ms versus 0.55 ms (first run); 0.48 ms versus 0.63 ms (re-run). The sign reversed</td><td><span class="badge b-measured">Measured</span> <b>inconclusive: no speed claim</b></td></tr></tbody></table></div>
 <p>The cascade still touches every vector at least once, so the floor is <code>n</code> bits per query. Going below that needs a partitioning index in front of it, which is future work.</p>
 <h3>Reproduce</h3>
 <div class="eq">cd benchmarks/prism

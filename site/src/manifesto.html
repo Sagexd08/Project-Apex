@@ -31,7 +31,7 @@
 </tbody></table></div></section>
 
 <section id="thesis"><h2>Thesis and falsifiers</h2>
-<p><b>Thesis (Proposed).</b> Nested bit planes plus log-pinned snapshots can improve the memory, recall and latency trade-off when a store is read while it is written. So far one synthetic benchmark shows bits read falling to about 1.06 per coordinate, and shows <b>no time saving</b> over an optimised exact scan.</p>
+<p><b>Thesis (Proposed).</b> Nested bit planes plus log-pinned snapshots can improve the memory, recall and latency trade-off when a store is read while it is written. So far one synthetic benchmark shows bits read falling to about 1.06 per coordinate, and shows <b>no established time saving</b> over an optimised exact scan (inconclusive: the sign reversed between two runs).</p>
 <p>The thesis fails if any of these turn out to be true:</p>
 <ul><li>The saving in bytes read does not become a saving in time on real hardware.</li>
 <li>Real embeddings are far less friendly than our synthetic clusters.</li>
