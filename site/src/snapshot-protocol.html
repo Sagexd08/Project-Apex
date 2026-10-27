@@ -1,0 +1,37 @@
+<section id="why"><h2>Why a log position is not a snapshot</h2>
+<p>A sequence number says how far the log has grown. A snapshot says which immutable index state a reader may use. They are only the same thing if the system defines, and checks, the relationship between committed writes, applied index state, published segments, deletions and reclamation. Established systems keep that relationship explicit: RocksDB snapshots are sequence numbers pinned against compaction, SQLite readers record a WAL end mark, and RCU readers hold an epoch.</p>
+<div class="call warn"><b class="k">Status</b><p>This is a <span class="badge b-proposed">Proposed</span> protocol with a state model on paper. The Prism prototype commits whole segments, but <b>no isolated model or crash test exists yet</b>. Deletes, reader expiry and compaction under pins are undefined below and listed as open.</p></div></section>
+
+<section id="defs"><h2>Definitions and invariants</h2>
+<p>Each commit gets a log sequence number <code>ℓ</code>. A pin <code>p = (ε, ℓ)</code> names an epoch (seed, dimension, schedule) and a position. The visible set is:</p>
+<div class="eq">V(p) = { r : lsn(r) ≤ ℓ }        # deletes, future work:  and  del_lsn(r) > ℓ</div>
+<div class="tw"><table><thead><tr><th>Invariant</th><th>Meaning</th><th>Status</th></tr></thead><tbody>
+<tr><td>I1 Repeatability</td><td>For a fixed pin and query, the result is identical every time, whatever commits happen meanwhile.</td><td><span class="badge b-proposed">Proposed</span></td></tr>
+<tr><td>I2 No torn reads</td><td>A commit is visible whole (all planes and the full-precision vector) or not at all.</td><td><span class="badge b-proposed">Proposed</span></td></tr>
+<tr><td>I3 Monotonicity</td><td>Successive pins by one reader never move backward in <code>ℓ</code>.</td><td><span class="badge b-proposed">Proposed</span></td></tr>
+<tr><td>I4 Compaction transparency</td><td>Compaction changes layout, never the visible set.</td><td><span class="badge b-proposed">Proposed</span></td></tr></tbody></table></div></section>
+
+<section id="states"><h2>Legal states of a write</h2>
+<ol class="steps">
+<li><div><b>Appended.</b> The record is in the log buffer. Not durable, not visible.</div></li>
+<li><div><b>Durable.</b> The log record reached the configured durability boundary. The write may be acknowledged. Still not visible to readers.</div></li>
+<li><div><b>Applied.</b> The record is in the in-memory index state. Visible to the writer's own reads only if read-your-writes is chosen; any lag must be explicit.</div></li>
+<li><div><b>Sealed.</b> The record is part of an immutable segment. No more changes to that segment.</div></li>
+<li><div><b>Published.</b> A snapshot listing the segment becomes current by one pointer swap. From here new readers can pin it.</div></li>
+<li><div><b>Retired, then reclaimed.</b> Once compaction replaces the segment and no pin references it, its storage is freed.</div></li></ol>
+<p>A crash at any step must leave a state from which recovery rebuilds exactly the published snapshots the log can justify. That claim is <b>not yet tested</b> at every boundary.</p></section>
+
+<section id="atlas"><h2>What the Atlas engine already does</h2>
+<p>The production engine this research sits beside is a separate, more conservative design: a write-ahead log is the single source of truth, the index is derived from it and rebuilt on open, and a poisoned or corrupt state fails closed. Builder-reported and not independently verified:</p>
+<ul><li>A protected log header; a torn final record is truncated, a corrupt middle record fails the open.</li>
+<li>Idempotent inserts keyed by operation id, so a retry never applies twice.</li>
+<li>Tenant scope enforced on every call, with isolation tests.</li></ul>
+<p>Power-loss behaviour is <b>not proven</b>: process-kill tests are not power-cut evidence.</p></section>
+
+<section id="open"><h2>Open questions</h2>
+<ul><li>What does a delete mean for a pinned reader, and when is the tombstone reclaimable?</li>
+<li>What happens to a long-lived or abandoned pin: expire it, and what does the reader see?</li>
+<li>How much disk can pinned snapshots retain before writers get backpressure?</li>
+<li>Does an immutable snapshot actually lower tail latency against a carefully controlled mutable-index baseline, once memory retention and write amplification are counted?</li>
+<li>What is the visibility lag between a durable write and the first snapshot that contains it?</li></ul>
+<p>Each of these is on the <a href="loopholes.html">loophole audit</a> until a test closes it.</p></section>

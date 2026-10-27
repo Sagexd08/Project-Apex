@@ -1,0 +1,31 @@
+<section id="scope"><h2>How to read this page</h2>
+<p>This page places Prism among prior work and narrows its claim to what survives the comparison. It follows the claim audit described in the project's research brief.</p>
+<div class="call warn"><b class="k">Honest limits</b><p>Each row summarizes what the cited source says about itself, as we understand it. <b>We have not reproduced any of these results</b>, and a full primary-source read of each paper is still on the <a href="roadmap.html">roadmap</a>. Treat every cell as <span class="badge b-reported">Reported, not reproduced</span>. If a row overlaps Prism, the Prism claim shrinks; it does not hide the overlap.</p></div></section>
+
+<section id="matrix"><h2>Comparison matrix</h2>
+<div class="tw"><table><thead><tr><th>Family</th><th>Representative work</th><th>What it provides, per its authors</th><th>Updates</th><th>Filtering</th><th>What Prism might add</th></tr></thead><tbody>
+<tr><td>Rotation + scalar quantization</td><td>TurboQuant (ICLR 2026)</td><td>Randomized rotation, data-oblivious scalar quantization, inner-product estimation, a residual stage for unbiased estimates.</td><td>No trained codebook to retrain.</td><td>Not its focus.</td><td>Overlaps most with Prism's encoder. Prism does <b>not</b> claim novelty here.</td></tr>
+<tr><td>Binary codes with bounds</td><td>RaBitQ (SIGMOD 2024, arXiv 2405.12497)</td><td>Compact binary codes with a theoretical error bound on distance estimation, then reranking.</td><td>Not its focus.</td><td>Not its focus.</td><td>Per-vector bounds like this are the likely answer to Prism's open gate problem.</td></tr>
+<tr><td>Product quantization</td><td>PQ, OPQ (FAISS)</td><td>Trained sub-vector codebooks; OPQ learns a rotation first.</td><td>Codebooks drift if the data shifts.</td><td>Via the surrounding index.</td><td>A baseline to beat on memory and recall.</td></tr>
+<tr><td>Anisotropic quantization</td><td>ScaNN</td><td>A score-aware quantization loss aimed at maximum inner-product search.</td><td>Trained.</td><td>Via the surrounding index.</td><td>A baseline for inner-product workloads.</td></tr>
+<tr><td>Streaming graph index</td><td>FreshDiskANN (arXiv 2105.09613)</td><td>A disk-backed graph index that accepts inserts and deletes while serving queries.</td><td>Online, with background merging.</td><td>Separate work.</td><td>Prism targets the same freshness problem with segments rather than a graph.</td></tr>
+<tr><td>Quantization under streaming</td><td>arXiv 2512.18335</td><td>Title: <i>Quantization for Vector Search under Streaming Updates</i>. Method not yet read in depth.</td><td>The paper's subject.</td><td>Unknown to us.</td><td>The closest prior art to check before any streaming claim.</td></tr>
+<tr><td>Filtered graph search</td><td>ACORN (arXiv 2403.04871); filtered-ANN benchmark (arXiv 2507.21989)</td><td>Predicate-aware graph traversal; a benchmark of filtered methods.</td><td>Graph-dependent.</td><td>The core topic.</td><td>Prism's cascade has no filter story yet. See the <a href="tournament.html">tournament</a>.</td></tr>
+<tr><td>Snapshots and logs</td><td>RocksDB snapshots, SQLite WAL, Linux RCU</td><td>A reader sees a consistent point; writers do not block readers. Sequence numbers and epochs recorded in the log.</td><td>Established practice.</td><td>Not applicable.</td><td>Prism borrows these ideas. A log position is not by itself a reconstructible snapshot; see the <a href="snapshot-protocol.html">protocol</a>.</td></tr>
+</tbody></table></div></section>
+
+<section id="known"><h2>Already solved by prior work</h2>
+<ul><li>Random rotation followed by scalar quantization is a known, data-oblivious compression recipe.</li>
+<li>Binary and few-bit codes with error bounds exist for distance estimation.</li>
+<li>Progressive refinement and reranking with full precision are standard in quantized search.</li>
+<li>Immutable segments, snapshots and write-ahead logs are mature storage techniques.</li></ul></section>
+
+<section id="unsolved"><h2>Not solved by the designs we have reviewed</h2>
+<p>With the limit above (a surface read, not a full audit), these look open to us:</p>
+<ul><li>A bound on the pruning gate that is both provable and cheap enough to keep the saving.</li>
+<li>One code layout that serves 1, 2, 3 and 4 bit scoring from a single stored copy, together with log-pinned readers.</li>
+<li>Honest measurement of the same engine read-while-written, over hours, with tail latency reported next to absolute latency.</li></ul></section>
+
+<section id="maybe"><h2>Potential Prism contribution, pending proof and measurement</h2>
+<p>The narrowest defensible statement today: <b>nested bit planes from one stored code, combined with a log-pinned snapshot per reader, as a design to test for streaming search</b>. Not the rotation, not scalar quantization, not progressive reranking, and not snapshots. Whether the combination helps is the experiment, and so far the only time comparison shows no saving.</p>
+<div class="call"><b class="k">Next</b><p>Read each source in full, fill the matrix with equations and assumptions, and reproduce at least one baseline. Tracked on the <a href="roadmap.html">roadmap</a>.</p></div></section>

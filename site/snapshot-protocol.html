@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Snapshot protocol | Prism | Project Apex</title>
+<meta name="description" content="A reader pins a point in the log. What that has to mean, which states are legal, and what is still undefined.">
+<meta name="theme-color" content="#232323">
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/lab.css">
+</head>
+<body class="lab">
+<a class="skip" href="#main">Skip to content</a>
+<header class="lb-bar" role="banner"><a class="logo" href="index.html" aria-label="Project Apex home"></a>
+  <a class="lb-brand" href="prism.html">Prism</a>
+  <button class="lb-burger" type="button" aria-expanded="false" aria-controls="lb-nav">Menu</button>
+  <ul class="lb-nav" id="lb-nav" aria-label="Primary">
+    <li><a href="prism.html#abstract">Abstract</a></li><li><a href="prism.html#film-sec">Film</a></li>
+    <li><button class="lb-dd cur" type="button" aria-expanded="false" aria-haspopup="true" aria-controls="lb-menu">Manifesto &#9662;</button>
+      <div class="lb-menu" id="lb-menu"><a href="manifesto.html"><b>01</b>Manifesto<small>The statement of direction and the falsifiers</small></a><a href="related-work.html"><b>02</b>Related work<small>Prior art and the claim audit</small></a><a href="algorithm.html"><b>03</b>Algorithm<small>Encode, cascade, rerank, snapshot</small></a><a href="mathematics.html"><b>04</b>Mathematics<small>Derivations, lemma, open problem</small></a><a href="tournament.html"><b>05</b>Algorithm tournament<small>Candidates A to G, keep or defer</small></a><a href="snapshot-protocol.html" aria-current="page"><b>06</b>Snapshot protocol<small>Visibility, publication, reclamation</small></a><a href="loopholes.html"><b>07</b>Loophole audit<small>Math, storage, filter, concurrency</small></a><a href="roadmap.html"><b>08</b>Roadmap<small>Stages A to J and the licence gate</small></a></div></li>
+    <li><a href="prism.html#lab">Lab</a></li><li><a href="prism.html#paper">Paper</a></li>
+    <li><a href="prism.html#evidence">Evidence<i class="ping"></i></a></li>
+    <li><a href="https://github.com/Sagexd08/Project-Apex">Source &#8599;</a></li>
+  </ul></header><div class="lb-prog" aria-hidden="true"></div>
+<main id="main">
+<section class="lh" aria-labelledby="h1">
+  <div class="lh-l">
+    <p class="crumb"><a href="prism.html">Prism</a><span>/</span><a href="manifesto.html">Manifesto</a><span>/</span><span>Snapshot protocol</span></p>
+    <h1 id="h1">Snapshot protocol</h1>
+    <p class="lead">A reader pins a point in the log. What that has to mean, which states are legal, and what is still undefined.</p>
+    <div class="status-row"><span class="badge b-proposed">Proposed</span></div>
+    <p class="meta">Research Note v1.0 &middot; preprint, not peer reviewed &middot; synthetic data, one machine</p>
+  </div>
+  <div class="lh-r"><svg viewBox="0 0 400 340" role="img" aria-label="Log with writer head and two reader pins"><g>
+    <path class="fa dim" d="M30 150H370"/><path class="fa" d="M50 142V158"/><text class="ft" x="50" y="178" text-anchor="middle">1</text><path class="fa" d="M94 142V158"/><text class="ft" x="94" y="178" text-anchor="middle">2</text><path class="fa" d="M138 142V158"/><text class="ft" x="138" y="178" text-anchor="middle">3</text><path class="fa" d="M182 142V158"/><text class="ft" x="182" y="178" text-anchor="middle">4</text><path class="fa" d="M226 142V158"/><text class="ft" x="226" y="178" text-anchor="middle">5</text><path class="fa" d="M270 142V158"/><text class="ft" x="270" y="178" text-anchor="middle">6</text><path class="fa" d="M314 142V158"/><text class="ft" x="314" y="178" text-anchor="middle">7</text><path class="fa" d="M358 142V158"/><text class="ft" x="358" y="178" text-anchor="middle">8</text>
+    <path class="fa ac" d="M138 100V140M138 100l-6 8M138 100l6 8"/><text class="ft" x="138" y="90" text-anchor="middle">reader A</text>
+    <path class="fa ac" d="M270 100V140M270 100l-6 8M270 100l6 8"/><text class="ft" x="270" y="90" text-anchor="middle">reader B</text>
+    <rect class="ff" x="350" y="136" width="14" height="28" rx="3"/><text class="ft" x="357" y="210" text-anchor="middle">writer</text>
+    <rect class="fa dim" x="50" y="240" width="130" height="30" rx="4"/><rect class="fa dim" x="186" y="240" width="130" height="30" rx="4"/><rect class="fa ac" x="322" y="240" width="48" height="30" rx="4"/>
+    <text class="ft" x="30" y="296">sealed segments, immutable</text></g></svg><span class="num" aria-hidden="true">06</span></div>
+</section>
+<div class="lb-main">
+  <nav class="toc" aria-label="On this page"><p>On this page</p><ol><li><a href="#why">Why a log position is not a snapshot</a></li><li><a href="#defs">Definitions and invariants</a></li><li><a href="#states">Legal states of a write</a></li><li><a href="#atlas">What the Atlas engine already does</a></li><li><a href="#open">Open questions</a></li></ol></nav>
+  <article class="art"><section id="why"><h2>Why a log position is not a snapshot</h2>
+<p>A sequence number says how far the log has grown. A snapshot says which immutable index state a reader may use. They are only the same thing if the system defines, and checks, the relationship between committed writes, applied index state, published segments, deletions and reclamation. Established systems keep that relationship explicit: RocksDB snapshots are sequence numbers pinned against compaction, SQLite readers record a WAL end mark, and RCU readers hold an epoch.</p>
+<div class="call warn"><b class="k">Status</b><p>This is a <span class="badge b-proposed">Proposed</span> protocol with a state model on paper. The Prism prototype commits whole segments, but <b>no isolated model or crash test exists yet</b>. Deletes, reader expiry and compaction under pins are undefined below and listed as open.</p></div></section>
+
+<section id="defs"><h2>Definitions and invariants</h2>
+<p>Each commit gets a log sequence number <code>ℓ</code>. A pin <code>p = (ε, ℓ)</code> names an epoch (seed, dimension, schedule) and a position. The visible set is:</p>
+<div class="eq">V(p) = { r : lsn(r) ≤ ℓ }        # deletes, future work:  and  del_lsn(r) > ℓ</div>
+<div class="tw"><table><thead><tr><th>Invariant</th><th>Meaning</th><th>Status</th></tr></thead><tbody>
+<tr><td>I1 Repeatability</td><td>For a fixed pin and query, the result is identical every time, whatever commits happen meanwhile.</td><td><span class="badge b-proposed">Proposed</span></td></tr>
+<tr><td>I2 No torn reads</td><td>A commit is visible whole (all planes and the full-precision vector) or not at all.</td><td><span class="badge b-proposed">Proposed</span></td></tr>
+<tr><td>I3 Monotonicity</td><td>Successive pins by one reader never move backward in <code>ℓ</code>.</td><td><span class="badge b-proposed">Proposed</span></td></tr>
+<tr><td>I4 Compaction transparency</td><td>Compaction changes layout, never the visible set.</td><td><span class="badge b-proposed">Proposed</span></td></tr></tbody></table></div></section>
+
+<section id="states"><h2>Legal states of a write</h2>
+<ol class="steps">
+<li><div><b>Appended.</b> The record is in the log buffer. Not durable, not visible.</div></li>
+<li><div><b>Durable.</b> The log record reached the configured durability boundary. The write may be acknowledged. Still not visible to readers.</div></li>
+<li><div><b>Applied.</b> The record is in the in-memory index state. Visible to the writer's own reads only if read-your-writes is chosen; any lag must be explicit.</div></li>
+<li><div><b>Sealed.</b> The record is part of an immutable segment. No more changes to that segment.</div></li>
+<li><div><b>Published.</b> A snapshot listing the segment becomes current by one pointer swap. From here new readers can pin it.</div></li>
+<li><div><b>Retired, then reclaimed.</b> Once compaction replaces the segment and no pin references it, its storage is freed.</div></li></ol>
+<p>A crash at any step must leave a state from which recovery rebuilds exactly the published snapshots the log can justify. That claim is <b>not yet tested</b> at every boundary.</p></section>
+
+<section id="atlas"><h2>What the Atlas engine already does</h2>
+<p>The production engine this research sits beside is a separate, more conservative design: a write-ahead log is the single source of truth, the index is derived from it and rebuilt on open, and a poisoned or corrupt state fails closed. Builder-reported and not independently verified:</p>
+<ul><li>A protected log header; a torn final record is truncated, a corrupt middle record fails the open.</li>
+<li>Idempotent inserts keyed by operation id, so a retry never applies twice.</li>
+<li>Tenant scope enforced on every call, with isolation tests.</li></ul>
+<p>Power-loss behaviour is <b>not proven</b>: process-kill tests are not power-cut evidence.</p></section>
+
+<section id="open"><h2>Open questions</h2>
+<ul><li>What does a delete mean for a pinned reader, and when is the tombstone reclaimable?</li>
+<li>What happens to a long-lived or abandoned pin: expire it, and what does the reader see?</li>
+<li>How much disk can pinned snapshots retain before writers get backpressure?</li>
+<li>Does an immutable snapshot actually lower tail latency against a carefully controlled mutable-index baseline, once memory retention and write amplification are counted?</li>
+<li>What is the visibility lag between a durable write and the first snapshot that contains it?</li></ul>
+<p>Each of these is on the <a href="loopholes.html">loophole audit</a> until a test closes it.</p></section>
+</article>
+</div>
+<nav class="pn" aria-label="Page navigation"><a href="tournament.html"><small>Previous</small><span>Algorithm tournament</span></a><a href="loopholes.html"><small>Next</small><span>Loophole audit</span></a></nav>
+</main>
+<footer class="lb-foot"><div class="cols">
+    <div><h4>Project Apex / Prism</h4><p>An open research prototype about progressively refined vector codes and per-reader snapshots. Research Note v1.0, preprint, not peer reviewed.</p></div>
+    <div><h4>Pages</h4><a href="manifesto.html">Manifesto</a><a href="related-work.html">Related work</a><a href="algorithm.html">Algorithm</a><a href="mathematics.html">Mathematics</a><a href="tournament.html">Algorithm tournament</a><a href="snapshot-protocol.html">Snapshot protocol</a><a href="loopholes.html">Loophole audit</a><a href="roadmap.html">Roadmap</a></div>
+    <div><h4>Evidence</h4><a href="prism.html#evidence">Measurements</a><a href="prism.html#paper">Research note</a><a href="prism.html#lab">Interactive lab</a></div>
+    <div><h4>Open source</h4><a href="https://github.com/Sagexd08/Project-Apex">Repository</a><a href="https://github.com/Sagexd08/Project-Apex/tree/main/benchmarks/prism">Benchmark source</a><a href="https://github.com/Sagexd08/Project-Apex/issues">Issues</a></div></div>
+    <p class="fine">Synthetic data, one machine. No comparison with other systems. Nothing on these pages is a claim to be first, fastest or best.</p></footer>
+<script src="js/lab.js" defer></script>
+</body>
+</html>

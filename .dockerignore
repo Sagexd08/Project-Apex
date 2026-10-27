@@ -1,0 +1,9 @@
+target
+.git
+site
+docs
+benchmarks
+ci
+scripts
+**/node_modules
+*.md

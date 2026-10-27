@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Related work | Prism | Project Apex</title>
+<meta name="description" content="Where Prism sits among quantization, streaming-index, filtered-search and snapshot systems, and what is already known.">
+<meta name="theme-color" content="#232323">
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/lab.css">
+</head>
+<body class="lab">
+<a class="skip" href="#main">Skip to content</a>
+<header class="lb-bar" role="banner"><a class="logo" href="index.html" aria-label="Project Apex home"></a>
+  <a class="lb-brand" href="prism.html">Prism</a>
+  <button class="lb-burger" type="button" aria-expanded="false" aria-controls="lb-nav">Menu</button>
+  <ul class="lb-nav" id="lb-nav" aria-label="Primary">
+    <li><a href="prism.html#abstract">Abstract</a></li><li><a href="prism.html#film-sec">Film</a></li>
+    <li><button class="lb-dd cur" type="button" aria-expanded="false" aria-haspopup="true" aria-controls="lb-menu">Manifesto &#9662;</button>
+      <div class="lb-menu" id="lb-menu"><a href="manifesto.html"><b>01</b>Manifesto<small>The statement of direction and the falsifiers</small></a><a href="related-work.html" aria-current="page"><b>02</b>Related work<small>Prior art and the claim audit</small></a><a href="algorithm.html"><b>03</b>Algorithm<small>Encode, cascade, rerank, snapshot</small></a><a href="mathematics.html"><b>04</b>Mathematics<small>Derivations, lemma, open problem</small></a><a href="tournament.html"><b>05</b>Algorithm tournament<small>Candidates A to G, keep or defer</small></a><a href="snapshot-protocol.html"><b>06</b>Snapshot protocol<small>Visibility, publication, reclamation</small></a><a href="loopholes.html"><b>07</b>Loophole audit<small>Math, storage, filter, concurrency</small></a><a href="roadmap.html"><b>08</b>Roadmap<small>Stages A to J and the licence gate</small></a></div></li>
+    <li><a href="prism.html#lab">Lab</a></li><li><a href="prism.html#paper">Paper</a></li>
+    <li><a href="prism.html#evidence">Evidence<i class="ping"></i></a></li>
+    <li><a href="https://github.com/Sagexd08/Project-Apex">Source &#8599;</a></li>
+  </ul></header><div class="lb-prog" aria-hidden="true"></div>
+<main id="main">
+<section class="lh" aria-labelledby="h1">
+  <div class="lh-l">
+    <p class="crumb"><a href="prism.html">Prism</a><span>/</span><a href="manifesto.html">Manifesto</a><span>/</span><span>Related work</span></p>
+    <h1 id="h1">Related work</h1>
+    <p class="lead">Where Prism sits among quantization, streaming-index, filtered-search and snapshot systems, and what is already known.</p>
+    <div class="status-row"><span class="badge b-reported">Reported, not reproduced</span></div>
+    <p class="meta">Research Note v1.0 &middot; preprint, not peer reviewed &middot; synthetic data, one machine</p>
+  </div>
+  <div class="lh-r"><svg viewBox="0 0 400 340" role="img" aria-label="Related research families around Prism"><g class="fa dim">
+    <path d="M200 170L90 70M200 170L310 70M200 170L60 190M200 170L340 190M200 170L120 290M200 170L290 290"/></g>
+    <circle class="fa" cx="90" cy="70" r="26"/><text class="ft" x="90" y="73" text-anchor="middle">PQ</text><circle class="fa" cx="310" cy="70" r="26"/><text class="ft" x="310" y="73" text-anchor="middle">RaBitQ</text><circle class="fa" cx="60" cy="190" r="26"/><text class="ft" x="60" y="193" text-anchor="middle">Turbo</text><circle class="fa" cx="340" cy="190" r="26"/><text class="ft" x="340" y="193" text-anchor="middle">ScaNN</text><circle class="fa" cx="120" cy="290" r="26"/><text class="ft" x="120" y="293" text-anchor="middle">Fresh</text><circle class="fa" cx="290" cy="290" r="26"/><text class="ft" x="290" y="293" text-anchor="middle">ACORN</text>
+    <circle class="fa ac" cx="200" cy="170" r="34" stroke-dasharray="4 4"/><text class="ft" x="200" y="174" text-anchor="middle" style="fill:var(--accent)">Prism ?</text></svg><span class="num" aria-hidden="true">02</span></div>
+</section>
+<div class="lb-main">
+  <nav class="toc" aria-label="On this page"><p>On this page</p><ol><li><a href="#scope">How to read this page</a></li><li><a href="#matrix">Comparison matrix</a></li><li><a href="#known">Already solved by prior work</a></li><li><a href="#unsolved">Not solved by the designs we have reviewed</a></li><li><a href="#maybe">Potential Prism contribution, pending proof and measurement</a></li></ol></nav>
+  <article class="art"><section id="scope"><h2>How to read this page</h2>
+<p>This page places Prism among prior work and narrows its claim to what survives the comparison. It follows the claim audit described in the project's research brief.</p>
+<div class="call warn"><b class="k">Honest limits</b><p>Each row summarizes what the cited source says about itself, as we understand it. <b>We have not reproduced any of these results</b>, and a full primary-source read of each paper is still on the <a href="roadmap.html">roadmap</a>. Treat every cell as <span class="badge b-reported">Reported, not reproduced</span>. If a row overlaps Prism, the Prism claim shrinks; it does not hide the overlap.</p></div></section>
+
+<section id="matrix"><h2>Comparison matrix</h2>
+<div class="tw"><table><thead><tr><th>Family</th><th>Representative work</th><th>What it provides, per its authors</th><th>Updates</th><th>Filtering</th><th>What Prism might add</th></tr></thead><tbody>
+<tr><td>Rotation + scalar quantization</td><td>TurboQuant (ICLR 2026)</td><td>Randomized rotation, data-oblivious scalar quantization, inner-product estimation, a residual stage for unbiased estimates.</td><td>No trained codebook to retrain.</td><td>Not its focus.</td><td>Overlaps most with Prism's encoder. Prism does <b>not</b> claim novelty here.</td></tr>
+<tr><td>Binary codes with bounds</td><td>RaBitQ (SIGMOD 2024, arXiv 2405.12497)</td><td>Compact binary codes with a theoretical error bound on distance estimation, then reranking.</td><td>Not its focus.</td><td>Not its focus.</td><td>Per-vector bounds like this are the likely answer to Prism's open gate problem.</td></tr>
+<tr><td>Product quantization</td><td>PQ, OPQ (FAISS)</td><td>Trained sub-vector codebooks; OPQ learns a rotation first.</td><td>Codebooks drift if the data shifts.</td><td>Via the surrounding index.</td><td>A baseline to beat on memory and recall.</td></tr>
+<tr><td>Anisotropic quantization</td><td>ScaNN</td><td>A score-aware quantization loss aimed at maximum inner-product search.</td><td>Trained.</td><td>Via the surrounding index.</td><td>A baseline for inner-product workloads.</td></tr>
+<tr><td>Streaming graph index</td><td>FreshDiskANN (arXiv 2105.09613)</td><td>A disk-backed graph index that accepts inserts and deletes while serving queries.</td><td>Online, with background merging.</td><td>Separate work.</td><td>Prism targets the same freshness problem with segments rather than a graph.</td></tr>
+<tr><td>Quantization under streaming</td><td>arXiv 2512.18335</td><td>Title: <i>Quantization for Vector Search under Streaming Updates</i>. Method not yet read in depth.</td><td>The paper's subject.</td><td>Unknown to us.</td><td>The closest prior art to check before any streaming claim.</td></tr>
+<tr><td>Filtered graph search</td><td>ACORN (arXiv 2403.04871); filtered-ANN benchmark (arXiv 2507.21989)</td><td>Predicate-aware graph traversal; a benchmark of filtered methods.</td><td>Graph-dependent.</td><td>The core topic.</td><td>Prism's cascade has no filter story yet. See the <a href="tournament.html">tournament</a>.</td></tr>
+<tr><td>Snapshots and logs</td><td>RocksDB snapshots, SQLite WAL, Linux RCU</td><td>A reader sees a consistent point; writers do not block readers. Sequence numbers and epochs recorded in the log.</td><td>Established practice.</td><td>Not applicable.</td><td>Prism borrows these ideas. A log position is not by itself a reconstructible snapshot; see the <a href="snapshot-protocol.html">protocol</a>.</td></tr>
+</tbody></table></div></section>
+
+<section id="known"><h2>Already solved by prior work</h2>
+<ul><li>Random rotation followed by scalar quantization is a known, data-oblivious compression recipe.</li>
+<li>Binary and few-bit codes with error bounds exist for distance estimation.</li>
+<li>Progressive refinement and reranking with full precision are standard in quantized search.</li>
+<li>Immutable segments, snapshots and write-ahead logs are mature storage techniques.</li></ul></section>
+
+<section id="unsolved"><h2>Not solved by the designs we have reviewed</h2>
+<p>With the limit above (a surface read, not a full audit), these look open to us:</p>
+<ul><li>A bound on the pruning gate that is both provable and cheap enough to keep the saving.</li>
+<li>One code layout that serves 1, 2, 3 and 4 bit scoring from a single stored copy, together with log-pinned readers.</li>
+<li>Honest measurement of the same engine read-while-written, over hours, with tail latency reported next to absolute latency.</li></ul></section>
+
+<section id="maybe"><h2>Potential Prism contribution, pending proof and measurement</h2>
+<p>The narrowest defensible statement today: <b>nested bit planes from one stored code, combined with a log-pinned snapshot per reader, as a design to test for streaming search</b>. Not the rotation, not scalar quantization, not progressive reranking, and not snapshots. Whether the combination helps is the experiment, and so far the only time comparison shows no saving.</p>
+<div class="call"><b class="k">Next</b><p>Read each source in full, fill the matrix with equations and assumptions, and reproduce at least one baseline. Tracked on the <a href="roadmap.html">roadmap</a>.</p></div></section>
+</article>
+</div>
+<nav class="pn" aria-label="Page navigation"><a href="manifesto.html"><small>Previous</small><span>Manifesto</span></a><a href="algorithm.html"><small>Next</small><span>Algorithm</span></a></nav>
+</main>
+<footer class="lb-foot"><div class="cols">
+    <div><h4>Project Apex / Prism</h4><p>An open research prototype about progressively refined vector codes and per-reader snapshots. Research Note v1.0, preprint, not peer reviewed.</p></div>
+    <div><h4>Pages</h4><a href="manifesto.html">Manifesto</a><a href="related-work.html">Related work</a><a href="algorithm.html">Algorithm</a><a href="mathematics.html">Mathematics</a><a href="tournament.html">Algorithm tournament</a><a href="snapshot-protocol.html">Snapshot protocol</a><a href="loopholes.html">Loophole audit</a><a href="roadmap.html">Roadmap</a></div>
+    <div><h4>Evidence</h4><a href="prism.html#evidence">Measurements</a><a href="prism.html#paper">Research note</a><a href="prism.html#lab">Interactive lab</a></div>
+    <div><h4>Open source</h4><a href="https://github.com/Sagexd08/Project-Apex">Repository</a><a href="https://github.com/Sagexd08/Project-Apex/tree/main/benchmarks/prism">Benchmark source</a><a href="https://github.com/Sagexd08/Project-Apex/issues">Issues</a></div></div>
+    <p class="fine">Synthetic data, one machine. No comparison with other systems. Nothing on these pages is a claim to be first, fastest or best.</p></footer>
+<script src="js/lab.js" defer></script>
+</body>
+</html>

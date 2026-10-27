@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Prism: research draft for agent memory | Project Apex</title>
-<meta name="description" content="Prism is a research draft for vector storage that agents can read and write at the same time: nested bit planes, an error-gated search cascade and snapshots tied to the write-ahead log. Simulation results only.">
-<meta property="og:title" content="Prism: one stored code, any precision, a snapshot per reader">
-<meta property="og:description" content="A research draft from Project Apex. Abstract, manifesto, paper, algorithm and an interactive lab. Synthetic-data results, not a comparison with other systems.">
+<title>Prism: research note v1.0 (preprint) | Project Apex</title>
+<meta name="description" content="Prism investigates progressively refined vector codes and immutable reader snapshots for streaming vector search. Research prototype; preliminary synthetic results that need reproduction.">
+<meta property="og:title" content="Prism: one stored code, progressive precision, a snapshot per reader">
+<meta property="og:description" content="Research Note v1.0 (preprint, not peer reviewed) from Project Apex. Preliminary synthetic results; no comparison with other systems.">
 <meta name="theme-color" content="#232323">
 <link rel="icon" href="assets/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
@@ -27,15 +27,15 @@
     <li><a class="logo" href="index.html" aria-label="Project Apex home"></a></li>
     <li><a class="nl" href="#abstract">Abstract</a></li>
     <li><a class="nl" href="#film-sec">Film</a></li>
-    <li><a class="nl" href="#manifesto">Manifesto</a></li>
+    <li><a class="nl" href="manifesto.html">Manifesto</a></li>
     <li><a class="nl" href="#lab">Lab</a></li>
-    <li><a class="nl" href="#algorithm">Algorithm</a></li>
+    <li><a class="nl" href="algorithm.html">Algorithm</a></li>
     <li><a class="nl" href="#paper">Paper</a></li>
     <li><a class="nl" href="#evidence">Evidence<i class="ping"></i></a></li>
   </ul>
   <div class="ticker" aria-hidden="true">
-    <span>Research draft · Synthetic data · Not a comparison with other systems ·</span>
-    <span>Research draft · Synthetic data · Not a comparison with other systems ·</span>
+    <span>Research prototype · Preliminary synthetic results · Not peer reviewed · No comparison with other systems ·</span>
+    <span>Research prototype · Preliminary synthetic results · Not peer reviewed · No comparison with other systems ·</span>
   </div>
 </nav>
 
@@ -43,14 +43,15 @@
   <header class="p-hero dark" id="top">
     <canvas class="rain" id="rain" aria-hidden="true"></canvas>
     <div>
-      <div class="status-row"><span class="tag acc">Research draft</span><span class="tag">Simulation only</span><span class="tag">Open source</span></div>
-      <h1>One stored code. Any precision.</h1>
-      <p class="lead">Prism is a proposal for vector storage that an agent can read and write at the same time. Each vector is stored once as four bit planes. A search reads one bit for everything, then more bits for the few vectors still in contention. Every reader sees one named point in the write-ahead log.</p>
+      <div class="status-row"><span class="tag acc">Research Note v1.0 · Preprint</span><span class="tag">Not peer reviewed</span><span class="tag">Open source</span></div>
+      <h1>One stored code. Progressive precision. A snapshot per reader.</h1>
+      <p class="lead">Prism investigates whether progressively refined vector codes and immutable reader snapshots can improve the memory&ndash;recall&ndash;latency trade-off for streaming vector search.</p>
+      <p class="status-line"><b>Research prototype</b> &middot; Preliminary synthetic results require reproduction &middot; Real-data and long-duration concurrency validation outstanding</p>
       <div class="btns">
-        <a class="btn" href="#abstract"><span class="odo">Read the abstract</span></a>
-        <a class="btn line" href="#lab"><span class="odo">Open the lab</span></a>
+        <a class="btn" href="#lab"><span class="odo">Explore the algorithm</span></a>
+        <a class="btn line" href="#paper"><span class="odo">Read the research paper</span></a>
       </div>
-      <p class="fine">Results on this page come from synthetic data on one machine. Nothing here compares Prism with another database. The numbers are in the evidence section with the code that made them.</p>
+      <p class="fine"><a class="u" href="https://github.com/Sagexd08/Project-Apex/tree/main/benchmarks/prism">Inspect the source</a> &middot; <a class="u" href="#evidence">View the experiments</a><br>Results come from synthetic data on one machine. Nothing here compares Prism with another system.</p>
     </div>
     <div class="stack" aria-hidden="true">
       <div class="pl"><span>plane 1 · sign bit</span></div>
@@ -66,10 +67,10 @@
     <div><span>θ̂ = π·H/d</span><span>σ_b ≈ C/(√(3P)·2^b)</span><span>B = n·m₁ + n₁·m₂ + n₂·m₃</span><span>z ≥ √(2 ln(2(k+1)S/δ))</span><span>V(ℓ) = { r : lsn(r) ≤ ℓ }</span><span>cos θ = ⟨q,x⟩</span></div>
   </div></div>
 
-  <section class="kpis dark" aria-label="Headline measurements">
-    <div class="kpi"><b data-count="1.06" data-dec="2">1.06</b><span>bits read per coordinate per vector at z = 3. A flat 4-bit scan reads 4.</span></div>
-    <div class="kpi"><b data-count="3.8" data-dec="1" data-suf="×">3.8×</b><span>fewer bits than a flat 4-bit scan, with the exact top 10 returned.</span></div>
-    <div class="kpi"><b data-count="1000" data-dec="0" data-suf=" / 1000">1000 / 1000</b><span>queries returned all ten true neighbours at z = 3 on synthetic data.</span></div>
+  <section class="kpis dark" aria-label="Measured on synthetic data, one machine">
+    <div class="kpi"><b data-count="1.06" data-dec="2">1.06</b><span>bits read per coordinate per vector at z = 3 (measured, synthetic). A flat 4-bit scan reads 4. Raw float32 is still stored for the exact rerank.</span></div>
+    <div class="kpi"><b data-count="3.8" data-dec="1" data-suf="×">3.8×</b><span>fewer bits read than a flat 4-bit scan. At z = 3 the top 10 matched exact search on this set; the gate is empirical, not a guarantee.</span></div>
+    <div class="kpi"><b data-count="1000" data-dec="0" data-suf=" / 1000">1000 / 1000</b><span>queries returned all ten true neighbours at z = 3 on one synthetic set. Not a proof; the provable bound reads about 4 bits.</span></div>
     <div class="kpi warn"><b data-count="0.61" data-dec="2" data-suf=" ms">0.61 ms</b><span>per query for the cascade, against 0.55 ms for an optimised exact scan. Not faster yet.</span></div>
   </section>
 
@@ -93,7 +94,7 @@
         <button class="btn copy" id="copy-abs" type="button"><span class="odo">Copy abstract</span></button>
       </div>
       <div class="abs-box"><div id="abs-text"><p>Agentic workloads read and write the same vector store within milliseconds of each other, and published measurements show tail latency inflating when inserts run during queries. We describe Prism, a storage layout for that case. Each vector is rotated by a seeded randomized Hadamard transform and stored once as four nested bit planes, so the quantizer has no trained state and cannot drift as the data changes. A query runs an error-gated cascade: it scores every vector with one bit and reads further planes only for candidates that can still reach the top k. Readers search immutable snapshots pinned to a write-ahead-log position, so a reader never waits for a writer and never sees a partial write.</p>
-          <p>In a Rust reference implementation on synthetic data (20,000 vectors, 256 dimensions, 1,000 queries), a gate width of z = 3 returned the exact top 10 for every query while reading about 1.06 bits per coordinate per vector, against 4 for a flat 4-bit scan; at z = 2 recall@10 was 0.998. The saving in bits read did not become a saving in time: with a lookup-table kernel the cascade took 0.61 ms per query, against 0.55 ms for an optimised exact float scan. On harder synthetic sets it read 1.3 to 1.4 bits at z = 2, and over seven alternating trials a concurrent writer raised median P99 latency by 21% (range 12% to 34%). We state the open problems: a gate whose provable width does not cost most of the saving, real embedding data, and a kernel that beats an optimised exact scan.</p></div></div>
+          <p>In a Rust reference implementation on synthetic data (20,000 vectors, 256 dimensions, 1,000 queries), a gate width of z = 3 returned the same top 10 as exact search for all 1,000 queries while reading about 1.06 bits per coordinate per vector, against 4 for a flat 4-bit scan; at z = 2 recall@10 was 0.998. This gate is a calibrated heuristic, so the match is an observation, not a guarantee; the only certified bound we tested reads 3.7 to 4.0 bits. Bits read is not total memory, because raw float32 vectors must be kept for the exact rerank. The saving in bits read did not become a saving in time: with a lookup-table kernel the cascade took 0.61 ms per query, against 0.55 ms for an optimised exact float scan. On harder synthetic sets it read 1.3 to 1.4 bits at z = 2, and over seven alternating trials a concurrent writer raised median P99 latency by 21% (range 12% to 34%). Open problems: a gate whose provable width does not cost most of the saving, real embedding data, and a kernel that beats an optimised exact scan.</p></div></div>
     </div>
   </section>
 
@@ -133,7 +134,7 @@
       </ul>
       <div class="northstar">
         <p class="mono lbl">North star</p>
-        <h3>The best open-source vector database of this decade, built by one person with agents, for agents.</h3>
+        <h3>Proposed goal, not a claim: an open-source vector database that agents can use as memory, built by one person with agents.</h3>
         <p>We want model labs and model hubs to choose it because it is better, not because it is ours. That is a goal. We have no customers and we claim none. What we can do is write down the bar they would apply, and clear it in public:</p>
         <ul>
           <li><b>Speed on public data.</b> Recall against latency curves versus the leading engines, on SIFT1M, GIST1M and a current text-embedding set, on identical hardware.</li>
@@ -274,8 +275,8 @@ SEARCH(q, k, schedule, z, snapshot):
       <details open><summary><span class="q">1 /</span><span>Introduction</span></summary><div class="body"><p>An agent reads, acts, writes and reads again within milliseconds. A query over n vectors is mostly a question of how many bytes cross memory, and the store changes while it is queried. Other work reports P99 latency rising roughly 280% to 345% under concurrent inserts (arXiv 2606.08950) and data-dependent quantizers degrading or needing rebuilds under updates (arXiv 2512.18335). We have not reproduced these.</p><p>Prism rests on three observations: a random rotation makes any unit vector look the same, so the quantizer needs no training; a uniform quantizer’s codes nest, so bit planes serve every precision; and one bit is enough to reject most of a corpus.</p></div></details>
       <details><summary><span class="q">2 /</span><span>Related work</span></summary><div class="body"><p>Random hyperplane signs estimate angles (Goemans and Williamson; Charikar). Randomized Hadamard transforms give fast rotations (Ailon and Chazelle). TurboQuant rotates, quantizes per coordinate and adds a 1-bit residual transform for unbiased inner products. RaBitQ gives a 1-bit code with a theoretical error bound that supports reliable reranking. Multi-stage filtering is a standard idea.</p><p>Our claim is narrower: nested planes, a multi-stage gate and log-pinned snapshots, evaluated for read-while-write. A fuller related-work pass could shrink it. We read abstracts and summaries, so every citation needs checking against the primary text.</p></div></details>
       <details><summary><span class="q">3 /</span><span>Design</span></summary><div class="body"><p>Rotate with three rounds of random signs and a Walsh-Hadamard transform. Clip at C/√P, quantize each coordinate to 16 levels, and store the four index bits as four planes; plane one is the sign bit. Keep full-precision vectors for the final rerank on a slower tier.</p><p>Search scores everything at one bit, keeps candidates whose score plus zσ can still reach the k-th best minus zσ, reads the next plane for the survivors, and reranks the last few exactly. Writers seal immutable segments and publish a new snapshot; readers clone the pointer and never lock again.</p></div></details>
-      <details><summary><span class="q">4 /</span><span>Analysis</span></summary><div class="body"><p>Score error has variance about Δ²/12, so σ_b ≈ C/(√(3P)·2^b): each extra bit halves it, and the data does not enter. If every true top-k item and one witness have error within zσ, no top-k item is dropped. A union bound needs z near 4.2 for a 1% failure budget at k = 10 over three stages. Bits read are n·m₁ + n₁·m₂ + n₂·m₃, with a floor of n bits per query, so Prism accelerates a scan and does not remove it.</p></div></details>
-      <details><summary><span class="q">5 /</span><span>Evaluation</span></summary><div class="body"><p>20,000 vectors, d = 256, 50 Gaussian clusters, 1,000 queries from the same mixture, k = 10. At z = 3 the cascade returned the exact top 10 for every query while reading 1.06 bits per coordinate against 4 for a flat 4-bit scan. At z = 2 recall@10 was 0.998 with 1.7% of queries missing a neighbour. Measured σ matched the formula within 13% at one bit and within 3% at four. Reconstruction error was within about 3% on shifted data. On harder synthetic sets (out-of-distribution queries, isotropic data, overlapping clusters, 100,000 vectors) it read 1.04 to 1.40 bits at z = 2 with recall at least 0.997. The tables are in the evidence section.</p></div></details>
+      <details><summary><span class="q">4 /</span><span>Analysis</span></summary><div class="body"><p>Score error has variance about Δ²/12, so σ_b ≈ C/(√(3P)·2^b): each extra bit halves it, and the data does not enter. If every true top-k item and one witness have error within zσ, no top-k item is dropped. A union bound needs z near 4.2 for a 1% failure budget at k = 10 over three stages, so the z = 2 to 3 gate used in the experiments is a heuristic; only the deterministic residual-norm bound is certified. Storage: 4-bit planes add 1/8 to the retained float32 vectors, so total memory is about 1.125x float32, not 1/8. Bits read are n·m₁ + n₁·m₂ + n₂·m₃, with a floor of n bits per query, so Prism accelerates a scan and does not remove it.</p></div></details>
+      <details><summary><span class="q">5 /</span><span>Evaluation</span></summary><div class="body"><p>20,000 vectors, d = 256, 50 Gaussian clusters, 1,000 queries from the same mixture, k = 10. At z = 3 the cascade returned the same top 10 as exact search for every query (an observation, not a guarantee) while reading 1.06 bits per coordinate against 4 for a flat 4-bit scan. At z = 2 recall@10 was 0.998 with 1.7% of queries missing a neighbour. Measured σ matched the formula within 13% at one bit and within 3% at four. Reconstruction error was within about 3% on shifted data. On harder synthetic sets (out-of-distribution queries, isotropic data, overlapping clusters, 100,000 vectors) it read 1.04 to 1.40 bits at z = 2 with recall at least 0.997. The tables are in the evidence section.</p></div></details>
       <details><summary><span class="q">6 /</span><span>What cuts against us</span></summary><div class="body"><p>The cascade is not faster than an exact float scan. With a lookup-table kernel it takes 0.61 ms per query against 0.55 ms for an optimised exact scan at 20,000 vectors. Bits read did not become time.</p><p>The error tails are heavier than a bell curve: over 20 million pairs the largest error was 5.2 to 7.1 standard deviations, so a gate that never misses needs z near 7. A per-vector bound costs about as many bits as z = 4, and a deterministic bound prunes almost nothing.</p><p>A concurrent writer raised median P99 by 21% over seven alternating trials, and reader throughput fell 12%. Readers do not lock, so the cost is shared CPU and memory, which we have not profiled. Out-of-distribution queries read 1.40 bits, not the 1.77 of an early prototype, so our explanation for that gap was wrong and the gap is unexplained.</p></div></details>
       <details><summary><span class="q">7 /</span><span>Next</span></summary><div class="body"><p>A SIMD kernel and timing at larger n, where memory bandwidth matters. A sharper per-vector bound in the style of RaBitQ. Real embedding sets. A quiet-machine concurrent benchmark with a multi-core writer and profiling. A partitioning index in front, deletes, filtered search and a PrismIndex for the Atlas AnnIndex trait. Baselines on identical hardware: flat float, product quantization, RaBitQ and a TurboQuant-style scheme.</p></div></details>
     </div>
@@ -307,7 +308,7 @@ SEARCH(q, k, schedule, z, snapshot):
         <a href="index.html">Home</a><a href="#abstract">Abstract</a><a href="#manifesto">Manifesto</a><a href="#paper">Paper</a><a href="#evidence">Evidence</a><a href="https://github.com/Sagexd08/Project-Apex/tree/main/benchmarks/prism">Source</a>
       </nav>
     </div>
-    <div class="row2 mono"><span>Open source. Written in Rust.</span><span>Research draft</span></div>
+    <div class="row2 mono"><span>Open source. Written in Rust.</span><span>Research Note v1.0 &middot; preprint &middot; not peer reviewed</span></div>
   </footer>
 </main>
 

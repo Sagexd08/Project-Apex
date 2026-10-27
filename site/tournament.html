@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Algorithm tournament | Prism | Project Apex</title>
+<meta name="description" content="Seven candidate designs, one common yardstick. No winner is declared until the evidence exists.">
+<meta name="theme-color" content="#232323">
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/lab.css">
+</head>
+<body class="lab">
+<a class="skip" href="#main">Skip to content</a>
+<header class="lb-bar" role="banner"><a class="logo" href="index.html" aria-label="Project Apex home"></a>
+  <a class="lb-brand" href="prism.html">Prism</a>
+  <button class="lb-burger" type="button" aria-expanded="false" aria-controls="lb-nav">Menu</button>
+  <ul class="lb-nav" id="lb-nav" aria-label="Primary">
+    <li><a href="prism.html#abstract">Abstract</a></li><li><a href="prism.html#film-sec">Film</a></li>
+    <li><button class="lb-dd cur" type="button" aria-expanded="false" aria-haspopup="true" aria-controls="lb-menu">Manifesto &#9662;</button>
+      <div class="lb-menu" id="lb-menu"><a href="manifesto.html"><b>01</b>Manifesto<small>The statement of direction and the falsifiers</small></a><a href="related-work.html"><b>02</b>Related work<small>Prior art and the claim audit</small></a><a href="algorithm.html"><b>03</b>Algorithm<small>Encode, cascade, rerank, snapshot</small></a><a href="mathematics.html"><b>04</b>Mathematics<small>Derivations, lemma, open problem</small></a><a href="tournament.html" aria-current="page"><b>05</b>Algorithm tournament<small>Candidates A to G, keep or defer</small></a><a href="snapshot-protocol.html"><b>06</b>Snapshot protocol<small>Visibility, publication, reclamation</small></a><a href="loopholes.html"><b>07</b>Loophole audit<small>Math, storage, filter, concurrency</small></a><a href="roadmap.html"><b>08</b>Roadmap<small>Stages A to J and the licence gate</small></a></div></li>
+    <li><a href="prism.html#lab">Lab</a></li><li><a href="prism.html#paper">Paper</a></li>
+    <li><a href="prism.html#evidence">Evidence<i class="ping"></i></a></li>
+    <li><a href="https://github.com/Sagexd08/Project-Apex">Source &#8599;</a></li>
+  </ul></header><div class="lb-prog" aria-hidden="true"></div>
+<main id="main">
+<section class="lh" aria-labelledby="h1">
+  <div class="lh-l">
+    <p class="crumb"><a href="prism.html">Prism</a><span>/</span><a href="manifesto.html">Manifesto</a><span>/</span><span>Algorithm tournament</span></p>
+    <h1 id="h1">Algorithm tournament</h1>
+    <p class="lead">Seven candidate designs, one common yardstick. No winner is declared until the evidence exists.</p>
+    <div class="status-row"><span class="badge b-unmeasured">Unmeasured</span></div>
+    <p class="meta">Research Note v1.0 &middot; preprint, not peer reviewed &middot; synthetic data, one machine</p>
+  </div>
+  <div class="lh-r"><svg viewBox="0 0 400 340" role="img" aria-label="Seven candidates A to G, no winner"><g>
+    <rect class="fa dim" x="40" y="80" width="72" height="72" rx="8"/><text class="ft" x="76" y="120" text-anchor="middle" style="font-size:16px">A</text><rect class="fa dim" x="128" y="80" width="72" height="72" rx="8"/><text class="ft" x="164" y="120" text-anchor="middle" style="font-size:16px">B</text><rect class="fa ac" x="216" y="80" width="72" height="72" rx="8"/><text class="ft" x="252" y="120" text-anchor="middle" style="font-size:16px">C</text><rect class="fa dim" x="304" y="80" width="72" height="72" rx="8"/><text class="ft" x="340" y="120" text-anchor="middle" style="font-size:16px">D</text><rect class="fa dim" x="40" y="180" width="72" height="72" rx="8"/><text class="ft" x="76" y="220" text-anchor="middle" style="font-size:16px">E</text><rect class="fa dim" x="128" y="180" width="72" height="72" rx="8"/><text class="ft" x="164" y="220" text-anchor="middle" style="font-size:16px">F</text><rect class="fa dim" x="216" y="180" width="72" height="72" rx="8"/><text class="ft" x="252" y="220" text-anchor="middle" style="font-size:16px">G</text>
+    <text class="ft" x="40" y="300">no winner declared</text></g></svg><span class="num" aria-hidden="true">05</span></div>
+</section>
+<div class="lb-main">
+  <nav class="toc" aria-label="On this page"><p>On this page</p><ol><li><a href="#rules">Rules of the tournament</a></li><li><a href="#table">Candidates A to G</a></li><li><a href="#fair">What a fair comparison needs</a></li><li><a href="#decision">Selection gate</a></li></ol></nav>
+  <article class="art"><section id="rules"><h2>Rules of the tournament</h2>
+<p>Seven candidates are compared on the same corpus, queries, metric, top-k, hardware and concurrency, with ground truth computed over the <b>eligible</b> set, not the whole corpus. Training time and the memory of the original vectors are counted for every method, not just some. No candidate is declared the winner because of its name.</p>
+<div class="call warn"><b class="k">State today</b><p>Only candidates A, C and part of D have any measurement, and only on one synthetic set. Every "keep", "defer" or "reject" below is a <b>provisional plan</b>, not a verdict. The full tournament has not been run.</p></div></section>
+
+<section id="table"><h2>Candidates A to G</h2>
+<div class="tw"><table><thead><tr><th>Candidate</th><th>What it is</th><th>Guarantee</th><th>Evidence so far</th><th>Plan</th></tr></thead><tbody>
+<tr><td>A. Exact float32</td><td>Brute-force scan. The correctness oracle.</td><td>Exact; ties by ascending id.</td><td><span class="badge b-tested">Tested</span> exact index in the Atlas engine is the oracle for filtered-search tests. Optimised scan timing: 0.55 ms in the Prism benchmark.</td><td>Keep as baseline and ground truth.</td></tr>
+<tr><td>B. Flat scalar quantization</td><td>Simple low-precision scan, no cascade.</td><td>None.</td><td><span class="badge b-measured">Measured</span> only as the 4-bit bits-read baseline. No recall or time comparison.</td><td>Keep. It shows whether the extra stages add anything.</td></tr>
+<tr><td>C. Prism nested planes</td><td>1, 2, 3, 4 bit prefixes of one code with the heuristic gate.</td><td>Heuristic: calibrated, miss rate measured.</td><td><span class="badge b-measured">Measured</span> about 1.06 bits per coordinate, 1000 of 1000 queries exact at z = 3, 0.61 ms against 0.55 ms. Synthetic, one run.</td><td>Keep as the candidate under test. Not faster yet.</td></tr>
+<tr><td>D. Certified interval cascade</td><td>Deterministic bounds per vector; discard only when the upper bound is strictly below the k-th lower bound.</td><td>Sound by construction; floating point and ties still to be specified.</td><td><span class="badge b-measured">Measured</span> the residual-norm bound never missed and pruned almost nothing at d = 256 (3.7 to 4.0 bits).</td><td>Defer until a tighter per-vector bound exists.</td></tr>
+<tr><td>E. Strong baselines</td><td>RaBitQ, PQ and OPQ, a TurboQuant-style method, ScaNN.</td><td>Differ per method.</td><td><span class="badge b-unmeasured">Unmeasured</span></td><td>Implement or wrap at least one before any "better than" sentence.</td></tr>
+<tr><td>F. ANN front ends</td><td>HNSW, IVF-PQ, Vamana, SPANN as the first stage or around the cascade.</td><td>Approximate.</td><td><span class="badge b-reported">Reported</span> by the builder: an HNSW spike at 1M x 768 on synthetic data reached recall@10 0.964 with p95 1.7 ms, not independently verified. That library is not adopted pending a licence audit.</td><td>Defer. The exact index stays until the audit finishes.</td></tr>
+<tr><td>G. Filter-aware search</td><td>Pre-filter plus exact scan, predicate-aware traversal, bitmaps, iterative filtering.</td><td>Exact when pre-filtering.</td><td><span class="badge b-tested">Tested</span> the exact index selects top-k among allowed ids in linear time and matches a naive oracle at 100, 10, 1 and 0.1 percent selectivity. The HNSW spike took 49.7 ms at 1 percent and 417.7 ms at 0.1 percent, which is why very selective filters use the exact path.</td><td>Keep pre-filter plus exact scan for low selectivity. Never ship unrestricted ANN followed by a post-filter as the final answer.</td></tr>
+</tbody></table></div></section>
+
+<section id="fair"><h2>What a fair comparison needs</h2>
+<ul><li>Same machine, threads, normalization, metric convention, recall definition and preprocessing for every method.</li>
+<li>Warm-up and cache state reported; enough queries for the p99 to mean something; repeated trials with an uncertainty estimate.</li>
+<li>Training and build time for methods that need it. Original vectors included in every memory total.</li>
+<li>A real dataset, a filtered dataset with real metadata, and adversarial synthetic sets. A synthetic run is never presented as a real-data result.</li></ul></section>
+
+<section id="decision"><h2>Selection gate</h2>
+<p>The tournament ends with one written decision per candidate: keep, defer or reject, with its evidence. Until then the honest summary is: <b>one candidate has a first measurement, and it is not faster than the exact baseline</b>. Details of the open work are on the <a href="roadmap.html">roadmap</a>.</p></section>
+</article>
+</div>
+<nav class="pn" aria-label="Page navigation"><a href="mathematics.html"><small>Previous</small><span>Mathematics</span></a><a href="snapshot-protocol.html"><small>Next</small><span>Snapshot protocol</span></a></nav>
+</main>
+<footer class="lb-foot"><div class="cols">
+    <div><h4>Project Apex / Prism</h4><p>An open research prototype about progressively refined vector codes and per-reader snapshots. Research Note v1.0, preprint, not peer reviewed.</p></div>
+    <div><h4>Pages</h4><a href="manifesto.html">Manifesto</a><a href="related-work.html">Related work</a><a href="algorithm.html">Algorithm</a><a href="mathematics.html">Mathematics</a><a href="tournament.html">Algorithm tournament</a><a href="snapshot-protocol.html">Snapshot protocol</a><a href="loopholes.html">Loophole audit</a><a href="roadmap.html">Roadmap</a></div>
+    <div><h4>Evidence</h4><a href="prism.html#evidence">Measurements</a><a href="prism.html#paper">Research note</a><a href="prism.html#lab">Interactive lab</a></div>
+    <div><h4>Open source</h4><a href="https://github.com/Sagexd08/Project-Apex">Repository</a><a href="https://github.com/Sagexd08/Project-Apex/tree/main/benchmarks/prism">Benchmark source</a><a href="https://github.com/Sagexd08/Project-Apex/issues">Issues</a></div></div>
+    <p class="fine">Synthetic data, one machine. No comparison with other systems. Nothing on these pages is a claim to be first, fastest or best.</p></footer>
+<script src="js/lab.js" defer></script>
+</body>
+</html>

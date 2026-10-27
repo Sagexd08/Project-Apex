@@ -19,6 +19,7 @@
     root.innerHTML = `
       <p class="mono" style="margin:30px 0 0;color:var(--mid)">Bits read per coordinate per vector, per query</p>
       <div class="bars" role="img" aria-label="Bits read: float32 32, flat 4-bit 4, cascade z=2 ${f(bpc(z2.bits_incr_mean), 2)}, cascade z=3 ${f(bpc(z3.bits_incr_mean), 2)}">${bars.map(bar).join("")}</div>
+      <p class="note-m">Status of everything below: <b>Measured</b> (synthetic data, one machine, not reproduced elsewhere). Bits read is not total memory: raw float32 vectors are kept for the exact rerank, so 4-bit planes add 1/8 to float32 storage and do not replace it. The z gate is a heuristic; only the deterministic bound is certified.</p>
       <p class="note-m">Setup: ${n.toLocaleString()} vectors, d = ${dim}, ${nq.toLocaleString()} queries, k = ${k}, seed ${seed}. ${d.synthetic ? "Synthetic data. " : ""}${esc(d.note)}. rustc: ${esc(d.rustc)}. Source checksum (FNV-1a, src/*.rs): ${esc(d.src_fnv1a64)}. CPU note: ${esc(d.cpu_note)}.</p>
 
       <h3 style="margin-top:56px">Error per bit, and no drift</h3>
