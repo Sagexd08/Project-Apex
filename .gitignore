@@ -3,3 +3,13 @@ target/
 
 .vercel
 .env*
+
+# local-only notes, handoffs, evidence and agent instructions (purged from history)
+/CLAUDE.md
+/DESIGN.md
+/PRODUCT.md
+/site/BREAKDOWN.md
+/site/.impeccable/
+/docs/*
+!/docs/brand/
+!/docs/prism/

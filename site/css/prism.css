@@ -42,11 +42,8 @@ body.pp{background:var(--black);color:var(--off)}
 .abs-box{position:relative;border-top:1px solid var(--black);padding-top:22px}
 .abs-box p{font-size:var(--t-lead);max-width:58ch}
 .copy{margin-top:22px}
-.mf{display:grid;grid-template-columns:1fr;border-top:1px solid var(--line)}
-.mf article{display:grid;grid-template-columns:90px 1fr;gap:20px;padding:30px 0;border-bottom:1px solid var(--line)}
-.mf article b{font-family:var(--mono);font-weight:400;color:var(--accent);font-size:14px;padding-top:8px}
-.mf h3{font-size:var(--t-h1);line-height:1.05;letter-spacing:-.02em;margin:0 0 10px;max-width:22ch}
-.mf p{color:var(--mid)}
+/* .mf rows are styled in main.css; the rules draw on via #manifesto.in */
+.pp .mf h3{font-size:clamp(26px,3.6vw,52px);line-height:1.05;letter-spacing:-.03em;margin:0}
 .vision{margin-top:56px;display:grid;grid-template-columns:1fr 1fr;gap:clamp(20px,4vw,60px)}
 .vision>div{border-top:1px solid var(--line);padding-top:20px}
 
@@ -118,7 +115,6 @@ svg.geo text{font-family:var(--mono);font-size:11px;fill:currentColor}
 @media (max-width:900px){
   .p-hero,.abs-grid,.lab-grid,.vision,.lim,.eqs{grid-template-columns:1fr}
   .p-hero{padding-top:130px}.stack{margin:10px auto 0;max-width:340px}
-  .mf article{grid-template-columns:1fr;gap:4px}
   .paper .body{padding-left:0}
   .bar{grid-template-columns:1fr 60px}.bar i{grid-column:1/-1;order:3}
 }
@@ -140,11 +136,9 @@ svg.geo text{font-family:var(--mono);font-size:11px;fill:currentColor}
 /* depth: grid texture, glow, floating planes */
 .pp .dark{background-image:linear-gradient(rgba(241,238,231,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(241,238,231,.035) 1px,transparent 1px);background-size:64px 64px}
 .p-hero>*{position:relative;z-index:1}
-.p-hero>.rain{position:absolute;inset:0;width:100%;height:100%;z-index:0;opacity:.6;pointer-events:none}
-.p-hero::before{content:"";position:absolute;width:min(62vmax,100%);height:62vmax;right:0;top:-26vmax;background:radial-gradient(closest-side,rgba(255,145,0,.30),transparent 70%);transform:translate3d(0,calc(var(--sy,0) * -.12px),0);pointer-events:none;z-index:0}
+.p-hero>.rain{position:absolute;inset:0;width:100%;height:100%;z-index:0;opacity:.28;pointer-events:none}
+.tag.acc{background:transparent;color:var(--off);box-shadow:inset 0 0 0 1px var(--off)}
 .p-hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:140px;background:linear-gradient(transparent,var(--black));pointer-events:none;z-index:0}
-.stack{animation:floaty 7s ease-in-out infinite}
-@keyframes floaty{50%{transform:translateY(-14px)}}
 .stack .pl{transition:transform .25s linear,opacity .6s var(--ease)}
 .stack .pl:nth-child(1){--k:64}.stack .pl:nth-child(2){--k:34}.stack .pl:nth-child(3){--k:8}.stack .pl:nth-child(4){--k:-20}
 .stack .pl:nth-child(n){transform:rotateX(62deg) translateZ(calc(var(--peel,0) * var(--k) * 1px));box-shadow:0 24px 60px -24px rgba(0,0,0,.55)}
@@ -180,8 +174,8 @@ svg.geo text{font-family:var(--mono);font-size:11px;fill:currentColor}
 .film-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
 .film-chips button{font-family:var(--mono);font-size:12px;text-transform:uppercase;padding:8px 11px;border-radius:7px;box-shadow:inset 0 0 0 1px var(--line);color:var(--mid)}
 .film-chips button[aria-current=true]{background:var(--accent);color:var(--black);box-shadow:none}
-.northstar{margin-top:64px;border:1px solid var(--accent);border-radius:14px;padding:clamp(20px,3vw,40px)}
-.northstar h3{font-size:var(--t-h1);line-height:1.08;letter-spacing:-.02em;font-weight:600;max-width:24ch;margin-bottom:18px}
+.northstar{margin-top:clamp(64px,9vw,120px);border-top:1px solid var(--off);padding-top:clamp(24px,3vw,40px)}
+.northstar h3{font-size:clamp(30px,4.6vw,68px);line-height:1.02;letter-spacing:-.035em;font-weight:600;max-width:20ch;margin-bottom:28px}
 .northstar p{color:var(--mid)}
 .northstar ul{list-style:none;margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:14px 40px}
 .northstar li{border-top:1px solid var(--line);padding-top:12px;color:var(--mid);line-height:1.45}
@@ -205,8 +199,6 @@ svg.geo text{font-family:var(--mono);font-size:11px;fill:currentColor}
 .pp .kpi,.pp .lab{will-change:transform}
 .pp .lab{box-shadow:0 40px 90px -50px rgba(0,0,0,.5);transition:box-shadow .4s}
 .pp .lab:hover{box-shadow:0 50px 110px -45px rgba(0,0,0,.55)}
-.pp .mf article{transition:background .3s,transform .3s var(--ease)}
-.pp .mf article:hover{background:linear-gradient(90deg,rgba(255,145,0,.08),transparent);transform:translateX(14px)}
 .pp .paper details{transition:background .3s}
 .pp .paper details[open]{background:rgba(35,35,35,.04)}
 .pp .paper summary:hover{color:var(--accent-ink)}

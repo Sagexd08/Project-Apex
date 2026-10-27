@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@lucasmarkes/hairline": "^0.5.1"
+  }
+}

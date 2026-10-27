@@ -121,17 +121,16 @@
   <!-- manifesto -->
   <section class="s dark" id="manifesto" aria-labelledby="manifesto-h">
     <div class="wrap">
-      <p class="mono lbl">Manifesto</p>
       <h2 id="manifesto-h">Memory fast enough to disappear.</h2>
       <p class="grey" style="margin-bottom:44px">A statement of direction. Anything not measured in the evidence section is a belief, and we say so. The research behind it: the <a class="u" href="#abstract">abstract</a>, the <a class="u" href="#film-sec">film of the mathematics</a>, the <a class="u" href="#paper">paper</a> and the <a class="u" href="#evidence">evidence</a>.</p>
-      <div class="mf">
-        <article><b>001 /</b><div><h3>Agents write while they read.</h3><p>Most storage was built to load in bulk, index, then query for a long time. An agent loop reads, acts and writes within milliseconds. Storage that makes writes wait for reads, or the reverse, becomes the slowest step in the loop.</p></div></article>
-        <article><b>002 /</b><div><h3>Nothing to train means nothing to drift.</h3><p>A compressor learned from yesterday’s data is wrong about tomorrow’s. A fixed random rotation has no opinion about the data, so it cannot go out of date, and a new vector can be encoded the moment it arrives.</p></div></article>
-        <article><b>003 /</b><div><h3>Pay for precision only when the question needs it.</h3><p>Most of a corpus is plainly irrelevant to a given query, and one bit is enough to say so. Spend more bits only on the few vectors still in the running.</p></div></article>
-        <article><b>004 /</b><div><h3>A reader never waits for a writer, and never sees half a write.</h3><p>Every read happens against a named position in the log. The same question at the same position gives the same answer, so a surprising result can be replayed and explained.</p></div></article>
-        <article><b>005 /</b><div><h3>Say what was measured.</h3><p>Every number carries its data, its machine and a checksum of the code that produced it. A number from synthetic data says so. A claim without a measurement is a goal, and we label it as one.</p></div></article>
-        <article><b>006 /</b><div><h3>Keep it open.</h3><p>The reference implementation, the benchmark and the raw results are public, so anyone can disagree with us with evidence.</p></div></article>
-      </div>
+      <ul class="mf">
+        <li><span class="rule" aria-hidden="true"></span><h3>Agents write while they read.</h3><p>Most storage was built to load in bulk, index, then query for a long time. An agent loop reads, acts and writes within milliseconds. Storage that makes writes wait for reads, or the reverse, becomes the slowest step in the loop.</p></li>
+        <li><span class="rule" aria-hidden="true"></span><h3>Nothing to train means nothing to drift.</h3><p>A compressor learned from yesterday’s data is wrong about tomorrow’s. A fixed random rotation has no opinion about the data, so it cannot go out of date, and a new vector can be encoded the moment it arrives.</p></li>
+        <li><span class="rule" aria-hidden="true"></span><h3>Pay for precision only when the question needs it.</h3><p>Most of a corpus is plainly irrelevant to a given query, and one bit is enough to say so. Spend more bits only on the few vectors still in the running.</p></li>
+        <li><span class="rule" aria-hidden="true"></span><h3>A reader never waits for a writer, and never sees half a write.</h3><p>Every read happens against a named position in the log. The same question at the same position gives the same answer, so a surprising result can be replayed and explained.</p></li>
+        <li><span class="rule" aria-hidden="true"></span><h3>Say what was measured.</h3><p>Every number carries its data, its machine and a checksum of the code that produced it. A number from synthetic data says so. A claim without a measurement is a goal, and we label it as one.</p></li>
+        <li><span class="rule" aria-hidden="true"></span><h3>Keep it open.</h3><p>The reference implementation, the benchmark and the raw results are public, so anyone can disagree with us with evidence.</p></li>
+      </ul>
       <div class="northstar">
         <p class="mono lbl">North star</p>
         <h3>The best open-source vector database of this decade, built by one person with agents, for agents.</h3>

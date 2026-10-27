@@ -33,7 +33,7 @@
     <li><a class="nl" href="#repo">Source</a></li>
     <li><a class="nl" href="#status">Status<i class="ping"></i></a></li>
     <li><a class="nl" href="#faq">FAQ</a></li>
-    <li><a class="nl" href="prism.html#manifesto">Manifesto</a></li>
+    <li><a class="nl" href="#manifesto">Manifesto</a></li>
   </ul>
   <div class="ticker" aria-hidden="true">
     <span>Early development · Not ready for production · Open source · Written in Rust ·</span>
@@ -53,7 +53,7 @@
         <h1><span class="ln"><span>A database for</span></span><span class="ln"><span>agent memory.</span></span></h1>
         <p class="lead" data-in>Project Apex writes every change to a log, keeps each tenant’s records separate, and applies a retried write once. It is written in Rust and in early development.</p>
         <div class="btns" data-in>
-          <a class="btn" data-hold href="#repo"><span class="odo">View the source</span></a>
+          <a class="btn" data-hold href="https://github.com/Sagexd08/Project-Apex" target="_blank" rel="noopener"><span class="odo">View the source</span></a>
           <a class="btn" data-hold href="#status"><span class="odo">What’s done</span><i class="ping"></i></a>
         </div>
         <p class="fine" data-in>Not ready for production. No speed claims until benchmarks exist.</p>
@@ -146,6 +146,20 @@
       <article data-rv><h3><b>02</b> / Isolation has its own tests</h3><p>Tenant boundaries are covered by tests for concurrent tenants, a panicking index and replay after a crash.</p></article>
       <article data-rv><h3><b>03</b> / Numbers come with conditions</h3><p>Latency, recall, throughput and memory are reported together, with the dataset, hardware and build settings used.</p></article>
       <article data-rv><h3><b>04</b> / Evidence is tied to a snapshot</h3><p>Each test result is recorded against a digest of the source. Change a file and the old result no longer counts until it is re-run.</p></article>
+    </div>
+  </section>
+
+  <!-- anatomy of a write -->
+  <section class="s cream anat" id="anatomy" aria-labelledby="anat-h" style="padding-top:0">
+    <p class="mono lbl" data-rv>Anatomy</p>
+    <h2 id="anat-h" data-rv>Anatomy of a write.</h2>
+    <div class="anat-grid">
+      <iframe class="anat-fig" src="assets/ledger.html" title="Interactive figure: a log of eight tablets. Touch one and a retried write lands on it and is applied once." loading="lazy" width="520" height="640"></iframe>
+      <ol class="anat-list">
+        <li data-rv><i class="rule" aria-hidden="true"></i><span class="mono">01 · Log</span><p>Each write is appended to the log before anything else. The tablets are log entries, numbered in order.</p></li>
+        <li data-rv><i class="rule" aria-hidden="true"></i><span class="mono">02 · Scope</span><p>Every entry belongs to one tenant, so a search only sees records its caller may see.</p></li>
+        <li data-rv><i class="rule" aria-hidden="true"></i><span class="mono">03 · Once</span><p>A retried write carries the same key. It lands on the entry already there and is applied once.</p></li>
+      </ol>
     </div>
   </section>
 
@@ -262,8 +276,21 @@
 
   <canvas class="ascii-div" data-from="#f1eee7" data-to="#232323" aria-hidden="true"></canvas>
 
+  <!-- manifesto band -->
+  <section class="s dark" id="manifesto" aria-labelledby="mf-h">
+    <h2 id="mf-h" data-rv>Memory fast enough to disappear.</h2>
+    <p class="lede wide lt" data-rv>A statement of direction. Anything not measured in the evidence is a belief, and we say so.</p>
+    <ul class="mf">
+      <li data-rv><span class="rule" aria-hidden="true"></span><h3>Agents write while they read.</h3><p>Storage that makes writes wait for reads, or the reverse, becomes the slowest step in an agent loop.</p></li>
+      <li data-rv><span class="rule" aria-hidden="true"></span><h3>Nothing to train, nothing to drift.</h3><p>A fixed random rotation has no opinion about the data, so a new vector can be encoded the moment it arrives.</p></li>
+      <li data-rv><span class="rule" aria-hidden="true"></span><h3>A reader never sees half a write.</h3><p>Every read happens at a named position in the log, so a surprising result can be replayed and explained.</p></li>
+      <li data-rv><span class="rule" aria-hidden="true"></span><h3>Say what was measured.</h3><p>A number from synthetic data says so. A claim without a measurement is a goal, and we label it as one.</p></li>
+    </ul>
+    <p class="lede wide lt" data-rv style="margin-top:32px"><a class="u" href="prism.html#manifesto">Read the full manifesto and the Prism research</a></p>
+  </section>
+
   <!-- contributing + status + faq -->
-  <section class="s dark" id="open" aria-labelledby="open-h">
+  <section class="s dark" id="open" aria-labelledby="open-h" style="padding-top:0">
     <p class="mono lbl" data-rv>Contributing</p>
     <h2 id="open-h" data-rv>Where help is useful.</h2>
     <p class="lede wide lt" data-rv>Project Apex is open source. These are the contributions that help most right now.</p>
@@ -310,7 +337,7 @@
     <div class="ring-disc" id="ringDisc">
       <h2 id="cta-h">Read the source and try to break it.</h2>
       <div class="btns">
-        <a class="btn" data-hold href="#repo"><span class="odo">View the source</span></a>
+        <a class="btn" data-hold href="https://github.com/Sagexd08/Project-Apex" target="_blank" rel="noopener"><span class="odo">View the source</span></a>
         <a class="btn ghost" data-hold href="#open"><span class="odo">Contribute</span></a>
       </div>
     </div>
@@ -322,7 +349,7 @@
     <div class="foot-top">
       <p class="brand"><span class="logo" aria-hidden="true"></span>Project Apex</p>
       <nav class="fnav mono" aria-label="Footer">
-        <a href="#product">Features</a><a href="#benchmarks">Benchmarks</a><a href="#repo">Source</a><a href="#status">Status</a><a href="#faq">FAQ</a><a href="prism.html#manifesto">Manifesto</a>
+        <a href="#product">Features</a><a href="#benchmarks">Benchmarks</a><a href="#repo">Source</a><a href="#status">Status</a><a href="#faq">FAQ</a><a href="#manifesto">Manifesto</a>
       </nav>
     </div>
     <div class="row2 mono"><span>Open source. Written in Rust.</span><span>Early development</span></div>

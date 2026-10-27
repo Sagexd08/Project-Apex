@@ -236,3 +236,8 @@ if (vm) {
     },
   });
 }
+
+/* anatomy: draw the hairline rules on once the section is in view */
+for (const anat of document.querySelectorAll('#anatomy, #manifesto')) {
+  new IntersectionObserver(([e], io) => { if (e.isIntersecting) { anat.classList.add('in'); io.disconnect(); } }, { threshold: 0.25 }).observe(anat);
+}

@@ -169,7 +169,7 @@
     requestAnimationFrame(step);
   }
 
-  const RV = ".pp h2,.abs-box,.mf article,.vision>div,.lab,.eq,.code,.paper details,.kpi,.tbl,.bars,.note-m,.lim ul";
+  const RV = ".pp h2,.abs-box,.mf li,.vision>div,.lab,.eq,.code,.paper details,.kpi,.tbl,.bars,.note-m,.lim ul";
   const io = "IntersectionObserver" in window ? new IntersectionObserver(es => es.forEach(e => {
     if (!e.isIntersecting) return;
     const t = e.target; t.classList.add("rv-in"); t.classList.remove("rv-pre"); io.unobserve(t);
@@ -232,7 +232,7 @@
       if (!cx) return;
       cx.clearRect(0, 0, W, H); cx.font = "14px 'Geist Mono',monospace";
       for (const c of cols) for (let k = 0; k < 9; k++) {
-        cx.fillStyle = k === 0 ? "rgba(255,145,0,.95)" : `rgba(241,238,231,${(0.42 * (1 - k / 9)).toFixed(3)})`;
+        cx.fillStyle = k === 0 ? "rgba(241,238,231,.7)" :`rgba(241,238,231,${(0.42 * (1 - k / 9)).toFixed(3)})`;
         cx.fillText(Math.random() < 0.5 ? "0" : "1", c.x, c.y - k * FS);
       }
     };
@@ -252,5 +252,8 @@
       requestAnimationFrame(tick);
     }
   }
+  // manifesto: draw the 1px rules once the band is in view (main.js is not loaded on this page)
+  const mfSec = $("#manifesto");
+  if (mfSec) { if (reduce || !io) mfSec.classList.add("in"); else new IntersectionObserver(([e], o) => { if (e.isIntersecting) { mfSec.classList.add("in"); o.disconnect(); } }, { threshold: 0.15 }).observe(mfSec); }
   addEventListener("scroll", () => html.style.setProperty("--sy", scrollY), { passive: true });
 })();
