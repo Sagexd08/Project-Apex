@@ -1,6 +1,6 @@
 # Prism: mathematics and algorithm, end to end
 
-Status: research draft. Derivations are first-order and state their assumptions. Empirical checks are in `PAPER.md` section 6 and `benchmarks/prism/results/results.json`. Nothing here is a benchmark against another system.
+Status: Research Note v1.0 (preprint, not peer reviewed). Statuses used: Proved (under the stated assumptions), Measured (in `results.json`), Proposed. The global `zσ` gate in section 4 is a heuristic; only the deterministic residual-norm bound is certified. Storage: float32 vectors are retained for the exact rerank, so 4-bit planes add 1/8 to float32 and do not make total memory 1/8. Derivations are first-order and state their assumptions. Empirical checks are in `PAPER.md` section 6 and `benchmarks/prism/results/results.json`. Nothing here is a benchmark against another system.
 
 Notation: `d` is the vector dimension, `P` the next power of two at or above `d`, `n` the corpus size, `k` the result size, `q` a query and `x` a stored vector, both unit length. `s(q,x) = <q,x>` is cosine similarity.
 
@@ -102,7 +102,7 @@ Let `t` be the true k-th best score, and `τ_j` the k-th best estimate among cur
 ŝ_j(c) + z σ_j  ≥  τ_j - z σ_j
 ```
 
-**Lemma (gate safety).** Suppose, at stage `j`, every true top-k item `c` and one witness item `w` satisfy `|ε_j| ≤ z σ_j`. Then no true top-k item is dropped.
+**Lemma (gate safety; Proved, conditional on the stated assumption).** Suppose, at stage `j`, every true top-k item `c` and one witness item `w` satisfy `|ε_j| ≤ z σ_j`. Then no true top-k item is dropped.
 
 Proof. At least `k` candidates have estimate `≥ τ_j`. Fewer than `k` items have true score `> t`, so at least one of those `k` candidates, call it `w`, has `s(w) ≤ t`. Then `τ_j ≤ ŝ_j(w) ≤ s(w) + zσ_j ≤ t + zσ_j`. For a true top-k item `c`, `ŝ_j(c) ≥ s(c) - zσ_j ≥ t - zσ_j ≥ τ_j - 2zσ_j`, which is the gate condition. ∎
 

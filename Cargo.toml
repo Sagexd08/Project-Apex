@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 exclude = ["benchmarks/ann-spike", "ci/hook-absence"]
-members = ["crates/atlas-core", "crates/atlas-storage", "crates/atlas-index", "crates/atlas-engine"]
+members = ["crates/atlas-core", "crates/atlas-storage", "crates/atlas-index", "crates/atlas-engine", "crates/atlas-cli"]
 
 [workspace.package]
 version = "0.1.0"

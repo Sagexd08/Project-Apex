@@ -1,0 +1,22 @@
+   Compiling prism v0.0.0 (C:\Desktop\Project Apex\benchmarks\prism)
+    Finished `release` profile [optimized] target(s) in 1.40s
+     Running `target\release\prism-timing.exe`
+== n = 20000, 20 interleaved repetitions of 200 queries
+exact_scan_opt         p50 0.866 ms (min 0.787, max 1.203)  ratio to faster exact 1.207  95% [1.157, 1.232]  recall 1.0000  exact scan (baseline is the faster of the two)
+exact_scan_stream      p50 0.712 ms (min 0.666, max 1.034)  ratio to faster exact 1.000  95% [1.000, 1.000]  recall 1.0000  exact scan (baseline is the faster of the two)
+flat4_lut_rerank100    p50 0.823 ms (min 0.799, max 1.499)  ratio to faster exact 1.174  95% [1.161, 1.199]  recall 1.0000  slower than the exact scan (95% interval excludes 1)
+cascade_lut_z2         p50 0.461 ms (min 0.405, max 0.775)  ratio to faster exact 0.649  95% [0.608, 0.665]  recall 0.9980  faster than the exact scan (95% interval excludes 1)
+cascade_lut_z3         p50 0.467 ms (min 0.423, max 0.788)  ratio to faster exact 0.666  95% [0.632, 0.681]  recall 1.0000  faster than the exact scan (95% interval excludes 1)
+== n = 100000, 20 interleaved repetitions of 200 queries
+exact_scan_opt         p50 4.622 ms (min 4.523, max 5.603)  ratio to faster exact 1.136  95% [1.113, 1.240]  recall 1.0000  exact scan (baseline is the faster of the two)
+exact_scan_stream      p50 4.058 ms (min 4.033, max 4.517)  ratio to faster exact 1.000  95% [1.000, 1.000]  recall 1.0000  exact scan (baseline is the faster of the two)
+flat4_lut_rerank100    p50 4.145 ms (min 4.098, max 6.587)  ratio to faster exact 1.018  95% [1.016, 1.025]  recall 0.9920  slower than the exact scan (95% interval excludes 1)
+cascade_lut_z2         p50 2.758 ms (min 2.657, max 4.010)  ratio to faster exact 0.677  95% [0.671, 0.686]  recall 1.0000  faster than the exact scan (95% interval excludes 1)
+cascade_lut_z3         p50 2.839 ms (min 2.759, max 4.268)  ratio to faster exact 0.697  95% [0.691, 0.708]  recall 1.0000  faster than the exact scan (95% interval excludes 1)
+== n = 400000, 20 interleaved repetitions of 200 queries
+exact_scan_opt         p50 22.298 ms (min 22.013, max 22.952)  ratio to faster exact 1.135  95% [1.115, 1.162]  recall 1.0000  exact scan (baseline is the faster of the two)
+exact_scan_stream      p50 19.723 ms (min 19.599, max 19.813)  ratio to faster exact 1.000  95% [1.000, 1.000]  recall 1.0000  exact scan (baseline is the faster of the two)
+flat4_lut_rerank100    p50 17.975 ms (min 17.774, max 18.607)  ratio to faster exact 0.914  95% [0.909, 0.924]  recall 0.9720  faster than the exact scan (95% interval excludes 1)
+cascade_lut_z2         p50 12.056 ms (min 11.780, max 13.417)  ratio to faster exact 0.615  95% [0.603, 0.631]  recall 0.9880  faster than the exact scan (95% interval excludes 1)
+cascade_lut_z3         p50 13.054 ms (min 12.705, max 14.396)  ratio to faster exact 0.662  95% [0.649, 0.683]  recall 1.0000  faster than the exact scan (95% interval excludes 1)
+wrote C:\Desktop\Project Apex\benchmarks\prism/results/timing_interleaved.json

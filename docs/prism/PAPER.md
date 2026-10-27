@@ -1,6 +1,10 @@
 # Prism: nested bit planes, an error-gated cascade and log-pinned snapshots for vector memory that is read while it is written
 
-Project Apex research draft, 2026-10-26. Not peer reviewed. All measurements are on synthetic data on one machine, produced by `benchmarks/prism` (source checksum `50b8bcc7fdb6bf7c`, rustc 1.95.0). Derivations are in `MATH_AND_ALGORITHM.md`.
+**Research Note v1.0 (preprint), 2026-10-26.** Project Apex. Not peer reviewed; no authors or affiliations are claimed beyond the project. All measurements are preliminary, on synthetic data on one machine, produced by `benchmarks/prism` (source checksum `103fcb801fb94647`, rustc 1.95.0, `benchmarks/prism/results/results.json`) and have not been reproduced by anyone else. Derivations are in `MATH_AND_ALGORITHM.md`.
+
+**Status vocabulary.** Each claim carries one of: *Proved* (derivation with stated assumptions), *Implemented* (code exists), *Tested* (a test asserts it), *Measured* (a number in `results.json`), *Reported, not reproduced* (another source's claim), *Proposed* (design intent only), *Unmeasured*, *Failed* (tried, did not hold). Anything unlabelled below is Proposed.
+
+**Two gates, two kinds of guarantee.** The global sigma gate (`z * sigma`) is a **heuristic**: its miss rate is measured, not bounded. The **certified** interval cascade uses per-vector deterministic bounds (Cauchy-Schwarz on the residual norm) and cannot drop a true neighbour, but on the harder sets it reads 3.7 to 4.0 bits and prunes almost nothing (Measured, section 6.6).
 
 ## Abstract
 
@@ -10,9 +14,9 @@ See `ABSTRACT.md`.
 
 An agent reads what it knows, acts, writes what it learned and reads again, often within milliseconds. Vector storage for this loop faces two pressures. A query over `n` vectors is mostly a question of how many bytes are pulled through memory. And the store changes while it is being queried, so any structure that must be rebuilt or retrained when data changes either goes stale or makes someone wait.
 
-Measurements from other work show the second pressure is real. A study of vector databases under concurrent inserts reports P99 latency rising by roughly 280% to 345%, attributed to brute-force scans of unindexed segments and to lock contention (arXiv 2606.08950). A vendor benchmark reports P99 inflation between 1.1x and 10.3x across six engines under streaming load (OceanBase, 2026). A separate paper notes that data-dependent quantizers degrade or require rebuilds under insertions and deletions (arXiv 2512.18335). We have not independently reproduced any of these.
+Other work reports the second pressure is real (Reported, not reproduced). A study of vector databases under concurrent inserts reports P99 latency rising by roughly 280% to 345%, attributed to brute-force scans of unindexed segments and to lock contention (arXiv 2606.08950). A vendor benchmark reports P99 inflation between 1.1x and 10.3x across six engines under streaming load (OceanBase, 2026). A separate paper notes that data-dependent quantizers degrade or require rebuilds under insertions and deletions (arXiv 2512.18335). We have not independently reproduced any of these.
 
-We propose Prism, built on three observations:
+We propose Prism (Proposed; the observations below are Proved or Measured as marked in sections 4 and 6), built on three observations:
 
 1. A random rotation makes any unit vector look statistically the same, so a quantizer applied after rotation needs no training and cannot drift.
 2. A uniform quantizer's codes are nested: the top `b` bits of a 4-bit code are a valid `b`-bit code. Storing the code as bit planes lets one copy serve every precision.
@@ -24,7 +28,7 @@ A fourth element, snapshots keyed to the write-ahead-log position, addresses con
 
 Random hyperplane signs estimate angles (Goemans and Williamson, 1995; Charikar, 2002), which is the basis for 1-bit codes. Randomized Hadamard transforms give fast approximate rotations (Ailon and Chazelle, 2006). TurboQuant (ICLR 2026) rotates vectors, quantizes each coordinate, and adds a 1-bit residual transform for unbiased inner products, with distortion within about 2.7x of a lower bound as the authors report. RaBitQ (SIGMOD 2024) gives a 1-bit-per-dimension code with a theoretical error bound that supports reliable reranking, and a 2025 extension covers moderate compression rates. Multi-stage filtering with progressively more precise distance estimates is a standard idea in similarity search.
 
-What we claim is narrower than any of these: the combination of nested bit planes, a gate over several stages, and snapshots tied to the log, evaluated for read-while-write. A fuller related-work pass could reduce the claim further. We read abstracts and summaries of the cited papers, not all of the full texts; the citations must be checked against the primary sources before submission.
+What we propose is narrower than any of these, and we do not claim priority: the combination of nested bit planes, a gate over several stages, and snapshots tied to the log, evaluated for read-while-write. A fuller related-work pass could reduce the claim further. We read abstracts and summaries of the cited papers, not all of the full texts; the citations must be checked against the primary sources before submission.
 
 References to verify: Goemans and Williamson, J. ACM 42(6), 1995. Charikar, STOC 2002. Ailon and Chazelle, STOC 2006. Gao and Long, RaBitQ, SIGMOD 2024 (arXiv 2405.12497). Zandieh et al., TurboQuant, ICLR 2026 (arXiv 2504.19874).
 
@@ -32,7 +36,7 @@ References to verify: Goemans and Williamson, J. ACM 42(6), 1995. Charikar, STOC
 
 **Rotation.** Pad to `P`, the next power of two, and apply three rounds of a seeded random sign diagonal followed by a Walsh-Hadamard transform scaled by `1/sqrt(P)`. Cost `O(P log P)` per vector; the only state is the seed.
 
-**Planes.** Clip at `C/sqrt(P)` with `C = 3`, quantize each coordinate uniformly to 16 levels, and store the four index bits as four separate packed planes. Plane 0 is the sign bit. Full-precision vectors are kept for the final rerank and can live on a slower tier.
+**Planes.** Clip at `C/sqrt(P)` with `C = 3`, quantize each coordinate uniformly to 16 levels, and store the four index bits as four separate packed planes. Plane 0 is the sign bit. Full-precision float32 vectors must be retained for the final exact rerank; they can live on a slower tier, but they are not removed. See the storage accounting in section 4.
 
 **Cascade.** At stage `j` with `b_j` bits, estimate every candidate's score, take the `k`-th best estimate `tau_j`, and keep candidates with `s_hat + z*sigma_j >= tau_j - z*sigma_j`. `sigma_j` is the measured standard deviation of the estimate error. After the last stage, rerank survivors exactly.
 
@@ -42,13 +46,15 @@ References to verify: Goemans and Williamson, J. ACM 42(6), 1995. Charikar, STOC
 
 **Error per bit.** For fine cells, the score error has variance about `Delta_b^2 / 12`, giving `sigma_b ~ C / (sqrt(3P) * 2^b)`. Each added bit halves it. The error does not depend on the data.
 
-**Gate safety.** If every true top-k item and one witness item have error within `z*sigma`, no top-k item is dropped (lemma, proof in `MATH_AND_ALGORITHM.md` section 4). A union bound over `k+1` items and `S` stages gives a failure probability of at most `(k+1)*S*Pr[|error| > z*sigma]`. For a sub-Gaussian error and a 1% failure budget with `k = 10`, `S = 3`, this requires `z` near 4.2.
+**Gate safety.** If every true top-k item and one witness item have error within `z*sigma`, no top-k item is dropped (lemma, proof in `MATH_AND_ALGORITHM.md` section 4). A union bound over `k+1` items and `S` stages gives a failure probability of at most `(k+1)*S*Pr[|error| > z*sigma]`. For a sub-Gaussian error and a 1% failure budget with `k = 10`, `S = 3`, this requires `z` near 4.2 (Proved under the sub-Gaussian assumption; the measured tails are heavier, section 6.6). The z gate used in section 6 is therefore a heuristic.
 
-**Cost.** Bits read are `B = n*m_1 + n_1*m_2 + n_2*m_3`, with a floor of `n` bits per query. Prism is a scan accelerator and does not remove the scan.
+**Cost (bits read).** Bits read are `B = n*m_1 + n_1*m_2 + n_2*m_3`, with a floor of `n` bits per query. Prism is a scan accelerator and does not remove the scan.
+
+**Storage accounting (total memory).** Bits read per query is not memory. Per vector of dimension `d`, Prism stores 4 bits per coordinate of planes (`4d` bits, or 1/8 of float32) plus the retained float32 vector (`32d` bits) plus a residual norm, so total storage is about 1.125x float32 plus metadata, not 1/8. The 4-bit planes alone are 1/8 of float32, but the recall figures in section 6 depend on an exact rerank, which reads the float32 vectors. The saving is in bytes read per query (Measured), and the float32 tier can sit on slower storage (Proposed, not measured). Any "8x" claim applies to the code only.
 
 ## 5. Implementation
 
-A zero-dependency Rust crate, `benchmarks/prism`, about 700 lines of source: rotation, quantizer, store with snapshots, search, a deterministic generator, a benchmark binary and seven tests (norm preservation, nesting, sigma within 20% of the formula, exact result at very large `z`, compaction transparency, a 2-second one-writer four-reader invariant test, and cascade recall at `z = 3`). The scoring loop is scalar, with no lookup tables or SIMD.
+A zero-dependency Rust crate, `benchmarks/prism`, about 700 lines of source: rotation, quantizer, store with snapshots, search, a deterministic generator, a benchmark binary and seven tests (Implemented and Tested as reported by the benchmark run; not re-run in this wording pass): norm preservation, nesting, sigma within 20% of the formula, exact result at very large `z`, compaction transparency, a 2-second one-writer four-reader invariant test, and cascade recall at `z = 3`). The scoring loop is scalar, with no lookup tables or SIMD.
 
 ## 6. Evaluation
 
@@ -80,7 +86,7 @@ Bits are counted per coordinate per vector (a flat 4-bit scan reads 4; float32 i
 | cascade z = 3 | 1.000 | 0% | 1.060 | 1.120 | 399 / 398 / 204 | 204 |
 | cascade z = 4 | 1.000 | 0% | 1.060 | 1.120 | 399 / 399 / 296 | 296 |
 
-At `z = 3` the cascade returned the exact top 10 for all 1,000 queries while reading 1.06 bits, 3.8x fewer than a flat 4-bit scan and about 30x fewer than float32. Most of the cost is the first stage, which reads one bit of every vector, so the result sits near the one-bit floor.
+At `z = 3` the cascade returned the same top 10 as exact search for all 1,000 queries (Measured; an observation on this set, not a guarantee) while reading 1.06 bits, 3.8x fewer than a flat 4-bit scan and about 30x fewer than float32 (bits read, not memory: float32 is retained for the rerank). Most of the cost is the first stage, which reads one bit of every vector, so the result sits near the one-bit floor.
 
 ### 6.3 Why stage 1 is so effective here, and a warning
 
@@ -88,27 +94,29 @@ Stage 1 keeps about 399 vectors for every `z` from 2 to 4. The generator makes 5
 
 Our first prototype (numpy) drew the queries from a separate set of cluster centres and read about 1.77 bits per coordinate at `z = 2`. We guessed that the query distribution explained the difference. Section 6.6 tests that guess: out-of-distribution queries on the Rust code read 1.40 bits, not 1.77, so the guess was incomplete and the remaining gap is unexplained. The practical point is that the saving depends on how much structure the data and queries have, and real embeddings may land anywhere in this range.
 
-### 6.4 Time
+### 6.4 Time (first run, superseded by 6.6)
+
+Values as recorded in `results.json` under `wall_clock` (Measured; the file does not record which scoring kernel each row used, so treat this table as indicative and use 6.6 for the controlled comparison).
 
 | method | p50 ms | p95 ms |
 |---|---|---|
-| exact float scan | 3.65 | 4.51 |
-| flat 4-bit + rerank 100 | 7.09 | 9.42 |
-| cascade z = 2 | 4.37 | 5.54 |
-| cascade z = 3 | 4.68 | 6.21 |
+| exact float scan | 3.75 | 5.09 |
+| flat 4-bit + rerank 100 | 6.81 | 9.66 |
+| cascade z = 2 | 3.45 | 4.14 |
+| cascade z = 3 | 5.70 | 14.54 |
 
-**In this first run the cascade was slower than an exact float scan.** Section 6.6 repeats the comparison with a lookup-table kernel and an optimised baseline. The scoring loop decodes planes coordinate by coordinate in scalar code, so it does extra work per bit read, and a 20,000-vector float scan fits in cache. Whether a lookup-table or SIMD kernel changes this is untested, and we make no speed claim.
+Section 6.6 repeats the comparison against an optimised exact scan (0.55 ms), and in that run the cascade did not beat it. A re-run on a busy machine reversed the sign (docs/prism/STAGE_D_REPRODUCTION.md), so the comparison is inconclusive. We make no speed claim.
 
-### 6.5 Concurrent writes
+### 6.5 Concurrent writes (single run)
 
-One writer committing 20-vector batches every 10 ms (1,886 vectors/s, 94 commits/s, compacting every 32 commits) against four reader threads for five seconds.
+One writer committing 20-vector batches every 10 ms (1,896 vectors/s, 94.8 commits/s) against four reader threads, one run (Measured, `concurrency`).
 
-| | p50 ms | p95 ms | p99 ms |
-|---|---|---|---|
-| writer off | 5.30 | 9.68 | 19.51 |
-| writer on | 5.27 | 7.79 | 10.91 |
+| | queries | p50 ms | p95 ms | p99 ms |
+|---|---|---|---|---|
+| writer off | 4,017 | 5.09 | 6.40 | 6.80 |
+| writer on | 3,334 | 5.97 | 8.09 | 8.93 |
 
-The P99 ratio, concurrent over serial, is 0.56. A ratio below 1 means run-to-run noise on a busy machine exceeds any effect of the writer; it is not evidence that writing helps. The experiment shows the snapshot mechanism holds its invariants under load (the tests assert this) but does not yet measure the jitter ratio with useful precision.
+The single-run P99 ratio is 1.31, with fewer queries completed when the writer ran. One run on a non-idle machine cannot support a conclusion; section 6.6 gives seven alternating trials. The tests assert the snapshot invariants under load (Tested), which is a correctness result, not a latency result.
 
 ### 6.6 The weak points, re-measured
 
@@ -125,7 +133,7 @@ After section 6.1 to 6.5 we added a lookup-table scoring kernel with incremental
 | cascade lookup, z = 3 | 0.66 | 0.86 |
 | cascade scalar, z = 2 | 4.54 | 5.63 |
 
-The kernel makes the cascade about 7 times faster than the scalar version. It does not beat an optimised exact float scan, which at this size fits in cache. Our earlier comparison in 6.4 used the plain exact scan and was not a fair baseline.
+The kernel makes the cascade about 7 times faster than the scalar version. It was not shown to beat an optimised exact float scan (the sign reversed between two runs; see STAGE_D_REPRODUCTION.md), which at this size fits in cache. Our earlier comparison in 6.4 used the plain exact scan and was not a fair baseline.
 
 **Harder data** (cascade, z = 2; bits per coordinate per vector; time over the first 200 queries):
 
@@ -139,13 +147,13 @@ The kernel makes the cascade about 7 times faster than the scalar version. It do
 
 The cascade keeps its saving on data without cluster structure, but a conservative gate width costs most of it there: at `z = 4` the harder sets read about 3 bits, close to a flat 4-bit scan.
 
-**Gates.** Error shape is close to Gaussian (excess kurtosis between -0.02 and 0.23) but the tails are heavier: over 20 million pairs per set the largest error was 5.2 to 7.1 standard deviations, so a gate with zero misses over every pair would need `z` near 7.1. A per-vector bound `|s_hat - s| <= r_x * sqrt(2 ln(2/delta) / d)` with `delta = 0.001`, where `r_x` is the stored residual norm of the vector, was violated on between 0.008% and 0.055% of pairs, below `delta`, so it held empirically. It read about as many bits as global `z = 4` (2.97 against 3.06 bits on the out-of-distribution set) and more than `z = 3` (2.22). The deterministic Cauchy-Schwarz bound `|s_hat - s| <= r_x` never missed and kept every vector on three of the four sets, reading 4.0 bits. A provable guarantee therefore costs most of the saving on hard data; this is the main unresolved result.
+**Gates.** Error shape is close to Gaussian (excess kurtosis between -0.02 and 0.23) but the tails are heavier: over 20 million pairs per set the largest error was 5.2 to 7.1 standard deviations, so a gate with zero misses over every pair would need `z` near 7.1. A per-vector bound `|s_hat - s| <= r_x * sqrt(2 ln(2/delta) / d)` with `delta = 0.001`, where `r_x` is the stored residual norm of the vector, was violated on between 0.008% and 0.055% of pairs, below `delta`, so it held empirically on these sets. It is a probabilistic bound, not a certified one. It read about as many bits as global `z = 4` (2.97 against 3.06 bits on the out-of-distribution set) and more than `z = 3` (2.22). The deterministic Cauchy-Schwarz bound `|s_hat - s| <= r_x` never missed and kept every vector on three of the four sets, reading 4.0 bits. A certified guarantee therefore costs most of the saving on hard data; this is the main unresolved result. Only the deterministic bound is certified; the global z gate and the per-vector probabilistic bound are heuristics.
 
 **Concurrency.** Seven alternating writer-off and writer-on trials of 3 seconds with four lookup-table readers and a writer committing about 1,900 vectors per second. The median ratio of P99 latency, concurrent over serial, was 1.21 (range 1.12 to 1.34), and every trial was above 1. Median reader throughput fell from 6,007 to 5,255 queries per second (-12%). The earlier ratio of 0.56 was noise. Readers take no lock after pinning, so the cost is shared CPU and memory bandwidth, which we have not profiled. Snapshots remove blocking, not contention.
 
 ## 7. Limitations
 
-All data is synthetic. The gate width is calibrated, and the provable alternatives cost most of the saving on hard data (6.6). The scan floor is one bit per vector. The lookup-table cascade is not faster than an optimised exact scan at 20,000 vectors, and larger n and SIMD are untested. A concurrent writer raises median P99 by about 21% and cuts reader throughput by about 12%. There are no deletes, no filtered search and no integration with the Atlas `AnnIndex` trait. There is no comparison with RaBitQ, product quantization, HNSW or any database. Timing is from one non-idle machine whose CPU model was not recorded.
+All data is synthetic. The gate width is calibrated, and the provable alternatives cost most of the saving on hard data (6.6). The scan floor is one bit per vector. Whether the lookup-table cascade is faster than an optimised exact scan at 20,000 vectors is inconclusive (the sign reversed between two runs), and larger n and SIMD are untested. A concurrent writer raises median P99 by about 21% and cuts reader throughput by about 12%. There are no deletes, no filtered search and no integration with the Atlas `AnnIndex` trait. There is no comparison with RaBitQ, product quantization, HNSW or any database. Timing is from one non-idle machine whose CPU model was not recorded.
 
 ## 8. Future work
 

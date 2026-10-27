@@ -232,6 +232,28 @@ pub fn search_exact_fast(snap: &Snapshot, q: &[f32], k: usize) -> Vec<Hit> {
     h
 }
 
+/// Streaming exact scan: one pass and no allocation proportional to the corpus. Same order and
+/// tie-break as `search_exact_fast` for `k >= 1`; returns nothing for `k = 0`.
+pub fn search_exact_stream(snap: &Snapshot, q: &[f32], k: usize) -> Vec<Hit> {
+    let cmp = |a: &Hit, b: &Hit| b.1.total_cmp(&a.1).then(a.0.cmp(&b.0));
+    let mut top: Vec<Hit> = Vec::with_capacity(k + 1);
+    if k == 0 {
+        return top;
+    }
+    for seg in &snap.segments {
+        for i in 0..seg.len() {
+            let score = dot8(q, seg.vec(i));
+            if top.len() == k && score.total_cmp(&top[k - 1].1).is_lt() {
+                continue;
+            }
+            top.push((seg.ids[i], score));
+            top.sort_by(cmp);
+            top.truncate(k);
+        }
+    }
+    top
+}
+
 /// Scalar-reference scores at `b` bits for every vector, in `all_cands` order.
 pub fn score_all_ref(ep: &Epoch, snap: &Snapshot, q: &[f32], b: usize) -> Vec<f32> {
     score_cands(ep, snap, &ep.rotate(q), &all_cands(snap), b)

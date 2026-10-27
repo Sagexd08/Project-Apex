@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mathematics | Prism | Project Apex</title>
+<meta name="description" content="The geometry, the rotation, the quantizer error, the pruning gate and its proof, with every assumption stated.">
+<meta name="theme-color" content="#232323">
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/lab.css">
+</head>
+<body class="lab">
+<a class="skip" href="#main">Skip to content</a>
+<header class="lb-bar" role="banner"><a class="logo" href="index.html" aria-label="Project Apex home"></a>
+  <a class="lb-brand" href="prism.html">Prism</a>
+  <button class="lb-burger" type="button" aria-expanded="false" aria-controls="lb-nav">Menu</button>
+  <ul class="lb-nav" id="lb-nav" aria-label="Primary">
+    <li><a href="prism.html#abstract">Abstract</a></li><li><a href="prism.html#film-sec">Film</a></li>
+    <li><button class="lb-dd cur" type="button" aria-expanded="false" aria-haspopup="true" aria-controls="lb-menu">Manifesto &#9662;</button>
+      <div class="lb-menu" id="lb-menu"><a href="manifesto.html"><b>01</b>Manifesto<small>The statement of direction and the falsifiers</small></a><a href="related-work.html"><b>02</b>Related work<small>Prior art and the claim audit</small></a><a href="algorithm.html"><b>03</b>Algorithm<small>Encode, cascade, rerank, snapshot</small></a><a href="mathematics.html" aria-current="page"><b>04</b>Mathematics<small>Derivations, lemma, open problem</small></a><a href="tournament.html"><b>05</b>Algorithm tournament<small>Candidates A to G, keep or defer</small></a><a href="snapshot-protocol.html"><b>06</b>Snapshot protocol<small>Visibility, publication, reclamation</small></a><a href="loopholes.html"><b>07</b>Loophole audit<small>Math, storage, filter, concurrency</small></a><a href="roadmap.html"><b>08</b>Roadmap<small>Stages A to J and the licence gate</small></a></div></li>
+    <li><a href="prism.html#lab">Lab</a></li><li><a href="prism.html#paper">Paper</a></li>
+    <li><a href="prism.html#evidence">Evidence<i class="ping"></i></a></li>
+    <li><a href="https://github.com/Sagexd08/Project-Apex">Source &#8599;</a></li>
+  </ul></header><div class="lb-prog" aria-hidden="true"></div>
+<main id="main">
+<section class="lh" aria-labelledby="h1">
+  <div class="lh-l">
+    <p class="crumb"><a href="prism.html">Prism</a><span>/</span><a href="manifesto.html">Manifesto</a><span>/</span><span>Mathematics</span></p>
+    <h1 id="h1">Mathematics</h1>
+    <p class="lead">The geometry, the rotation, the quantizer error, the pruning gate and its proof, with every assumption stated.</p>
+    <div class="status-row"><span class="badge b-proved">Proved</span> <span class="badge b-proposed">Proposed</span></div>
+    <p class="meta">Research Note v1.0 &middot; preprint, not peer reviewed &middot; synthetic data, one machine</p>
+  </div>
+  <div class="lh-r"><svg viewBox="0 0 400 340" role="img" aria-label="Error distribution with plus and minus z sigma marks"><g>
+    <path class="fa" d="M20 270C100 270 140 60 200 60S300 270 380 270"/><path class="fa dim" d="M20 270H380"/>
+    <path class="fa ac" d="M130 270V150M270 270V150" stroke-dasharray="4 4"/>
+    <text class="ft" x="130" y="292" text-anchor="middle">-z σ</text><text class="ft" x="270" y="292" text-anchor="middle">+z σ</text>
+    <text class="ft" x="200" y="40" text-anchor="middle">score error ε</text></g></svg><span class="num" aria-hidden="true">04</span></div>
+</section>
+<div class="lb-main">
+  <nav class="toc" aria-label="On this page"><p>On this page</p><ol><li><a href="#notation">Notation and status</a></li><li><a href="#geometry">Why a bit can rank neighbours</a></li><li><a href="#rotation">Rotation</a></li><li><a href="#quantizer">Nested quantizer and its error</a></li><li><a href="#gate">The pruning gate</a></li><li><a href="#cost">Cost model and floor</a></li><li><a href="#not-covered">What is not proved</a></li></ol></nav>
+  <article class="art"><section id="notation"><h2>Notation and status</h2>
+<p><code>d</code> is the vector dimension, <code>P</code> the next power of two at or above <code>d</code>, <code>n</code> the corpus size, <code>k</code> the result size, <code>q</code> a query and <code>x</code> a stored vector, both of unit length. <code>s(q,x) = ⟨q,x⟩</code> is cosine similarity.</p>
+<p>Statuses: <span class="badge b-proved">Proved</span> under stated assumptions, <span class="badge b-measured">Measured</span> in the saved results, <span class="badge b-proposed">Proposed</span> otherwise. Derivations are first order. Nothing here is a comparison with another system.</p></section>
+
+<section id="geometry"><h2>Why a bit can rank neighbours</h2>
+<p>For unit vectors, ranking by inner product is ranking by angle. Take a random hyperplane with normal <code>g</code>. Its sign bits for <code>q</code> and <code>x</code> differ exactly when the hyperplane separates them, with probability <code>θ/π</code> (Goemans&ndash;Williamson). With <code>d</code> independent hyperplanes the Hamming distance <code>H</code> is Binomial(d, θ/π):</p>
+<div class="eq">θ̂ = π · H / d              E[θ̂] = θ
+std(θ̂) = π · sqrt( p(1−p) / d ),   p = θ/π
+std(cos θ̂) ≈ sin θ · std(θ̂)</div>
+<div class="tw"><table><thead><tr><th>True angle</th><th>std of θ̂ at d = 256</th><th>std of cos θ̂</th></tr></thead><tbody><tr><td>30°</td><td>4.19°</td><td>0.037</td></tr><tr><td>60°</td><td>5.30°</td><td>0.080</td></tr><tr><td>90°</td><td>5.62°</td><td>0.098</td></tr><tr><td>120°</td><td>5.30°</td><td>0.080</td></tr></tbody></table></div>
+<p>A one-bit code is sharpest for near neighbours and blurriest for unrelated vectors, which is exactly where sharpness is needed. The error shrinks as <code>1/√d</code>. <b>Caution:</b> the first plane of the multibit quantizer is the sign bit, but the variance formula above is for independent random hyperplanes. Applying it to the multibit code needs a separate derivation, and it is on the <a href="loopholes.html">loophole list</a>.</p></section>
+
+<section id="rotation"><h2>Rotation</h2>
+<p>If <code>R</code> is Haar-random and <code>x</code> is a unit vector, each coordinate of <code>Rx</code> has density proportional to <code>(1−t²)^((d−3)/2)</code>, mean 0 and variance <code>1/d</code>, close to <code>N(0,1/d)</code> for large <code>d</code>. The distribution of <code>Rx</code> does not depend on <code>x</code>, which is why the quantizer needs no training.</p>
+<div class="eq">rotate(x):  z = zero_pad(x, P)
+            repeat 3 times:  z = z ⊙ D_r ;  z = FWHT(z) / √P      # D_r: seeded ±1 diagonal</div>
+<p>Each round is orthogonal, so the norm is preserved. Three rounds are a standard approximation of a Haar rotation; that approximation is an <b>assumption</b> of the analysis. A random rotation does not make quantization error independent of the data in every sense. Heavy-tailed coordinates and clipping still matter.</p></section>
+
+<section id="quantizer"><h2>Nested quantizer and its error</h2>
+<p>With clip constant <code>C = 3</code> and <code>s_c = C/√P</code>, the 4-bit index of a rotated coordinate is <code>clamp(floor((z + s_c)/Δ_4), 0, 15)</code> with <code>Δ_4 = 2s_c/16</code>. The b-bit index is its top b bits, and nesting holds because <code>Δ_b = 2^(4−b) Δ_4</code>.</p>
+<div class="eq">ε_b = ŝ_b − s = Σ_i (Rq)_i · e_i,    e_i = recon_b(z_i) − z_i
+Var(ε_b) ≈ Δ_b² / 12 = C² / (3P · 4^b)         σ_b ≈ C / ( √(3P) · 2^b )</div>
+<p>For P = 256 and C = 3 the formula gives σ₁ ≈ 0.054, σ₂ ≈ 0.027, σ₄ ≈ 0.0068. A first prototype reported 0.0576, 0.0272 and 0.0069; <b>that run has no saved artifact</b>, so treat it as reported, not reproduced. Each added plane halves the error, and the error depends on <code>P</code>, <code>C</code> and <code>b</code>, not on the data. The estimate is slightly biased toward zero; a residual sign bit (the QJL step in TurboQuant) would remove that, and Prism v0 does not include it.</p></section>
+
+<section id="gate"><h2>The pruning gate</h2>
+<p>Let <code>t</code> be the true k-th best score and <code>τ_j</code> the k-th best estimate at stage <code>j</code>. Keep a candidate if <code>ŝ_j(c) + zσ_j ≥ τ_j − zσ_j</code>.</p>
+<div class="call"><b class="k">Lemma, proved under its assumption</b><p>If at stage j every true top-k item and one witness item have error at most <code>zσ_j</code> in absolute value, no true top-k item is dropped.</p>
+<p><i>Proof.</i> At least k candidates have estimate at least <code>τ_j</code>. Fewer than k items have true score above t, so one of those k, call it w, has <code>s(w) ≤ t</code>. Then <code>τ_j ≤ ŝ_j(w) ≤ s(w) + zσ_j ≤ t + zσ_j</code>. For a true top-k item c, <code>ŝ_j(c) ≥ s(c) − zσ_j ≥ t − zσ_j ≥ τ_j − 2zσ_j</code>, which is the gate condition. ∎</p></div>
+<p>The lemma is conditional. A union bound over S stages and k + 1 items, with sub-Gaussian error, gives a failure probability of at most <code>(k+1)·S·2·exp(−z²/2)</code>, so a budget δ needs:</p>
+<div class="eq">z ≥ √( 2 ln( 2 (k+1) S / δ ) )          k = 10, S = 3, δ = 0.01  →  z ≈ 4.2</div>
+<div class="call warn"><b class="k">Open problem</b><p>The provable <code>z</code> (above 4) costs most of the saving that an empirical <code>z</code> of 2 to 3 gives. Measured tails over 20 million pairs per set were close to Gaussian but reached 5.2 to 7.1 standard deviations, so zero misses over every pair needs <code>z</code> near 7.1. A per-vector bound in the style RaBitQ derives is the likely route. Until it exists, the correct statement is: <b>the gate is empirically calibrated and its miss rate is measured, not guaranteed</b>.</p></div></section>
+
+<section id="cost"><h2>Cost model and floor</h2>
+<div class="eq">B        = n·m_1 + n_1·m_2 + n_2·m_3        bits per query, incremental planes
+B_prefix = n·b_1 + n_1·b_2 + n_2·b_3        if each stage re-reads its whole prefix
+n_j ≈ k + n · g(t) · 2 z σ_j                first-order survivor count</div>
+<p>Here <code>m_j = b_j − b_{j−1}</code> and <code>g(t)</code> is the density of similarities at the threshold. Each extra bit halves the excess over k, but only while the window <code>2zσ_j</code> is small compared with how fast <code>g</code> changes; at one bit the formula overestimates. With one bit read per vector in stage 1, <code>B ≥ n</code>: Prism accelerates a scan, it does not remove it.</p></section>
+
+<section id="not-covered"><h2>What is not proved</h2>
+<ul><li>Floating-point rounding can invalidate a supposedly safe bound; tie handling at the threshold is by ascending id but has no adversarial test yet.</li>
+<li>Squared-L2 and cosine need their own derivations; the formulas above are for inner product on unit vectors.</li>
+<li>Non-power-of-two dimensions rely on zero padding, and its effect on the error formula is unmeasured.</li>
+<li>The variance formula for independent hyperplanes is not shown to hold for the structured rotation's correlated coordinates.</li></ul></section>
+</article>
+</div>
+<nav class="pn" aria-label="Page navigation"><a href="algorithm.html"><small>Previous</small><span>Algorithm</span></a><a href="tournament.html"><small>Next</small><span>Algorithm tournament</span></a></nav>
+</main>
+<footer class="lb-foot"><div class="cols">
+    <div><h4>Project Apex / Prism</h4><p>An open research prototype about progressively refined vector codes and per-reader snapshots. Research Note v1.0, preprint, not peer reviewed.</p></div>
+    <div><h4>Pages</h4><a href="manifesto.html">Manifesto</a><a href="related-work.html">Related work</a><a href="algorithm.html">Algorithm</a><a href="mathematics.html">Mathematics</a><a href="tournament.html">Algorithm tournament</a><a href="snapshot-protocol.html">Snapshot protocol</a><a href="loopholes.html">Loophole audit</a><a href="roadmap.html">Roadmap</a></div>
+    <div><h4>Evidence</h4><a href="prism.html#evidence">Measurements</a><a href="prism.html#paper">Research note</a><a href="prism.html#lab">Interactive lab</a></div>
+    <div><h4>Open source</h4><a href="https://github.com/Sagexd08/Project-Apex">Repository</a><a href="https://github.com/Sagexd08/Project-Apex/tree/main/benchmarks/prism">Benchmark source</a><a href="https://github.com/Sagexd08/Project-Apex/issues">Issues</a></div></div>
+    <p class="fine">Synthetic data, one machine. No comparison with other systems. Nothing on these pages is a claim to be first, fastest or best.</p></footer>
+<script src="js/lab.js" defer></script>
+</body>
+</html>

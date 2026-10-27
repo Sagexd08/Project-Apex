@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Loophole audit | Prism | Project Apex</title>
+<meta name="description" content="The places where an algorithm that looks right on easy data can break. Open items stay open until a test closes them.">
+<meta name="theme-color" content="#232323">
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/lab.css">
+</head>
+<body class="lab">
+<a class="skip" href="#main">Skip to content</a>
+<header class="lb-bar" role="banner"><a class="logo" href="index.html" aria-label="Project Apex home"></a>
+  <a class="lb-brand" href="prism.html">Prism</a>
+  <button class="lb-burger" type="button" aria-expanded="false" aria-controls="lb-nav">Menu</button>
+  <ul class="lb-nav" id="lb-nav" aria-label="Primary">
+    <li><a href="prism.html#abstract">Abstract</a></li><li><a href="prism.html#film-sec">Film</a></li>
+    <li><button class="lb-dd cur" type="button" aria-expanded="false" aria-haspopup="true" aria-controls="lb-menu">Manifesto &#9662;</button>
+      <div class="lb-menu" id="lb-menu"><a href="manifesto.html"><b>01</b>Manifesto<small>The statement of direction and the falsifiers</small></a><a href="related-work.html"><b>02</b>Related work<small>Prior art and the claim audit</small></a><a href="algorithm.html"><b>03</b>Algorithm<small>Encode, cascade, rerank, snapshot</small></a><a href="mathematics.html"><b>04</b>Mathematics<small>Derivations, lemma, open problem</small></a><a href="tournament.html"><b>05</b>Algorithm tournament<small>Candidates A to G, keep or defer</small></a><a href="snapshot-protocol.html"><b>06</b>Snapshot protocol<small>Visibility, publication, reclamation</small></a><a href="loopholes.html" aria-current="page"><b>07</b>Loophole audit<small>Math, storage, filter, concurrency</small></a><a href="roadmap.html"><b>08</b>Roadmap<small>Stages A to J and the licence gate</small></a></div></li>
+    <li><a href="prism.html#lab">Lab</a></li><li><a href="prism.html#paper">Paper</a></li>
+    <li><a href="prism.html#evidence">Evidence<i class="ping"></i></a></li>
+    <li><a href="https://github.com/Sagexd08/Project-Apex">Source &#8599;</a></li>
+  </ul></header><div class="lb-prog" aria-hidden="true"></div>
+<main id="main">
+<section class="lh" aria-labelledby="h1">
+  <div class="lh-l">
+    <p class="crumb"><a href="prism.html">Prism</a><span>/</span><a href="manifesto.html">Manifesto</a><span>/</span><span>Loophole audit</span></p>
+    <h1 id="h1">Loophole audit</h1>
+    <p class="lead">The places where an algorithm that looks right on easy data can break. Open items stay open until a test closes them.</p>
+    <div class="status-row"><span class="badge b-open">Open</span></div>
+    <p class="meta">Research Note v1.0 &middot; preprint, not peer reviewed &middot; synthetic data, one machine</p>
+  </div>
+  <div class="lh-r"><svg viewBox="0 0 400 340" role="img" aria-label="Audit grid with open items"><g>
+    <rect class="fa dim" x="50" y="60" width="34" height="34" rx="6" /><rect class="ff" x="100" y="60" width="34" height="34" rx="6" opacity=".85"/><rect class="fa dim" x="150" y="60" width="34" height="34" rx="6" /><rect class="fa dim" x="200" y="60" width="34" height="34" rx="6" /><rect class="ff" x="250" y="60" width="34" height="34" rx="6" opacity=".85"/><rect class="fa dim" x="300" y="60" width="34" height="34" rx="6" /><rect class="fa dim" x="50" y="116" width="34" height="34" rx="6" /><rect class="fa dim" x="100" y="116" width="34" height="34" rx="6" /><rect class="ff" x="150" y="116" width="34" height="34" rx="6" opacity=".85"/><rect class="fa dim" x="200" y="116" width="34" height="34" rx="6" /><rect class="fa dim" x="250" y="116" width="34" height="34" rx="6" /><rect class="ff" x="300" y="116" width="34" height="34" rx="6" opacity=".85"/><rect class="fa dim" x="50" y="172" width="34" height="34" rx="6" /><rect class="ff" x="100" y="172" width="34" height="34" rx="6" opacity=".85"/><rect class="ff" x="150" y="172" width="34" height="34" rx="6" opacity=".85"/><rect class="fa dim" x="200" y="172" width="34" height="34" rx="6" /><rect class="fa dim" x="250" y="172" width="34" height="34" rx="6" /><rect class="fa dim" x="300" y="172" width="34" height="34" rx="6" /><rect class="fa dim" x="50" y="228" width="34" height="34" rx="6" /><rect class="ff" x="100" y="228" width="34" height="34" rx="6" opacity=".85"/><rect class="fa dim" x="150" y="228" width="34" height="34" rx="6" /><rect class="fa dim" x="200" y="228" width="34" height="34" rx="6" /><rect class="ff" x="250" y="228" width="34" height="34" rx="6" opacity=".85"/><rect class="fa dim" x="300" y="228" width="34" height="34" rx="6" />
+    <text class="ft" x="50" y="310">filled = open item</text></g></svg><span class="num" aria-hidden="true">07</span></div>
+</section>
+<div class="lb-main">
+  <nav class="toc" aria-label="On this page"><p>On this page</p><ol><li><a href="#how">How the audit works</a></li><li><a href="#math">Mathematical</a></li><li><a href="#storage">Storage and complexity</a></li><li><a href="#filter">Filtering and retrieval</a></li><li><a href="#conc">Snapshots, concurrency and capacity</a></li><li><a href="#bench">Benchmark loopholes</a></li></ol></nav>
+  <article class="art"><section id="how"><h2>How the audit works</h2>
+<p>The aim is to find inputs where the algorithm looks right on easy data and breaks on plausible data. Every item below needs a reproduction input, the expected and actual behaviour, a severity, a root cause, a minimal fix and a regression test before it can be closed.</p>
+<div class="call warn"><b class="k">Honest summary</b><p>Most items are <span class="badge b-open">Open</span>. This page lists work, not results. The few items marked with evidence say exactly what the evidence is.</p></div></section>
+
+<section id="math"><h2>Mathematical</h2>
+<div class="tw"><table><thead><tr><th>Item</th><th>Why it matters</th><th>Status</th></tr></thead><tbody>
+<tr><td>Sign hashing versus the first plane</td><td>The independent-hyperplane variance formula may not describe a structured rotation plus a multibit quantizer.</td><td><span class="badge b-open">Open</span></td></tr>
+<tr><td>Clipping and heavy tails</td><td>Distribution shift can saturate coordinates; error is no longer the uniform-cell estimate.</td><td><span class="badge b-open">Open</span></td></tr>
+<tr><td>Zero, unnormalised, duplicate and extreme-norm vectors</td><td>The formulas assume unit vectors.</td><td><span class="badge b-open">Open</span></td></tr>
+<tr><td>Cosine, inner product and squared L2</td><td>A bound derived for one metric cannot be reused for another without proof.</td><td><span class="badge b-open">Open</span></td></tr>
+<tr><td>Floating-point rounding and ties at the threshold</td><td>A rounding error can invalidate a supposedly safe bound; ties need a deterministic order.</td><td><span class="badge b-open">Open</span></td></tr>
+<tr><td>Global sigma gate is not a guarantee</td><td>An empirical standard deviation and a cutoff are a heuristic.</td><td><span class="badge b-docs">Documented</span> labelled heuristic everywhere; the provable bound is measured to prune almost nothing</td></tr>
+<tr><td>Dense versus structured transform cost</td><td>A dense rotation makes query transformation expensive.</td><td><span class="badge b-open">Open</span> structured transform chosen, cost not benchmarked against dense</td></tr></tbody></table></div></section>
+
+<section id="storage"><h2>Storage and complexity</h2>
+<div class="tw"><table><thead><tr><th>Item</th><th>Why it matters</th><th>Status</th></tr></thead><tbody>
+<tr><td>Original vectors in memory accounting</td><td>Exact rerank needs float32; four bits is not an eightfold saving.</td><td><span class="badge b-docs">Documented</span> about 1.125 times float32 at d = 256</td></tr>
+<tr><td>Ids, metadata, segment records, padding</td><td>Total footprint, not just code size.</td><td><span class="badge b-unmeasured">Unmeasured</span></td></tr>
+<tr><td>Bytes read versus bytes retained; prefix rereads</td><td>Both are reported; allocator heap is not peak memory.</td><td><span class="badge b-open">Open</span></td></tr>
+<tr><td>Floor of n bits per query</td><td>The cascade is still a scan.</td><td><span class="badge b-docs">Documented</span></td></tr></tbody></table></div></section>
+
+<section id="filter"><h2>Filtering and retrieval</h2>
+<div class="tw"><table><thead><tr><th>Item</th><th>Why it matters</th><th>Status</th></tr></thead><tbody>
+<tr><td>Filtered search scanned and sorted every eligible hit</td><td>Cost grows with the eligible set instead of k.</td><td><span class="badge b-tested">Tested</span> fixed in the Atlas exact index: top-k selection, matches a naive oracle at 100, 10, 1 and 0.1 percent selectivity, no result outside the allowed set</td></tr>
+<tr><td>Selectivity, correlated and anti-correlated filters, range and null metadata</td><td>Recall of the eligible set must be measured against eligible ground truth.</td><td><span class="badge b-open">Open</span> for the Prism cascade</td></tr>
+<tr><td>Empty eligible set, duplicate and deleted ids, updates that change membership</td><td>Edge cases that quietly return the wrong set.</td><td><span class="badge b-open">Open</span> empty set is tested in the exact index only</td></tr>
+<tr><td>Tenant boundary under concurrent mutation</td><td>One tenant must never see another's vectors.</td><td><span class="badge b-tested">Tested</span> in the Atlas engine and its HTTP server, builder-reported</td></tr></tbody></table></div></section>
+
+<section id="conc"><h2>Snapshots, concurrency and capacity</h2>
+<div class="tw"><table><thead><tr><th>Item</th><th>Why it matters</th><th>Status</th></tr></thead><tbody>
+<tr><td>Crash at each publication boundary</td><td>Recovery must rebuild exactly what the log justifies.</td><td><span class="badge b-open">Open</span> process-kill durability tested in the Atlas engine; not for Prism segments</td></tr>
+<tr><td>Readers pinning old generations, abandoned pins, reclamation starvation</td><td>Retained versions can grow without bound.</td><td><span class="badge b-open">Open</span></td></tr>
+<tr><td>Compaction during active reads; interrupted manifest publication</td><td>Layout changes must not change results.</td><td><span class="badge b-open">Open</span></td></tr>
+<tr><td>Unbounded candidate buffers, huge batches, tenant cardinality, disk-full</td><td>Exhaustion must not silently reduce recall or lose committed data.</td><td><span class="badge b-open">Open</span> the MVP server caps request size, <code>k</code> and connections; the engine's op-id map is still unbounded</td></tr>
+<tr><td>Concurrent versus serial P99</td><td>A low jitter ratio is not enough if absolute latency is poor.</td><td><span class="badge b-measured">Measured</span> short runs only; one run is inconclusive; no hour-long trial</td></tr></tbody></table></div></section>
+
+<section id="bench"><h2>Benchmark loopholes</h2>
+<ul><li>Different hardware, threading, normalization, metric or recall definitions between competitors.</li>
+<li>Training time or original-vector memory counted for one method and not another.</li>
+<li>Average latency without tails; too few queries for a p99; cherry-picked seeds.</li>
+<li>A synthetic simulation reported as a real-data benchmark.</li></ul>
+<p>All of these are guarded against by the protocol on the <a href="tournament.html">tournament</a> page. None has yet been exercised against a second system.</p></section>
+</article>
+</div>
+<nav class="pn" aria-label="Page navigation"><a href="snapshot-protocol.html"><small>Previous</small><span>Snapshot protocol</span></a><a href="roadmap.html"><small>Next</small><span>Roadmap</span></a></nav>
+</main>
+<footer class="lb-foot"><div class="cols">
+    <div><h4>Project Apex / Prism</h4><p>An open research prototype about progressively refined vector codes and per-reader snapshots. Research Note v1.0, preprint, not peer reviewed.</p></div>
+    <div><h4>Pages</h4><a href="manifesto.html">Manifesto</a><a href="related-work.html">Related work</a><a href="algorithm.html">Algorithm</a><a href="mathematics.html">Mathematics</a><a href="tournament.html">Algorithm tournament</a><a href="snapshot-protocol.html">Snapshot protocol</a><a href="loopholes.html">Loophole audit</a><a href="roadmap.html">Roadmap</a></div>
+    <div><h4>Evidence</h4><a href="prism.html#evidence">Measurements</a><a href="prism.html#paper">Research note</a><a href="prism.html#lab">Interactive lab</a></div>
+    <div><h4>Open source</h4><a href="https://github.com/Sagexd08/Project-Apex">Repository</a><a href="https://github.com/Sagexd08/Project-Apex/tree/main/benchmarks/prism">Benchmark source</a><a href="https://github.com/Sagexd08/Project-Apex/issues">Issues</a></div></div>
+    <p class="fine">Synthetic data, one machine. No comparison with other systems. Nothing on these pages is a claim to be first, fastest or best.</p></footer>
+<script src="js/lab.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<section id="idea"><h2>The idea in four steps</h2>
+<ol class="steps">
+<li><div><b>Rotate.</b> Apply a fixed, seeded randomized Hadamard rotation so every vector looks statistically alike. No codebook, nothing to train.</div></li>
+<li><div><b>Encode once.</b> Quantize each rotated coordinate to a 4-bit cell and store the four bits as four nested planes. The first plane is the sign bit.</div></li>
+<li><div><b>Cascade.</b> Score every vector with plane 1 only. Drop the ones that clearly cannot reach the top k. Add the next plane for the survivors, and repeat.</div></li>
+<li><div><b>Rerank exactly.</b> Fetch the full-precision vectors of the final few survivors and rank them with the true score, ties by ascending id.</div></li></ol></section>
+
+<section id="encode"><h2>Encoding</h2>
+<p>A stored vector can have any shape: a few large coordinates, or many small ones. Scalar quantizers handle the second shape well and the first badly. A random rotation removes the difference, which is why no training is needed. A dense rotation costs <code>O(d²)</code> per vector, so Prism uses three rounds of a seeded random sign flip followed by a fast Walsh&ndash;Hadamard transform, <code>O(P log P)</code>, where <code>P</code> is the next power of two at or above <code>d</code>.</p>
+<div class="eq">ENCODE(x, seed):                       # writer, per vector
+    z   = rotate(x, seed)
+    idx = clamp(floor((z + s_c) / Δ_4), 0, 15)
+    plane p (p = 0..3) = bit p of every idx, packed into u64 words
+    return (planes, x)                 # x is kept for the exact rerank</div>
+<p>The b-bit index is the top b bits of the 4-bit index, so one stored copy serves 1, 2, 3 or 4 bit scoring. A query reads only the planes it needs.</p></section>
+
+<section id="cascade"><h2>The cascade</h2>
+<div class="eq">SEARCH(q, k, schedule=[b_1..b_S], z, snapshot):
+    rq   = rotate(q, seed)
+    cand = all vectors visible in the snapshot
+    for j in 1..S:
+        est  = { c : ŝ_{b_j}(rq, c) }      # read planes up to b_j
+        τ    = k-th largest of est
+        cand = { c : est[c] + zσ_j ≥ τ − zσ_j }
+    return top-k of cand by exact ⟨q, x⟩, ties by ascending id</div>
+<p>The gate keeps a candidate if it could still be within the error margin of the k-th best. Setting <code>z</code> is the whole story: a small <code>z</code> prunes hard and may drop a true neighbour, a large <code>z</code> is safe and prunes little.</p>
+<div class="call warn"><b class="k">Two different gates</b><p>The global <code>zσ</code> gate above is <b>heuristic</b>: it is calibrated, and its miss rate is measured, not guaranteed. The only gate with a guarantee uses each vector's stored residual norm (Cauchy&ndash;Schwarz). In our experiment that gate never missed, and it pruned almost nothing at d = 256. Closing that gap is the main open problem; see the <a href="mathematics.html#gate">mathematics</a>.</p></div></section>
+
+<section id="storage"><h2>Complete storage accounting</h2>
+<p>Four-bit planes are <b>not</b> an eightfold memory saving. Exact reranking needs the original float32 vector, so it is stored too. Prism reduces the bytes <i>read</i> per query, not the bytes <i>stored</i>.</p>
+<div class="tw"><table><thead><tr><th>Item (d = P = 256)</th><th>Bytes per vector</th><th>Note</th></tr></thead><tbody>
+<tr><td>Float32 original</td><td>1024</td><td>Needed for the exact rerank. Could live on a slower tier, since only the survivors are fetched.</td></tr>
+<tr><td>Four bit planes</td><td>128</td><td>P/2 bytes at 4 bits.</td></tr>
+<tr><td>Total with planes</td><td>1152</td><td>About 1.125 times float32, not one eighth.</td></tr>
+<tr><td>Ids, metadata, segment and snapshot records, allocator padding</td><td>not yet measured</td><td><span class="badge b-unmeasured">Unmeasured</span> The loophole audit lists this as open.</td></tr></tbody></table></div></section>
+
+<section id="snap"><h2>Snapshots in one paragraph</h2>
+<p>Segments are immutable once sealed. A commit builds one new sealed segment and publishes a new snapshot that lists the old segments plus the new one. A reader copies the current snapshot pointer, then never takes a lock again. Because the quantizer has no trained state, a writer encodes a new vector from the seed alone: no codebook to retrain and no moment when stored codes and the quantizer disagree. The full definition, and what is not yet defined, is on the <a href="snapshot-protocol.html">snapshot protocol</a> page.</p></section>
+
+<section id="result"><h2>What was measured</h2>
+<p>One synthetic benchmark, one machine, one run of each configuration. Raw results are in <code>benchmarks/prism/results/results.json</code>, and the <a href="prism.html#evidence">evidence page</a> shows them with their limits.</p>
+<div class="tw"><table><thead><tr><th>Quantity</th><th>Value</th><th>Status</th></tr></thead><tbody>
+<tr><td>Bits read per coordinate per vector at z = 3</td><td>about 1.06, against 4 for a flat 4-bit scan</td><td><span class="badge b-measured">Measured</span> synthetic data</td></tr>
+<tr><td>Fewer bits read than a flat 4-bit scan</td><td>about 3.8 times</td><td><span class="badge b-measured">Measured</span></td></tr>
+<tr><td>Queries with all ten true neighbours at z = 3</td><td>1000 of 1000</td><td><span class="badge b-measured">Measured</span> an observation on one set, not a guarantee</td></tr>
+<tr><td>Bits read with the deterministic, provable bound</td><td>about 3.7 to 4.0</td><td><span class="badge b-measured">Measured</span> almost no pruning</td></tr>
+<tr><td>Time per query, cascade versus optimised exact scan</td><td>0.61 ms versus 0.55 ms (first run); 0.48 ms versus 0.63 ms (re-run). The sign reversed</td><td><span class="badge b-measured">Measured</span> <b>inconclusive: no speed claim</b></td></tr></tbody></table></div>
+<p>The cascade still touches every vector at least once, so the floor is <code>n</code> bits per query. Going below that needs a partitioning index in front of it, which is future work.</p>
+<h3>Reproduce</h3>
+<div class="eq">cd benchmarks/prism
+cargo test --release
+cargo run --release --bin prism-bench</div></section>

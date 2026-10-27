@@ -19,6 +19,7 @@
     root.innerHTML = `
       <p class="mono" style="margin:30px 0 0;color:var(--mid)">Bits read per coordinate per vector, per query</p>
       <div class="bars" role="img" aria-label="Bits read: float32 32, flat 4-bit 4, cascade z=2 ${f(bpc(z2.bits_incr_mean), 2)}, cascade z=3 ${f(bpc(z3.bits_incr_mean), 2)}">${bars.map(bar).join("")}</div>
+      <p class="note-m">Status of everything below: <b>Measured</b> (synthetic data, one machine, not reproduced elsewhere). Bits read is not total memory: raw float32 vectors are kept for the exact rerank, so 4-bit planes add 1/8 to float32 storage and do not replace it. The z gate is a heuristic; only the deterministic bound is certified.</p>
       <p class="note-m">Setup: ${n.toLocaleString()} vectors, d = ${dim}, ${nq.toLocaleString()} queries, k = ${k}, seed ${seed}. ${d.synthetic ? "Synthetic data. " : ""}${esc(d.note)}. rustc: ${esc(d.rustc)}. Source checksum (FNV-1a, src/*.rs): ${esc(d.src_fnv1a64)}. CPU note: ${esc(d.cpu_note)}.</p>
 
       <h3 style="margin-top:56px">Error per bit, and no drift</h3>
@@ -49,7 +50,7 @@
       <p class="grey">A lookup-table kernel, harder data, error-tail measurements, per-vector gates and repeated concurrency trials. Source checksum ${esc(d.src_fnv1a64)}.</p>
       <h3 style="margin-top:34px">Kernel timing, single thread (n = ${n.toLocaleString()})</h3>
       ${table(["Path", "p50 ms", "p95 ms"], x.kernel_timing.map(t => [t.name.replace(/_/g, " "), f(t.p50_ms, 2), f(t.p95_ms, 2)]))}
-      <p class="note-m">The lookup-table cascade is about 7× faster than the scalar cascade and still not faster than an optimised exact scan.</p>
+      <p class="note-m">The lookup-table cascade is about 7× faster than the scalar cascade and not shown to be faster than an optimised exact scan (the sign reversed between two runs).</p>
       <h3 style="margin-top:40px">Harder data, cascade at z = 2 (z = 4 bits for contrast)</h3>
       ${table(["Data set", "n", "Recall@10", "Missing one", "Bits z=2", "Bits z=4", "p50 ms"], ds.map(([k, v]) => { const a = v.cascade_lut.find(r => r.z === 2), b = v.cascade_lut.find(r => r.z === 4); return [nm(k), v.n.toLocaleString(), f(a.recall, 4), (a.miss_rate * 100).toFixed(1) + "%", mb(a.bits_incr_mean, v.n), mb(b.bits_incr_mean, v.n), f(a.time_p50_ms, 2)]; }))}
       <p class="note-m">Bits are per coordinate per vector. Time is over the first 200 queries. The 1.77 bits of the early prototype was not reproduced.</p>

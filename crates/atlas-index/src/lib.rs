@@ -161,11 +161,17 @@ impl AnnIndex for FlatIndex {
                 )
             })
             .collect();
-        hits.sort_by(|a, b| {
-            b.0.total_cmp(&a.0)
-                .then_with(|| self.ids[a.1].cmp(&self.ids[b.1]))
-        });
+        let ids = &self.ids;
+        let cmp = |a: &(f32, usize), b: &(f32, usize)| {
+            b.0.total_cmp(&a.0).then_with(|| ids[a.1].cmp(&ids[b.1]))
+        };
+        // Top-k selection first (O(m)), then sort only the k survivors. `cmp` is a total order
+        // (ids are unique), so the result equals a full sort, ties included.
+        if k > 0 && hits.len() > k {
+            hits.select_nth_unstable_by(k - 1, cmp);
+        }
         hits.truncate(k);
+        hits.sort_by(cmp);
         Ok(hits
             .into_iter()
             .map(|(s, i)| Hit {
@@ -183,6 +189,69 @@ pub mod conformance;
 mod tests {
     use super::*;
     use serde_json::json;
+
+    /// Naive oracle: score everything eligible, full sort, truncate.
+    fn oracle(
+        ix: &FlatIndex,
+        q: &[f32],
+        k: usize,
+        m: Metric,
+        allow: &dyn Fn(VectorId) -> bool,
+    ) -> Vec<VectorId> {
+        let mut all: Vec<(f32, VectorId)> = ix
+            .entries()
+            .into_iter()
+            .filter(|(id, _, _)| allow(*id))
+            .map(|(id, v, _)| (score(m, q, &v), id))
+            .collect();
+        all.sort_by(|a, b| b.0.total_cmp(&a.0).then(a.1.cmp(&b.1)));
+        all.into_iter().take(k).map(|(_, id)| id).collect()
+    }
+
+    #[test]
+    fn filtered_top_k_matches_oracle_at_every_selectivity() {
+        let mut s = 0x2545_F491_4F6C_DD1Du64;
+        let mut rnd = move || {
+            s ^= s << 13;
+            s ^= s >> 7;
+            s ^= s << 17;
+            (s >> 40) as f32 / (1u64 << 23) as f32 - 1.0
+        };
+        let mut ix = FlatIndex::new(8);
+        for id in 0..3000u64 {
+            let v: Vec<f32> = (0..8).map(|_| rnd()).collect();
+            ix.insert(VectorId(id), &v, json!(null)).unwrap();
+        }
+        // Duplicate vectors force score ties, so the id tie-break is exercised too.
+        let dup = vec![0.5; 8];
+        for id in 3000..3010u64 {
+            ix.insert(VectorId(id), &dup, json!(null)).unwrap();
+        }
+        let q: Vec<f32> = (0..8).map(|_| rnd()).collect();
+        for modulus in [1u64, 10, 100, 1000] {
+            let allow = |id: VectorId| id.0.is_multiple_of(modulus);
+            for metric in [Metric::Cosine, Metric::Dot, Metric::Euclidean] {
+                for k in [0usize, 1, 10, 5000] {
+                    let got: Vec<VectorId> = ix
+                        .search_filtered(&q, k, metric, &allow)
+                        .unwrap()
+                        .into_iter()
+                        .map(|h| h.id)
+                        .collect();
+                    assert_eq!(got, oracle(&ix, &q, k, metric, &allow), "1/{modulus} k={k}");
+                    assert!(
+                        got.iter().all(|id| allow(*id)),
+                        "result outside allowed set"
+                    );
+                }
+            }
+        }
+        let none = |_: VectorId| false;
+        assert!(ix
+            .search_filtered(&q, 10, Metric::Cosine, &none)
+            .unwrap()
+            .is_empty());
+    }
 
     #[test]
     fn metrics_rank_and_replace() {

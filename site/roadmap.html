@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Roadmap | Prism | Project Apex</title>
+<meta name="description" content="What is done, what is next, and what we cannot do here. Ordered by what would change our minds.">
+<meta name="theme-color" content="#232323">
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/lab.css">
+</head>
+<body class="lab">
+<a class="skip" href="#main">Skip to content</a>
+<header class="lb-bar" role="banner"><a class="logo" href="index.html" aria-label="Project Apex home"></a>
+  <a class="lb-brand" href="prism.html">Prism</a>
+  <button class="lb-burger" type="button" aria-expanded="false" aria-controls="lb-nav">Menu</button>
+  <ul class="lb-nav" id="lb-nav" aria-label="Primary">
+    <li><a href="prism.html#abstract">Abstract</a></li><li><a href="prism.html#film-sec">Film</a></li>
+    <li><button class="lb-dd cur" type="button" aria-expanded="false" aria-haspopup="true" aria-controls="lb-menu">Manifesto &#9662;</button>
+      <div class="lb-menu" id="lb-menu"><a href="manifesto.html"><b>01</b>Manifesto<small>The statement of direction and the falsifiers</small></a><a href="related-work.html"><b>02</b>Related work<small>Prior art and the claim audit</small></a><a href="algorithm.html"><b>03</b>Algorithm<small>Encode, cascade, rerank, snapshot</small></a><a href="mathematics.html"><b>04</b>Mathematics<small>Derivations, lemma, open problem</small></a><a href="tournament.html"><b>05</b>Algorithm tournament<small>Candidates A to G, keep or defer</small></a><a href="snapshot-protocol.html"><b>06</b>Snapshot protocol<small>Visibility, publication, reclamation</small></a><a href="loopholes.html"><b>07</b>Loophole audit<small>Math, storage, filter, concurrency</small></a><a href="roadmap.html" aria-current="page"><b>08</b>Roadmap<small>Stages A to J and the licence gate</small></a></div></li>
+    <li><a href="prism.html#lab">Lab</a></li><li><a href="prism.html#paper">Paper</a></li>
+    <li><a href="prism.html#evidence">Evidence<i class="ping"></i></a></li>
+    <li><a href="https://github.com/Sagexd08/Project-Apex">Source &#8599;</a></li>
+  </ul></header><div class="lb-prog" aria-hidden="true"></div>
+<main id="main">
+<section class="lh" aria-labelledby="h1">
+  <div class="lh-l">
+    <p class="crumb"><a href="prism.html">Prism</a><span>/</span><a href="manifesto.html">Manifesto</a><span>/</span><span>Roadmap</span></p>
+    <h1 id="h1">Roadmap</h1>
+    <p class="lead">What is done, what is next, and what we cannot do here. Ordered by what would change our minds.</p>
+    <div class="status-row"><span class="badge b-open">Open</span></div>
+    <p class="meta">Research Note v1.0 &middot; preprint, not peer reviewed &middot; synthetic data, one machine</p>
+  </div>
+  <div class="lh-r"><svg viewBox="0 0 400 340" role="img" aria-label="Staircase of milestones"><g>
+    <path class="fa" d="M30 290H110V230H190V170H270V110H350V50"/>
+    <circle class="ff" cx="70" cy="290" r="6"/><circle class="fa" cx="150" cy="230" r="6"/><circle class="fa dim" cx="230" cy="170" r="6"/><circle class="fa dim" cx="310" cy="110" r="6"/>
+    <text class="ft" x="30" y="316">we are here: first step</text></g></svg><span class="num" aria-hidden="true">08</span></div>
+</section>
+<div class="lb-main">
+  <nav class="toc" aria-label="On this page"><p>On this page</p><ol><li><a href="#now">Where we are</a></li><li><a href="#next">Next, in order</a></li><li><a href="#licence">Licensing and open-source gate</a></li><li><a href="#cannot">What cannot be done from this machine</a></li></ol></nav>
+  <article class="art"><section id="now"><h2>Where we are</h2>
+<p>A research prototype with one synthetic benchmark, a corrected set of claims, and a separate Atlas engine with a working MVP server. Ordered by what would change our minds, not by what is easiest.</p>
+<div class="tw"><table><thead><tr><th>Stage</th><th>Work</th><th>Status</th></tr></thead><tbody>
+<tr><td>A. Audit</td><td>Inspect the repository and keep production code untouched.</td><td><span class="badge b-docs">Done</span> research stays in <code>benchmarks/prism</code>; the Atlas crates are not changed by Prism work</td></tr>
+<tr><td>B. Literature</td><td>Read each primary source in full and complete the claim audit.</td><td><span class="badge b-open">Open</span> surface summary only; see <a href="related-work.html">related work</a></td></tr>
+<tr><td>C. Formalize</td><td>Representation, intervals, pruning rule, exact rerank path, snapshot invariants.</td><td><span class="badge b-proved">Proved</span> gate lemma, conditional. Floating point, ties and other metrics open</td></tr>
+<tr><td>D. Reproduce</td><td>Recreate the synthetic pilot against exact ground truth.</td><td><span class="badge b-measured">Measured</span> one run; the earlier numpy figures have no saved artifact</td></tr>
+<tr><td>E. Red-team</td><td>Adversarial mathematical, retrieval, concurrency and capacity tests.</td><td><span class="badge b-open">Open</span> see the <a href="loopholes.html">audit</a></td></tr>
+<tr><td>F. Compare</td><td>Run the feasible baselines; decide if the cascade has a defensible advantage.</td><td><span class="badge b-unmeasured">Unmeasured</span> see the <a href="tournament.html">tournament</a></td></tr>
+<tr><td>G. Prototype</td><td>Isolated snapshot model and Rust prototype with measured cost.</td><td><span class="badge b-open">Open</span> see the <a href="snapshot-protocol.html">protocol</a></td></tr>
+<tr><td>H. Publish</td><td>Manifesto, paper, figures, bibliography, reproduction instructions.</td><td><span class="badge b-open">Open</span> the manifesto and a markdown note exist; no typeset PDF, DOCX or bibliography file</td></tr>
+<tr><td>I. Website</td><td>A research site built on real artifacts.</td><td><span class="badge b-implemented">Implemented</span> this lab; not yet checked in a browser across devices</td></tr>
+<tr><td>J. Final audit</td><td>Check citations, equations, outputs and claims against digests.</td><td><span class="badge b-open">Open</span></td></tr></tbody></table></div></section>
+
+<section id="next"><h2>Next, in order</h2>
+<ol class="steps">
+<li><div><b>Close the gate problem.</b> A per-vector error bound that is cheap enough to keep the saving, or a clear negative result.</div></li>
+<li><div><b>Real data.</b> SIFT1M, GIST1M and a pinned text-embedding set, with checksums and their licences verified before use.</div></li>
+<li><div><b>One strong baseline.</b> Reproduce a rotation-plus-quantization baseline on the same corpus and report both honestly.</div></li>
+<li><div><b>Snapshot model.</b> A deterministic state-machine model with a crash at every publication boundary, and a linearizability-style history check.</div></li>
+<li><div><b>Long runs.</b> At least an hour of concurrent reads and writes per major configuration on a quiet machine, with repeated trials.</div></li></ol></section>
+
+<section id="licence"><h2>Licensing and open-source gate</h2>
+<p>The project is open by construction, so this gate is part of readiness, not an afterthought.</p>
+<div class="tw"><table><thead><tr><th>Item</th><th>Status</th></tr></thead><tbody>
+<tr><td>Declared licence</td><td>Apache-2.0 in the Rust workspace manifests.</td></tr>
+<tr><td><code>LICENSE</code> file, <code>THIRD_PARTY_NOTICES</code>, licence policy and audit documents</td><td><span class="badge b-open">Open</span></td></tr>
+<tr><td>Software bill of materials and a licence check in continuous integration</td><td><span class="badge b-open">Open</span> <code>cargo-deny</code> runs locally on every verification; no CI workflow yet</td></tr>
+<tr><td>USearch (or any ANN dependency)</td><td><span class="badge b-open">Awaiting review</span> exact pinned version, vendored code and transitive licences unverified; not in the production build</td></tr>
+<tr><td>Contribution guide, code of conduct, security policy, issue templates</td><td><span class="badge b-open">Open</span></td></tr></tbody></table></div></section>
+
+<section id="cannot"><h2>What cannot be done from this machine</h2>
+<ul><li>A macOS run and a CI matrix.</li><li>A true power-loss test.</li><li>A Linux peak-memory run and 10-million-vector or idle-machine reruns.</li><li>An independent review. Every result here is the author's, and none has been checked by someone else.</li></ul></section>
+</article>
+</div>
+<nav class="pn" aria-label="Page navigation"><a href="loopholes.html"><small>Previous</small><span>Loophole audit</span></a><a href="prism.html"><small>Back to</small><span>Prism overview</span></a></nav>
+</main>
+<footer class="lb-foot"><div class="cols">
+    <div><h4>Project Apex / Prism</h4><p>An open research prototype about progressively refined vector codes and per-reader snapshots. Research Note v1.0, preprint, not peer reviewed.</p></div>
+    <div><h4>Pages</h4><a href="manifesto.html">Manifesto</a><a href="related-work.html">Related work</a><a href="algorithm.html">Algorithm</a><a href="mathematics.html">Mathematics</a><a href="tournament.html">Algorithm tournament</a><a href="snapshot-protocol.html">Snapshot protocol</a><a href="loopholes.html">Loophole audit</a><a href="roadmap.html">Roadmap</a></div>
+    <div><h4>Evidence</h4><a href="prism.html#evidence">Measurements</a><a href="prism.html#paper">Research note</a><a href="prism.html#lab">Interactive lab</a></div>
+    <div><h4>Open source</h4><a href="https://github.com/Sagexd08/Project-Apex">Repository</a><a href="https://github.com/Sagexd08/Project-Apex/tree/main/benchmarks/prism">Benchmark source</a><a href="https://github.com/Sagexd08/Project-Apex/issues">Issues</a></div></div>
+    <p class="fine">Synthetic data, one machine. No comparison with other systems. Nothing on these pages is a claim to be first, fastest or best.</p></footer>
+<script src="js/lab.js" defer></script>
+</body>
+</html>

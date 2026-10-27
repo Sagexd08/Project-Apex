@@ -1,0 +1,33 @@
+<section id="now"><h2>Where we are</h2>
+<p>A research prototype with one synthetic benchmark, a corrected set of claims, and a separate Atlas engine with a working MVP server. Ordered by what would change our minds, not by what is easiest.</p>
+<div class="tw"><table><thead><tr><th>Stage</th><th>Work</th><th>Status</th></tr></thead><tbody>
+<tr><td>A. Audit</td><td>Inspect the repository and keep production code untouched.</td><td><span class="badge b-docs">Done</span> research stays in <code>benchmarks/prism</code>; the Atlas crates are not changed by Prism work</td></tr>
+<tr><td>B. Literature</td><td>Read each primary source in full and complete the claim audit.</td><td><span class="badge b-open">Open</span> surface summary only; see <a href="related-work.html">related work</a></td></tr>
+<tr><td>C. Formalize</td><td>Representation, intervals, pruning rule, exact rerank path, snapshot invariants.</td><td><span class="badge b-proved">Proved</span> gate lemma, conditional. Floating point, ties and other metrics open</td></tr>
+<tr><td>D. Reproduce</td><td>Recreate the synthetic pilot against exact ground truth.</td><td><span class="badge b-measured">Measured</span> one run; the earlier numpy figures have no saved artifact</td></tr>
+<tr><td>E. Red-team</td><td>Adversarial mathematical, retrieval, concurrency and capacity tests.</td><td><span class="badge b-open">Open</span> see the <a href="loopholes.html">audit</a></td></tr>
+<tr><td>F. Compare</td><td>Run the feasible baselines; decide if the cascade has a defensible advantage.</td><td><span class="badge b-unmeasured">Unmeasured</span> see the <a href="tournament.html">tournament</a></td></tr>
+<tr><td>G. Prototype</td><td>Isolated snapshot model and Rust prototype with measured cost.</td><td><span class="badge b-open">Open</span> see the <a href="snapshot-protocol.html">protocol</a></td></tr>
+<tr><td>H. Publish</td><td>Manifesto, paper, figures, bibliography, reproduction instructions.</td><td><span class="badge b-open">Open</span> the manifesto and a markdown note exist; no typeset PDF, DOCX or bibliography file</td></tr>
+<tr><td>I. Website</td><td>A research site built on real artifacts.</td><td><span class="badge b-implemented">Implemented</span> this lab; not yet checked in a browser across devices</td></tr>
+<tr><td>J. Final audit</td><td>Check citations, equations, outputs and claims against digests.</td><td><span class="badge b-open">Open</span></td></tr></tbody></table></div></section>
+
+<section id="next"><h2>Next, in order</h2>
+<ol class="steps">
+<li><div><b>Close the gate problem.</b> A per-vector error bound that is cheap enough to keep the saving, or a clear negative result.</div></li>
+<li><div><b>Real data.</b> SIFT1M, GIST1M and a pinned text-embedding set, with checksums and their licences verified before use.</div></li>
+<li><div><b>One strong baseline.</b> Reproduce a rotation-plus-quantization baseline on the same corpus and report both honestly.</div></li>
+<li><div><b>Snapshot model.</b> A deterministic state-machine model with a crash at every publication boundary, and a linearizability-style history check.</div></li>
+<li><div><b>Long runs.</b> At least an hour of concurrent reads and writes per major configuration on a quiet machine, with repeated trials.</div></li></ol></section>
+
+<section id="licence"><h2>Licensing and open-source gate</h2>
+<p>The project is open by construction, so this gate is part of readiness, not an afterthought.</p>
+<div class="tw"><table><thead><tr><th>Item</th><th>Status</th></tr></thead><tbody>
+<tr><td>Declared licence</td><td>Apache-2.0 in the Rust workspace manifests.</td></tr>
+<tr><td><code>LICENSE</code> file, <code>THIRD_PARTY_NOTICES</code>, licence policy and audit documents</td><td><span class="badge b-open">Open</span></td></tr>
+<tr><td>Software bill of materials and a licence check in continuous integration</td><td><span class="badge b-open">Open</span> <code>cargo-deny</code> runs locally on every verification; no CI workflow yet</td></tr>
+<tr><td>USearch (or any ANN dependency)</td><td><span class="badge b-open">Awaiting review</span> exact pinned version, vendored code and transitive licences unverified; not in the production build</td></tr>
+<tr><td>Contribution guide, code of conduct, security policy, issue templates</td><td><span class="badge b-open">Open</span></td></tr></tbody></table></div></section>
+
+<section id="cannot"><h2>What cannot be done from this machine</h2>
+<ul><li>A macOS run and a CI matrix.</li><li>A true power-loss test.</li><li>A Linux peak-memory run and 10-million-vector or idle-machine reruns.</li><li>An independent review. Every result here is the author's, and none has been checked by someone else.</li></ul></section>

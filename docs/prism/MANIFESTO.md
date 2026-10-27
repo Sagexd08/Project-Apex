@@ -1,19 +1,19 @@
-# The Prism manifesto
+# Prism: one stored code, progressive precision, a snapshot per reader
 
-Written 2026-10-26. This is a statement of direction. Measurements are in `PAPER.md`, and anything not measured there is a belief, not a result.
+Manifesto, Research Note v1.0 (preprint, not peer reviewed), 2026-10-26. This is a statement of direction. Measurements are in `PAPER.md`; anything not measured there is **Proposed**, not a result. We make no claim to be first, fastest or best at anything.
 
 ## What we see
 
 An agent does not work like a report. It reads what it knows, acts, writes what it learned, and reads again, often within a few milliseconds. The storage under most agents was designed for the opposite rhythm: load in bulk, build an index, then query for a long time. When the two meet, writes slow reads, the tail latency spikes, and a memory that should be instant becomes the part of the loop everyone waits for.
 
-We also see that moving bytes is expensive. A search over a million vectors is mostly a question of how many bytes the machine must pull through memory. Arithmetic is cheap by comparison. A system that asks the question with fewer bytes wins on time, and it should also win on energy.
+We also see that moving bytes is expensive. A search over a million vectors is mostly a question of how many bytes the machine must pull through memory. Arithmetic is cheap by comparison. A system that asks the question with fewer bytes may win on time and energy. We have not yet shown that it does (see "What would make us wrong").
 
 ## What we believe
 
 1. **Memory should be fast enough to disappear.** An agent should be able to consult everything it knows inside one thought, on a laptop, without a cluster.
-2. **Nothing to train means nothing to drift.** A compressor learned from yesterday's data is wrong about tomorrow's. A fixed random rotation has no opinion about the data, so it cannot fall out of date.
+2. **Nothing to train means no trained state to drift.** A compressor learned from yesterday's data can be wrong about tomorrow's. A fixed random rotation has no opinion about the data. The error scale we use for gating is measured, and we recheck it on shifted data.
 3. **Pay for precision only when the question needs it.** Most of a corpus is clearly irrelevant to a given query. One bit is enough to say so. Spend more bits only on the few vectors still in the running.
-4. **A reader never waits for a writer, and never sees half a write.** Every read happens against a named point in the log. The same question at the same point gives the same answer.
+4. **A reader takes no lock and never sees half a write.** Every read happens against a named point in the log. The same question at the same point gives the same answer. Readers still share CPU and memory with writers; we measured a cost (see the paper).
 5. **Say what was measured.** Every number carries its data, its machine and the version of the code that produced it. A number from synthetic data says so. A claim without a measurement is a goal.
 6. **Keep it open.** The reference implementation, the benchmark and the raw results are public, so anyone can disagree with us with evidence.
 
@@ -23,16 +23,20 @@ A storage layout, Prism, where each vector is stored once as nested bit planes, 
 
 ## North star
 
-The best open-source vector database of this decade, built by one person with agents, for agents. We want model labs and model hubs to choose it because it is better, not because it is ours. That is a goal. We have no customers and we claim none. What we can do is write down the bar they would apply, and clear it in public:
+A proposed goal, not a claim: an open-source vector database that agents can use as memory, built by one person with agents. We have no customers and no comparison with any other system. What we can do is write down the bar a reader would apply, and try to clear it in public:
 
-1. **Speed on public data.** Recall against latency curves versus the leading engines on SIFT1M, GIST1M and a current text-embedding set, on identical hardware.
+1. **Speed on public data.** Recall against latency curves versus other engines on SIFT1M, GIST1M and a current text-embedding set, on identical hardware.
 2. **Honest concurrency.** P99 under agent-rate writes, over hours, on a quiet machine.
 3. **Durability.** Power-loss tests and an independent review before anyone is asked to trust it with memory.
 4. **Isolation.** Tenant boundaries proved by tests that try to break them.
 5. **Drop-in for agents.** An embedded Rust library, SDKs and an MCP server, so an agent can use it without glue.
 6. **Reproducible.** Every number from a public script, with a checksum, that a stranger can re-run.
 
-## What would make us wrong
+## What Prism is trying to show, and what would make us wrong
+
+Thesis (Proposed): nested bit planes plus log-pinned snapshots can improve the memory, recall and latency trade-off when a store is read while it is written. So far one synthetic benchmark shows bits read fall to about 1.06 per coordinate, and shows no established time saving over an optimised exact scan (inconclusive: the sign reversed between two runs).
+
+The thesis fails if:
 
 - If the saving in bytes read does not become a saving in time on real hardware.
 - If real embeddings are far less friendly than our synthetic clusters.

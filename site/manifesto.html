@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Manifesto | Prism | Project Apex</title>
+<meta name="description" content="Why agents need a better-measured memory layer, what Prism is trying to show, and what would prove it wrong.">
+<meta name="theme-color" content="#232323">
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/lab.css">
+</head>
+<body class="lab">
+<a class="skip" href="#main">Skip to content</a>
+<header class="lb-bar" role="banner"><a class="logo" href="index.html" aria-label="Project Apex home"></a>
+  <a class="lb-brand" href="prism.html">Prism</a>
+  <button class="lb-burger" type="button" aria-expanded="false" aria-controls="lb-nav">Menu</button>
+  <ul class="lb-nav" id="lb-nav" aria-label="Primary">
+    <li><a href="prism.html#abstract">Abstract</a></li><li><a href="prism.html#film-sec">Film</a></li>
+    <li><button class="lb-dd cur" type="button" aria-expanded="false" aria-haspopup="true" aria-controls="lb-menu">Manifesto &#9662;</button>
+      <div class="lb-menu" id="lb-menu"><a href="manifesto.html" aria-current="page"><b>01</b>Manifesto<small>The statement of direction and the falsifiers</small></a><a href="related-work.html"><b>02</b>Related work<small>Prior art and the claim audit</small></a><a href="algorithm.html"><b>03</b>Algorithm<small>Encode, cascade, rerank, snapshot</small></a><a href="mathematics.html"><b>04</b>Mathematics<small>Derivations, lemma, open problem</small></a><a href="tournament.html"><b>05</b>Algorithm tournament<small>Candidates A to G, keep or defer</small></a><a href="snapshot-protocol.html"><b>06</b>Snapshot protocol<small>Visibility, publication, reclamation</small></a><a href="loopholes.html"><b>07</b>Loophole audit<small>Math, storage, filter, concurrency</small></a><a href="roadmap.html"><b>08</b>Roadmap<small>Stages A to J and the licence gate</small></a></div></li>
+    <li><a href="prism.html#lab">Lab</a></li><li><a href="prism.html#paper">Paper</a></li>
+    <li><a href="prism.html#evidence">Evidence<i class="ping"></i></a></li>
+    <li><a href="https://github.com/Sagexd08/Project-Apex">Source &#8599;</a></li>
+  </ul></header><div class="lb-prog" aria-hidden="true"></div>
+<main id="main">
+<section class="lh" aria-labelledby="h1">
+  <div class="lh-l">
+    <p class="crumb"><a href="prism.html">Prism</a><span>/</span><a href="manifesto.html">Manifesto</a></p>
+    <h1 id="h1">Manifesto</h1>
+    <p class="lead">Why agents need a better-measured memory layer, what Prism is trying to show, and what would prove it wrong.</p>
+    <div class="status-row"><span class="badge b-proposed">Proposed</span></div>
+    <p class="meta">Research Note v1.0 &middot; preprint, not peer reviewed &middot; synthetic data, one machine</p>
+  </div>
+  <div class="lh-r"><svg viewBox="0 0 400 340" role="img" aria-label="Four stacked bit planes"><g>
+    <path class="fa ac" d="M80 40H340L380 90H40Z"/><path class="fa" d="M80 100H340L380 150H40Z"/>
+    <path class="fa dim" d="M80 160H340L380 210H40Z"/><path class="fa dim" d="M80 220H340L380 270H40Z"/>
+    <circle class="ff" cx="96" cy="66" r="2.4"/><circle class="ff" cx="120" cy="66" r="2.4"/><circle class="ff" cx="144" cy="66" r="2.4"/><circle class="ff" cx="168" cy="66" r="2.4"/><circle class="ff" cx="192" cy="66" r="2.4"/><circle class="ff" cx="216" cy="66" r="2.4"/><circle class="ff" cx="240" cy="66" r="2.4"/><circle class="ff" cx="264" cy="66" r="2.4"/><circle class="ff" cx="288" cy="66" r="2.4"/><circle class="ff" cx="312" cy="66" r="2.4"/>
+    <text class="ft" x="40" y="302">plane 1 sign bit .. plane 4 finest cell</text></g></svg><span class="num" aria-hidden="true">01</span></div>
+</section>
+<div class="lb-main">
+  <nav class="toc" aria-label="On this page"><p>On this page</p><ol><li><a href="#see">What we see</a></li><li><a href="#believe">What we believe</a></li><li><a href="#building">What we are building</a></li><li><a href="#north">North star</a></li><li><a href="#thesis">Thesis and falsifiers</a></li><li><a href="#open">Open by construction</a></li><li><a href="#for">Who it is for</a></li></ol></nav>
+  <article class="art"><section id="see"><h2>What we see</h2>
+<p>An agent does not work like a report. It reads what it knows, acts, writes what it learned, and reads again, often within a few milliseconds. The storage under most agents was designed for the opposite rhythm: load in bulk, build an index, then query for a long time. When the two meet, writes slow reads, tail latency spikes, and a memory that should be instant becomes the part of the loop everyone waits for.</p>
+<p>We also see that moving bytes is expensive. A search over a million vectors is mostly a question of how many bytes the machine must pull through memory. A system that asks the question with fewer bytes may win on time and energy. <b>We have not shown that it does</b>; see the falsifiers below.</p>
+<div class="call warn"><b class="k">Status of this page</b><p>A statement of direction, not a result. Measurements live on the <a href="prism.html#evidence">evidence page</a>. Anything not measured there is <span class="badge b-proposed">Proposed</span>.</p></div></section>
+
+<section id="believe"><h2>What we believe</h2>
+<ol class="steps">
+<li><div><b>Memory should be fast enough to disappear.</b> An agent should consult everything it knows inside one thought, on a laptop, without a cluster.</div></li>
+<li><div><b>Nothing to train means no trained state to drift.</b> A compressor learned from yesterday's data can be wrong about tomorrow's. A fixed random rotation has no opinion about the data. The error scale we gate on is measured, and rechecked on shifted data.</div></li>
+<li><div><b>Pay for precision only when the question needs it.</b> Most of a corpus is clearly irrelevant to a given query, and one bit is enough to say so. Spend more bits only on the few vectors still in the running.</div></li>
+<li><div><b>A reader takes no lock and never sees half a write.</b> Every read happens against a named point in the log. The same question at the same point gives the same answer. Readers still share CPU and memory with writers; the paper reports a cost.</div></li>
+<li><div><b>Say what was measured.</b> Every number carries its data, its machine and the version of the code that produced it. A claim without a measurement is a goal.</div></li>
+<li><div><b>Keep it open.</b> The reference implementation, the benchmark and the raw results are public, so anyone can disagree with us with evidence.</div></li></ol></section>
+
+<section id="building"><h2>What we are building</h2>
+<p>A storage layout, Prism, where each vector is stored once as nested bit planes, searched by a cascade that reads more planes only for candidates still in contention, and served to readers through snapshots tied to the write-ahead log. It began as a question: could an agent memory be both fresh and fast, without a rebuild step between the two?</p>
+<div class="cards">
+<a class="card" href="algorithm.html"><b>03</b><h3>The algorithm</h3><p>Encode once, read progressively, rerank exactly.</p></a>
+<a class="card" href="mathematics.html"><b>04</b><h3>The mathematics</h3><p>The error formula, the gate lemma and its open problem.</p></a>
+<a class="card" href="snapshot-protocol.html"><b>06</b><h3>The snapshot protocol</h3><p>What it means for a reader to pin the log.</p></a></div></section>
+
+<section id="north"><h2>North star</h2>
+<p>A proposed goal, not a claim: an open-source vector database that agents can use as memory, built by one person with agents. We have no customers and no comparison with any other system. What we can do is write down the bar a reader would apply, and try to clear it in public.</p>
+<div class="tw"><table><thead><tr><th>Bar</th><th>What it requires</th><th>Status</th></tr></thead><tbody>
+<tr><td>Speed on public data</td><td>Recall against latency curves versus other engines on SIFT1M, GIST1M and a current text-embedding set, on identical hardware.</td><td><span class="badge b-unmeasured">Unmeasured</span></td></tr>
+<tr><td>Honest concurrency</td><td>P99 under agent-rate writes, over hours, on a quiet machine.</td><td><span class="badge b-open">Open</span></td></tr>
+<tr><td>Durability</td><td>Power-loss tests and an independent review before anyone is asked to trust it with memory.</td><td><span class="badge b-open">Open</span></td></tr>
+<tr><td>Isolation</td><td>Tenant boundaries proved by tests that try to break them.</td><td><span class="badge b-tested">Tested</span> in the Atlas engine, builder-reported</td></tr>
+<tr><td>Drop-in for agents</td><td>An embedded Rust library, SDKs and an MCP server, so an agent can use it without glue.</td><td><span class="badge b-open">Open</span> a Rust engine, HTTP API and demo exist; SDKs and MCP do not</td></tr>
+<tr><td>Reproducible</td><td>Every number from a public script, with a checksum, that a stranger can re-run.</td><td><span class="badge b-open">Open</span> source digests exist; dataset checksums and per-result commands do not</td></tr>
+</tbody></table></div></section>
+
+<section id="thesis"><h2>Thesis and falsifiers</h2>
+<p><b>Thesis (Proposed).</b> Nested bit planes plus log-pinned snapshots can improve the memory, recall and latency trade-off when a store is read while it is written. So far one synthetic benchmark shows bits read falling to about 1.06 per coordinate, and shows <b>no established time saving</b> over an optimised exact scan (inconclusive: the sign reversed between two runs).</p>
+<p>The thesis fails if any of these turn out to be true:</p>
+<ul><li>The saving in bytes read does not become a saving in time on real hardware.</li>
+<li>Real embeddings are far less friendly than our synthetic clusters.</li>
+<li>The empirical gate misses neighbours more often than its tuning suggests, and a provable gate costs too much to be worth it.</li>
+<li>An existing system, such as RaBitQ or TurboQuant combined with a segment design, already gives the same result.</li></ul>
+<p>We will publish the result either way. A negative result is an acceptable outcome. An unsupported positive claim is not.</p></section>
+
+<section id="open"><h2>Open by construction</h2>
+<p>Free has to mean both free of charge and free to inspect, modify and redistribute. The core database must not need a paid API, a hosted service, telemetry, or a language model to store, search and recover vectors.</p>
+<div class="tw"><table><thead><tr><th>Commitment</th><th>Where it stands</th></tr></thead><tbody>
+<tr><td>Licence</td><td>The Rust workspace manifests declare Apache-2.0. A top-level <code>LICENSE</code> file, a third-party notice inventory and a software bill of materials are <span class="badge b-open">Open</span>.</td></tr>
+<tr><td>Dependency policy</td><td><code>cargo-deny</code> checks advisories, bans, licences and sources on every verification run. USearch is <b>not</b> adopted: its exact version and obligations are unaudited, so the exact-search index stays.</td></tr>
+<tr><td>No mandatory paid service</td><td>The MVP server is standard-library Rust plus the engine. No API key from anyone else is needed to run the tests or the demo.</td></tr>
+<tr><td>Reproduction</td><td>Synthetic data with fixed seeds; raw results are committed. Large real datasets will be linked, not bundled, and licence-checked first.</td></tr></tbody></table></div></section>
+
+<section id="for"><h2>Who it is for</h2>
+<p>A person running an agent on their own machine, with their own data, who should not need to rent a cluster to give that agent a memory. A small team that wants retrieval it can reason about and replay. A research community that deserves an open, reproducible reference for the read-while-writing case, not just for the static one.</p>
+<p>The goal is modest in scope and large in reach: make good memory cheap enough to be everywhere.</p></section>
+</article>
+</div>
+<nav class="pn" aria-label="Page navigation"><a href="prism.html"><small>Overview</small><span>Prism overview</span></a><a href="related-work.html"><small>Next</small><span>Related work</span></a></nav>
+</main>
+<footer class="lb-foot"><div class="cols">
+    <div><h4>Project Apex / Prism</h4><p>An open research prototype about progressively refined vector codes and per-reader snapshots. Research Note v1.0, preprint, not peer reviewed.</p></div>
+    <div><h4>Pages</h4><a href="manifesto.html">Manifesto</a><a href="related-work.html">Related work</a><a href="algorithm.html">Algorithm</a><a href="mathematics.html">Mathematics</a><a href="tournament.html">Algorithm tournament</a><a href="snapshot-protocol.html">Snapshot protocol</a><a href="loopholes.html">Loophole audit</a><a href="roadmap.html">Roadmap</a></div>
+    <div><h4>Evidence</h4><a href="prism.html#evidence">Measurements</a><a href="prism.html#paper">Research note</a><a href="prism.html#lab">Interactive lab</a></div>
+    <div><h4>Open source</h4><a href="https://github.com/Sagexd08/Project-Apex">Repository</a><a href="https://github.com/Sagexd08/Project-Apex/tree/main/benchmarks/prism">Benchmark source</a><a href="https://github.com/Sagexd08/Project-Apex/issues">Issues</a></div></div>
+    <p class="fine">Synthetic data, one machine. No comparison with other systems. Nothing on these pages is a claim to be first, fastest or best.</p></footer>
+<script src="js/lab.js" defer></script>
+</body>
+</html>

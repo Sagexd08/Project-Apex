@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atlas console</title>
+<style>
+  :root { --bg:#fbfaf7; --fg:#1b1b1b; --mut:#5c5c58; --line:#d9d6cc; --acc:#0b5d4b; --err:#a1260f; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141412; --fg:#ecebe6; --mut:#a3a199; --line:#34332e; --acc:#5fc4a8; --err:#ff8a73; } }
+  body { margin:0 auto; padding:16px; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui, sans-serif; max-width:760px; }
+  h1 { font-size:1.2rem; margin:.2rem 0 1rem; }
+  label { display:block; margin:.7rem 0 .2rem; color:var(--mut); font-size:.85rem; }
+  input, textarea, select, button { font:inherit; color:inherit; background:transparent; border:1px solid var(--line); border-radius:6px; padding:.45rem .6rem; width:100%; box-sizing:border-box; }
+  textarea { min-height:5.5rem; font-family:ui-monospace, monospace; font-size:.85rem; }
+  button { width:auto; cursor:pointer; border-color:var(--acc); color:var(--acc); margin:.6rem .4rem 0 0; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline:2px solid var(--acc); outline-offset:2px; }
+  pre { border:1px solid var(--line); border-radius:6px; padding:.7rem; overflow:auto; white-space:pre-wrap; word-break:break-word; min-height:4rem; }
+  .err { color:var(--err); }
+  p.note { color:var(--mut); font-size:.85rem; }
+</style>
+</head>
+<body>
+<h1>Atlas console</h1>
+<p class="note">Talks to this server's JSON API with your API key. The key stays in this page's memory only. Nothing here is a benchmark.</p>
+<label for="key">API key (Bearer)</label>
+<input id="key" type="password" autocomplete="off" spellcheck="false">
+<label for="op">Operation</label>
+<select id="op">
+  <option value="count">GET /v1/count</option>
+  <option value="insert">POST /v1/insert</option>
+  <option value="search">POST /v1/search</option>
+  <option value="fetch">POST /v1/fetch</option>
+  <option value="delete">POST /v1/delete</option>
+</select>
+<label for="body">JSON body</label>
+<textarea id="body" spellcheck="false"></textarea>
+<button id="run" type="button">Send</button>
+<label for="out">Response</label>
+<pre id="out" role="status" aria-live="polite"></pre>
+<script>
+const TEMPLATES = {
+  count: "",
+  insert: '{"id": 1, "vector": [0.1, 0.2, 0.3, 0.4], "metadata": {"tag": "demo"}, "op_id": "demo-1"}',
+  search: '{"vector": [0.1, 0.2, 0.3, 0.4], "k": 5, "metric": "cosine"}',
+  fetch: '{"id": 1}',
+  delete: '{"id": 1}'
+};
+const el = (id) => document.getElementById(id);
+const setTemplate = () => { el("body").value = TEMPLATES[el("op").value]; };
+el("op").addEventListener("change", setTemplate);
+setTemplate();
+el("run").addEventListener("click", async () => {
+  const op = el("op").value, out = el("out");
+  out.className = "";
+  try {
+    const res = await fetch("/v1/" + op, {
+      method: op === "count" ? "GET" : "POST",
+      headers: { "Authorization": "Bearer " + el("key").value, "Content-Type": "application/json" },
+      body: op === "count" ? undefined : el("body").value
+    });
+    const text = await res.text();
+    out.className = res.ok ? "" : "err";
+    out.textContent = res.status + " " + text;
+  } catch (e) {
+    out.className = "err";
+    out.textContent = "request failed: " + e.message;
+  }
+});
+</script>
+</body>
+</html>
