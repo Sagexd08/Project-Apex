@@ -55,6 +55,12 @@ pub struct Config {
     pub max_batch: usize,
     /// Upper bound on one WAL record payload.
     pub max_record_len: u32,
+    /// Upper bound on retained idempotency entries (op ids) across all tenants. A NEW op id past
+    /// it is refused with CAPACITY_EXCEEDED; retries of known op ids still succeed.
+    pub max_ops: usize,
+    /// Upper bound on vectors in one tenant partition. Upserts past it are refused with
+    /// CAPACITY_EXCEEDED; deletes still work. Concurrent writers may overshoot by in-flight writes.
+    pub max_tenant_vectors: usize,
 }
 
 impl Config {
@@ -75,6 +81,8 @@ impl Config {
             batch_window: Duration::from_millis(2),
             max_batch: 128,
             max_record_len: 16 * 1024 * 1024,
+            max_ops: 1_000_000,
+            max_tenant_vectors: 10_000_000,
         }
     }
 }
@@ -101,6 +109,8 @@ pub enum AtlasError {
     OpIdConflict(String),
     #[error("INVALID_OP_ID: operation id must be 1..=128 bytes")]
     InvalidOpId,
+    #[error("CAPACITY_EXCEEDED: {0} is full; delete data or raise the configured limit")]
+    CapacityExceeded(&'static str),
     #[error("WAL_FAILED: write path failed and needs recovery; reopen the database")]
     WalFailed,
     #[error("DIMENSION_MISMATCH: database has dimension {stored}, requested {requested}")]
@@ -140,6 +150,7 @@ impl AtlasError {
             Self::OutcomeUnknown(_) => "OUTCOME_UNKNOWN",
             Self::OpIdConflict(_) => "OP_ID_CONFLICT",
             Self::InvalidOpId => "INVALID_OP_ID",
+            Self::CapacityExceeded(_) => "CAPACITY_EXCEEDED",
             Self::WalFailed => "WAL_FAILED",
             Self::DimensionMismatch { .. } => "DIMENSION_MISMATCH",
             Self::InvalidConfig(_) => "INVALID_CONFIG",
@@ -192,6 +203,7 @@ mod tests {
             AtlasError::OutcomeUnknown("x".into()),
             AtlasError::OpIdConflict("x".into()),
             AtlasError::InvalidOpId,
+            AtlasError::CapacityExceeded("op map"),
             AtlasError::UnsupportedWalVersion {
                 found: 2,
                 supported: 1,

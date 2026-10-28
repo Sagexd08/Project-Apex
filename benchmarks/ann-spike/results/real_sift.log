@@ -1,0 +1,12 @@
+C:/Desktop/apex-data/sift: n=1000000 d=128 angular=false queries=1000
+ground truth 15s
+built in 93.3s
+ef=32 recall=0.8852999999999956 p95=0.3348ms
+ef=64 recall=0.957099999999997 p95=0.4856ms
+ef=128 recall=0.9876999999999987 p95=0.749ms
+ef=256 recall=0.9967999999999995 p95=1.5826ms
+sel=10% native r=0.9990999999999998 p95=5.3337ms | hybrid r=1.0 p95=22.0873ms leaks=0
+sel=5% native r=1.0 p95=13.8829ms | hybrid r=1.0 p95=12.7842ms leaks=0
+sel=3% native r=0.9995999999999999 p95=14.4187ms | hybrid r=1.0 p95=8.8448ms leaks=0
+sel=1% native r=0.9988999999999999 p95=42.177ms | hybrid r=1.0 p95=4.902100000000001ms leaks=0
+sel=0.1% native r=0.9961999999999992 p95=213.7385ms | hybrid r=1.0 p95=2.2128ms leaks=0

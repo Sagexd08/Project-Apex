@@ -47,12 +47,12 @@
         const a = r() * Math.PI, between = a < rad ? 1 : 0;
         sep += between;
         const x1 = C - R * Math.cos(a), y1 = C + R * Math.sin(a), x2 = C + R * Math.cos(a), y2 = C - R * Math.sin(a);
-        lines += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${between ? "#ff9100" : "currentColor"}" stroke-opacity="${between ? 0.9 : 0.18}" stroke-width="${between ? 1.4 : 1}"/>`;
+        lines += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${between ? "#a8b8a2" : "currentColor"}" stroke-opacity="${between ? 0.9 : 0.18}" stroke-width="${between ? 1.4 : 1}"/>`;
       }
       const xx = C + R * Math.cos(rad), xy = C - R * Math.sin(rad);
       const arc = `M ${C + 40} ${C} A 40 40 0 0 0 ${(C + 40 * Math.cos(rad)).toFixed(1)} ${(C - 40 * Math.sin(rad)).toFixed(1)}`;
       geo.innerHTML = `<circle cx="${C}" cy="${C}" r="${R}" fill="none" stroke="currentColor" stroke-opacity=".35"/>${lines}
-        <line x1="${C}" y1="${C}" x2="${C + R}" y2="${C}" stroke="#ff9100" stroke-width="2.4"/>
+        <line x1="${C}" y1="${C}" x2="${C + R}" y2="${C}" stroke="#a8b8a2" stroke-width="2.4"/>
         <line x1="${C}" y1="${C}" x2="${xx.toFixed(1)}" y2="${xy.toFixed(1)}" stroke="currentColor" stroke-width="2.4"/>
         <path d="${arc}" fill="none" stroke="currentColor"/>
         <text x="${C + R - 4}" y="${C + 18}" text-anchor="end">q</text>
@@ -100,19 +100,19 @@
     function draw() {
       const z = +zEl.value, bits = SCHEDS[sched]; zv.textContent = z.toFixed(1);
       const W = cv.width, H = cv.height, m = run(rng(seed), z, bits, true);
-      ctx.fillStyle = "#232323"; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "#3b0f1c"; ctx.fillRect(0, 0, W, H);
       const lo = -0.9, hi = 0.9, X = v => 30 + (v - lo) / (hi - lo) * (W - 60);
       const si = Math.min(view, m.stages.length - 1), stage = m.stages[si], alive = new Set(stage.after);
       const rr = rng(99);
       const wlo = stage.tau - 2 * z * stage.sg;
       ctx.fillStyle = "rgba(255,145,0,.10)"; ctx.fillRect(X(wlo), 20, X(stage.tau) - X(wlo), H - 60);
-      ctx.strokeStyle = "rgba(241,238,231,.5)"; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(X(m.t), 20); ctx.lineTo(X(m.t), H - 40); ctx.stroke(); ctx.setLineDash([]);
+      ctx.strokeStyle = "rgba(239,230,211,.5)"; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(X(m.t), 20); ctx.lineTo(X(m.t), H - 40); ctx.stroke(); ctx.setLineDash([]);
       for (let i = 0; i < N; i++) {
         const y = 30 + rr() * (H - 90), x = X(m.s[i]);
-        if (m.top.has(i)) { ctx.fillStyle = alive.has(i) ? "#ff9100" : "#ff3b30"; ctx.fillRect(x - 3, y - 3, 6, 6); }
-        else { ctx.fillStyle = alive.has(i) ? "rgba(241,238,231,.85)" : "rgba(241,238,231,.12)"; ctx.fillRect(x - 1, y - 1, 2, 2); }
+        if (m.top.has(i)) { ctx.fillStyle = alive.has(i) ? "#a8b8a2" : "#ff3b30"; ctx.fillRect(x - 3, y - 3, 6, 6); }
+        else { ctx.fillStyle = alive.has(i) ? "rgba(239,230,211,.85)" : "rgba(239,230,211,.12)"; ctx.fillRect(x - 1, y - 1, 2, 2); }
       }
-      ctx.fillStyle = "#cbcbcb"; ctx.font = "11px 'Geist Mono',monospace";
+      ctx.fillStyle = "#d8d0be"; ctx.font = "11px 'Geist Mono',monospace";
       ctx.fillText("true similarity to the query →", 30, H - 14); ctx.fillText("dashed: true 10th best", W - 150, H - 14);
       const ss = m.stages.map(x => x.after.length);
       ro.s1.textContent = ss[0].toLocaleString(); ro.s2.textContent = ss[1] != null ? ss[1].toLocaleString() : "–"; ro.s3.textContent = ss[2] != null ? ss[2].toLocaleString() : "–";
@@ -232,7 +232,7 @@
       if (!cx) return;
       cx.clearRect(0, 0, W, H); cx.font = "14px 'Geist Mono',monospace";
       for (const c of cols) for (let k = 0; k < 9; k++) {
-        cx.fillStyle = k === 0 ? "rgba(241,238,231,.7)" :`rgba(241,238,231,${(0.42 * (1 - k / 9)).toFixed(3)})`;
+        cx.fillStyle = k === 0 ? "rgba(239,230,211,.7)" :`rgba(239,230,211,${(0.42 * (1 - k / 9)).toFixed(3)})`;
         cx.fillText(Math.random() < 0.5 ? "0" : "1", c.x, c.y - k * FS);
       }
     };

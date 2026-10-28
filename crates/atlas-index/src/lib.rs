@@ -89,6 +89,17 @@ impl FlatIndex {
             meta: vec![],
         }
     }
+
+    /// Every stored id, in storage order (lets an ANN wrapper size a filter's allowed set).
+    pub fn ids(&self) -> &[VectorId] {
+        &self.ids
+    }
+
+    /// One stored vector with its metadata (lets an ANN wrapper rescore its candidates).
+    pub fn get(&self, id: VectorId) -> Option<(&[f32], &Value)> {
+        let &p = self.pos.get(&id)?;
+        Some((&self.data[p * self.dim..(p + 1) * self.dim], &self.meta[p]))
+    }
 }
 
 impl AnnIndex for FlatIndex {

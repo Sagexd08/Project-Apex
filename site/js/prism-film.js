@@ -8,7 +8,7 @@
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const W = 1280, H = 720, ctx = cv.getContext("2d");
   cv.width = W; cv.height = H;
-  const C = { bg: "#232323", off: "#f1eee7", acc: "#ff9100", mid: "#cbcbcb", line: "#4a4946", dim: "#8a8984" };
+  const C = { bg: "#3b0f1c", off: "#efe6d3", acc: "#a8b8a2", mid: "#d8d0be", line: "#6a3441", dim: "#a89c92" };
   const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
   const seg = (t, a, b) => clamp((t - a) / (b - a));
   const ease = p => 1 - Math.pow(1 - p, 3);

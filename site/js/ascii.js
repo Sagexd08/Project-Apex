@@ -91,10 +91,10 @@ export function createGlobe(canvas, ticker, reduce) {
         const z = Math.sqrt(1 - rr);
         const lat = Math.asin(-y), lon = Math.atan2(x, z) + spin;
         const l = land(lon, lat);
-        if (l < 0.12) { if (rr > 0.94) { ctx.fillStyle = 'rgba(241,238,231,.18)'; ctx.fillText('·', i * cw + cw / 2, j * ch + ch / 2); } continue; }
+        if (l < 0.12) { if (rr > 0.94) { ctx.fillStyle = 'rgba(239,230,211,.18)'; ctx.fillText('·', i * cw + cw / 2, j * ch + ch / 2); } continue; }
         const b = Math.min(1, z * 0.85 + (l - 0.12) * 0.25);
         const g = RAMP[Math.min(RAMP.length - 1, Math.floor(b * RAMP.length))];
-        ctx.fillStyle = `rgba(241,238,231,${(0.12 + b * 0.5).toFixed(2)})`;
+        ctx.fillStyle = `rgba(239,230,211,${(0.12 + b * 0.5).toFixed(2)})`;
         ctx.fillText(g, i * cw + cw / 2, j * ch + ch / 2);
       }
     }

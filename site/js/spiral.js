@@ -90,7 +90,7 @@ export async function createSpiral(host, { ticker, reduce }) {
     tMap: { value: null }, uAspect: { value: 1 }, uZoom: { value: 1 }, uRot: { value: 0 }, uTime: { value: 0 },
     uTwist: { value: 0.55 }, uShow: { value: 0 }, uPx: { value: 0.0014 },
     uCenter: { value: new THREE.Vector2(0.75, 0.5) }, uPointer: { value: new THREE.Vector2() },
-    uBg: { value: new THREE.Color('#232323') }, uInk: { value: new THREE.Color('#f1eee7') },
+    uBg: { value: new THREE.Color('#3b0f1c') }, uInk: { value: new THREE.Color('#efe6d3') },
   };
   const mat = new THREE.ShaderMaterial({ uniforms: u, vertexShader: VERT, fragmentShader: FRAG, depthTest: false, depthWrite: false });
   scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat));

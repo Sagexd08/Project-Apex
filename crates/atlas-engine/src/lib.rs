@@ -88,8 +88,9 @@ type FpFn = fn(&[u8]) -> u64;
 /// (seq, fingerprint, payload) copied out of an `OpEntry`.
 type OpLookup = (u64, u64, Arc<[u8]>);
 
-/// ponytail: the dedupe window is the whole WAL and this map grows without bound, now retaining
-/// each op's payload bytes (up to max_record_len); add expiry/compaction when snapshots exist.
+/// Bounded by `Config.max_ops` for new writes (CAPACITY_EXCEEDED); replay always admits what is
+/// already durable. Retains each op's payload bytes (up to max_record_len). ponytail: no expiry;
+/// add expiry/compaction when snapshots exist.
 type OpMap = HashMap<(TenantId, String), OpEntry>;
 
 /// Documented cap on metadata nesting (arrays/objects). Below serde_json recursion limit of 128
@@ -309,6 +310,8 @@ pub struct PoisonLayers {
 pub struct Engine {
     dim: usize,
     max_record_len: u32,
+    max_ops: usize,
+    max_tenant_vectors: usize,
     wal: Wal,
     parts: Arc<RwLock<Parts>>,
     ops: Arc<Mutex<OpMap>>,
@@ -449,6 +452,8 @@ impl Engine {
         Ok(Engine {
             dim,
             max_record_len: cfg.max_record_len,
+            max_ops: cfg.max_ops,
+            max_tenant_vectors: cfg.max_tenant_vectors,
             wal,
             parts,
             ops,
@@ -593,6 +598,7 @@ impl Engine {
         self.check_poison()?; // cheap: before any depth/encode/admit work
         let metadata = check_depth(metadata)?;
         validate_vector(self.dim, vector)?;
+        self.check_tenant_capacity(t)?;
         let (payload, _) = self.prepare(&Record {
             tenant: t.as_str().to_string(),
             deleted: false,
@@ -610,7 +616,7 @@ impl Engine {
     /// Retrying the same `op_id` with the same payload (after OUTCOME_UNKNOWN, a crash or a
     /// restart) never applies twice and returns the ORIGINAL seq. Same `op_id` with a different
     /// payload is OP_ID_CONFLICT. Op ids of different tenants are independent namespaces.
-    /// The dedupe window is the whole WAL (unbounded, see OpMap).
+    /// The dedupe window is the whole WAL, bounded by `Config.max_ops` (see OpMap).
     /// OUTCOME_UNKNOWN means the record may be durable (e.g. the engine was poisoned by another
     /// record in the same batch): treat it as unknown and retry the same op id after reopen.
     pub fn insert_op(
@@ -651,7 +657,24 @@ impl Engine {
                 Err(AtlasError::OpIdConflict(clip_echo(op_id)))
             };
         }
+        // New op id: capacity is checked only now so a retry of a known op still succeeds when
+        // full. The gate serialises insert_op, so the op-map bound is exact.
+        if self.ops.lock().map_err(|_| generic_poison())?.len() >= self.max_ops {
+            return Err(AtlasError::CapacityExceeded("operation map"));
+        }
+        self.check_tenant_capacity(t)?;
         self.append(payload, true)
+    }
+
+    /// Refuse an upsert when the tenant partition is at `max_tenant_vectors` (updates of existing
+    /// ids are refused too: conservative, no per-id lookup). ponytail: read-then-append is not
+    /// atomic, concurrent writers can overshoot by the in-flight count; tighten if that matters.
+    fn check_tenant_capacity(&self, t: &TenantId) -> Result<(), AtlasError> {
+        let n = self.read_parts()?.map.get(t).map_or(0, |ix| ix.len());
+        if n >= self.max_tenant_vectors {
+            return Err(AtlasError::CapacityExceeded("tenant partition"));
+        }
+        Ok(())
     }
 
     /// Copy one op-map entry out and release the map lock before returning.
