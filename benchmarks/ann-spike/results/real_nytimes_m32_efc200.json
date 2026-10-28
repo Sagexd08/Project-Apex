@@ -1,0 +1,166 @@
+{
+  "build_seconds": 133.1939127,
+  "dataset": "nytimes-256-angular",
+  "dim": 256,
+  "filtered": [
+    {
+      "hybrid": {
+        "mean_ms": 13.844302599999999,
+        "p50_ms": 14.3397,
+        "p95_ms": 18.209300000000002,
+        "p99_ms": 21.9011,
+        "qps_single_thread": 72.23187970479638,
+        "recall_at_10": 0.9560999999999963
+      },
+      "leaks": 0,
+      "native": {
+        "mean_ms": 12.996668899999998,
+        "p50_ms": 13.5472,
+        "p95_ms": 17.1237,
+        "p99_ms": 19.6703,
+        "qps_single_thread": 76.94279262588583,
+        "recall_at_10": 0.9560999999999963
+      },
+      "selectivity": "10%"
+    },
+    {
+      "hybrid": {
+        "mean_ms": 4.858220800000001,
+        "p50_ms": 4.7002,
+        "p95_ms": 5.6781999999999995,
+        "p99_ms": 6.7908,
+        "qps_single_thread": 205.8366717297,
+        "recall_at_10": 1.0
+      },
+      "leaks": 0,
+      "native": {
+        "mean_ms": 24.80118960000001,
+        "p50_ms": 25.0721,
+        "p95_ms": 32.366899999999994,
+        "p99_ms": 40.6633,
+        "qps_single_thread": 40.3206465547927,
+        "recall_at_10": 0.9726999999999969
+      },
+      "selectivity": "5%"
+    },
+    {
+      "hybrid": {
+        "mean_ms": 3.285650999999999,
+        "p50_ms": 3.1905,
+        "p95_ms": 3.7857,
+        "p99_ms": 4.754300000000001,
+        "qps_single_thread": 304.35368820364664,
+        "recall_at_10": 1.0
+      },
+      "leaks": 0,
+      "native": {
+        "mean_ms": 36.7040139,
+        "p50_ms": 35.049,
+        "p95_ms": 54.100500000000004,
+        "p99_ms": 77.116,
+        "qps_single_thread": 27.244976604588757,
+        "recall_at_10": 0.9825999999999975
+      },
+      "selectivity": "3%"
+    },
+    {
+      "hybrid": {
+        "mean_ms": 1.0774089000000004,
+        "p50_ms": 1.0254999999999999,
+        "p95_ms": 1.3013000000000001,
+        "p99_ms": 1.6699,
+        "qps_single_thread": 928.1527189909059,
+        "recall_at_10": 1.0
+      },
+      "leaks": 0,
+      "native": {
+        "mean_ms": 76.18872990000008,
+        "p50_ms": 75.7578,
+        "p95_ms": 88.2169,
+        "p99_ms": 98.8554,
+        "qps_single_thread": 13.125300832715425,
+        "recall_at_10": 0.9954999999999995
+      },
+      "selectivity": "1%"
+    },
+    {
+      "hybrid": {
+        "mean_ms": 0.6911644000000003,
+        "p50_ms": 0.664,
+        "p95_ms": 0.8945,
+        "p99_ms": 0.9571000000000001,
+        "qps_single_thread": 1446.8337778971265,
+        "recall_at_10": 1.0
+      },
+      "leaks": 0,
+      "native": {
+        "mean_ms": 250.53884620000008,
+        "p50_ms": 233.4649,
+        "p95_ms": 353.12719999999996,
+        "p99_ms": 500.62569999999994,
+        "qps_single_thread": 3.991397003567742,
+        "recall_at_10": 0.9991
+      },
+      "selectivity": "0.1%"
+    }
+  ],
+  "ground_truth": "exact brute force computed here (not the dataset-supplied neighbours)",
+  "metric": "angular",
+  "n": 290000,
+  "params": {
+    "M": 32,
+    "ef_construction": 200,
+    "k": 10,
+    "scalar": "f32",
+    "threads_build": 12
+  },
+  "queries": 1000,
+  "source_digest": "1c64bcd32a499731a4f56de139df793f",
+  "unfiltered_sweep": [
+    {
+      "expansion_search": 64,
+      "mean_ms": 1.201802900000002,
+      "p50_ms": 1.1357,
+      "p95_ms": 2.0663,
+      "p99_ms": 2.9409,
+      "qps_single_thread": 832.0831976691015,
+      "recall_at_10": 0.8921999999999983
+    },
+    {
+      "expansion_search": 128,
+      "mean_ms": 1.8267109999999993,
+      "p50_ms": 1.7869,
+      "p95_ms": 2.859,
+      "p99_ms": 3.8983,
+      "qps_single_thread": 547.4319692606007,
+      "recall_at_10": 0.9164999999999981
+    },
+    {
+      "expansion_search": 256,
+      "mean_ms": 3.5754488000000024,
+      "p50_ms": 3.6681,
+      "p95_ms": 5.244000000000001,
+      "p99_ms": 6.424799999999999,
+      "qps_single_thread": 279.68516847451417,
+      "recall_at_10": 0.9386999999999979
+    },
+    {
+      "expansion_search": 512,
+      "mean_ms": 6.256255399999991,
+      "p50_ms": 6.3654,
+      "p95_ms": 9.5511,
+      "p99_ms": 13.9896,
+      "qps_single_thread": 159.8400218763448,
+      "recall_at_10": 0.9594999999999977
+    },
+    {
+      "expansion_search": 1024,
+      "mean_ms": 11.4479671,
+      "p50_ms": 12.138100000000001,
+      "p95_ms": 14.827,
+      "p99_ms": 16.7516,
+      "qps_single_thread": 87.35175348293912,
+      "recall_at_10": 0.9753999999999978
+    }
+  ]
+}

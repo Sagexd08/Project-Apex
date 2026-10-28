@@ -178,7 +178,7 @@ export function createMinimap(el) {
       if (r.height < 6 || r.width < 6) return;
       const i = document.createElement('i');
       const acc = n.matches('.btn');
-      i.style.cssText = `left:${6 + Math.min(1, Math.max(0, r.left / innerWidth)) * (W - 14)}px;top:${(y / docH) * H}px;width:${Math.max(6, (Math.min(r.width, innerWidth) / innerWidth) * (W - 14))}px;height:${Math.max(1.5, (r.height / docH) * H * 0.55)}px;background:${acc ? '#ff9100' : '#8a8a86'};opacity:${n.matches('.ide,.card') ? 0.35 : 0.8}`;
+      i.style.cssText = `left:${6 + Math.min(1, Math.max(0, r.left / innerWidth)) * (W - 14)}px;top:${(y / docH) * H}px;width:${Math.max(6, (Math.min(r.width, innerWidth) / innerWidth) * (W - 14))}px;height:${Math.max(1.5, (r.height / docH) * H * 0.55)}px;background:${acc ? '#a8b8a2' : '#a89c92'};opacity:${n.matches('.ide,.card') ? 0.35 : 0.8}`;
       frag.appendChild(i);
     });
     el.prepend(frag);

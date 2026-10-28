@@ -1,0 +1,20 @@
+[package]
+name = "atlas-usearch"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+
+# Detached from the core workspace on purpose: USearch is a C++ dependency and must not enter the
+# static musl image build or the core dependency / license audit. See docs/DEPS.md.
+[workspace]
+
+[dependencies]
+atlas-core = { path = "../../crates/atlas-core" }
+atlas-index = { path = "../../crates/atlas-index" }
+serde_json = { version = "=1.0.154", features = ["float_roundtrip"] }
+usearch = "=2.26.6"
+
+[dev-dependencies]
+atlas-core = { path = "../../crates/atlas-core", features = ["test-auth"] }
+atlas-engine = { path = "../../crates/atlas-engine" }

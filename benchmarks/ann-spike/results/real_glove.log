@@ -1,0 +1,12 @@
+C:/Desktop/apex-data/glove: n=1183514 d=100 angular=true queries=1000
+ground truth 10s
+built in 141.8s
+ef=32 recall=0.656199999999999 p95=0.36900000000000005ms
+ef=64 recall=0.7534999999999984 p95=0.6362ms
+ef=128 recall=0.8234999999999972 p95=1.121ms
+ef=256 recall=0.8784999999999977 p95=1.7948ms
+sel=10% native r=0.9181999999999981 p95=6.2531ms | hybrid r=0.9181999999999981 p95=9.9668ms leaks=0
+sel=5% native r=0.9435999999999971 p95=11.6858ms | hybrid r=1.0 p95=13.4871ms leaks=0
+sel=3% native r=0.9570999999999968 p95=20.7811ms | hybrid r=1.0 p95=9.7889ms leaks=0
+sel=1% native r=0.9779999999999969 p95=53.3927ms | hybrid r=1.0 p95=4.4512ms leaks=0
+sel=0.1% native r=0.9983999999999997 p95=349.82570000000004ms | hybrid r=1.0 p95=2.3773ms leaks=0
