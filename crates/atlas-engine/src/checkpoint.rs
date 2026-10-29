@@ -27,26 +27,34 @@ fn tagged(tag: u8, body: Vec<u8>) -> Vec<u8> {
     out
 }
 
-pub(super) fn items(parts: &Parts) -> Result<Vec<Vec<u8>>, AtlasError> {
+pub(super) fn snapshot(parts: &Parts) -> Vec<Record> {
     let mut tenants: Vec<_> = parts.map.keys().collect();
     tenants.sort_by(|a, b| a.as_str().cmp(b.as_str()));
     let mut out = Vec::new();
     for t in tenants {
         let Some(ix) = parts.map.get(t) else { continue };
         for (id, vector, metadata) in ix.entries() {
-            let rec = Record {
+            out.push(Record {
                 tenant: t.as_str().to_string(),
                 id,
                 vector,
                 metadata,
                 deleted: false,
                 op_id: None,
-            };
-            let body = serde_json::to_vec(&rec).map_err(|e| AtlasError::Codec(e.to_string()))?;
-            out.push(tagged(TAG_ITEM, body));
+            });
         }
     }
-    Ok(out)
+    out
+}
+
+pub(super) fn encode(records: Vec<Record>) -> Result<Vec<Vec<u8>>, AtlasError> {
+    records
+        .iter()
+        .map(|rec| {
+            let body = serde_json::to_vec(rec).map_err(|e| AtlasError::Codec(e.to_string()))?;
+            Ok(tagged(TAG_ITEM, body))
+        })
+        .collect()
 }
 
 pub(super) fn ops(map: &OpMap, upto_seq: u64) -> Result<Vec<Vec<u8>>, AtlasError> {

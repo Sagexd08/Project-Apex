@@ -333,3 +333,64 @@ fn leftover_temp_segment_from_a_crash_is_cleaned_and_ignored() {
     assert_eq!(e.count(&a).unwrap(), 1);
     assert!(!d.join("seg-00000000000000000099.atlas.tmp").exists());
 }
+
+#[test]
+fn checkpoint_cuts_the_running_log_and_later_writes_survive_reopen() {
+    let d = dir("live-cut");
+    let a = full("a");
+    let (want, grown);
+    {
+        let e = Engine::open(&d, Config::new(2)).unwrap();
+        for i in 0..100u64 {
+            e.insert(&a, VectorId(i), &v(i), json!({"i": i})).unwrap();
+        }
+        let before = wal_len(&d);
+        let seq = e.checkpoint().unwrap();
+        assert_eq!(seq, 100);
+        let cut = wal_len(&d);
+        assert!(
+            cut < before,
+            "live cut must shrink the log: {cut} vs {before}"
+        );
+        for i in 100..120u64 {
+            e.insert(&a, VectorId(i), &v(i), json!({"i": i})).unwrap();
+        }
+        grown = wal_len(&d);
+        assert!(grown > cut, "appends after the cut must reach the new file");
+        assert_eq!(e.checkpoint().unwrap(), 120);
+        e.insert(&a, VectorId(500), &v(3), json!({})).unwrap();
+        want = snapshot_of(&e, "a");
+    }
+    let e = Engine::open(&d, Config::new(2)).unwrap();
+    assert_eq!(snapshot_of(&e, "a"), want);
+    assert_eq!(want.len(), 121);
+}
+
+#[test]
+fn writers_running_during_live_cuts_lose_nothing() {
+    let d = dir("live-cut-conc");
+    let e = std::sync::Arc::new(Engine::open(&d, Config::new(2)).unwrap());
+    let a = full("a");
+    let writers: Vec<_> = (0..4u64)
+        .map(|w| {
+            let (e, a) = (e.clone(), a.clone());
+            std::thread::spawn(move || {
+                for i in 0..100u64 {
+                    e.insert(&a, VectorId(w * 1000 + i), &v(i), json!({"w": w}))
+                        .unwrap();
+                }
+            })
+        })
+        .collect();
+    for _ in 0..10 {
+        e.checkpoint().unwrap();
+    }
+    for h in writers {
+        h.join().unwrap();
+    }
+    let want = snapshot_of(&e, "a");
+    assert_eq!(want.len(), 400);
+    drop(e);
+    let e = Engine::open(&d, Config::new(2)).unwrap();
+    assert_eq!(snapshot_of(&e, "a"), want);
+}

@@ -755,13 +755,14 @@ impl Engine {
         self.check_poison()?;
         // Serialize checkpoints: they share the `.tmp` name and prune older segments.
         let _gate = self.checkpoint_gate.lock().map_err(|_| generic_poison())?;
-        let (seq, mut payloads) = {
+        let (seq, snapshot) = {
             let parts = self.read_parts()?;
             (
                 self.applied.load(Ordering::SeqCst),
-                checkpoint::items(&parts)?,
+                checkpoint::snapshot(&parts),
             )
         };
+        let mut payloads = checkpoint::encode(snapshot)?;
         if seq == 0 {
             return Ok(0);
         }
@@ -779,6 +780,7 @@ impl Engine {
         segment::write_segment(&self.dir, seq, &payloads)?;
         // The new segment is already durable; failing to prune old ones is not a failure.
         let _ = segment::remove_older_than(&self.dir, seq);
+        let _ = self.wal.cut_prefix(seq);
         Ok(seq)
     }
 

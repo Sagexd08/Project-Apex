@@ -36,6 +36,14 @@ struct Req {
     reply: Reply,
 }
 
+enum Msg {
+    Append(Req),
+    Cut {
+        through: u64,
+        reply: Sender<Result<(), AtlasError>>,
+    },
+}
+
 #[cfg(any(test, feature = "test-support"))]
 #[derive(Default)]
 pub struct CommitHold {
@@ -178,7 +186,7 @@ impl Faults {
 }
 
 pub struct Wal {
-    tx: Option<Sender<Req>>,
+    tx: Option<Sender<Msg>>,
     handle: Option<JoinHandle<()>>,
     #[cfg(any(test, feature = "test-support"))]
     faults: Faults,
@@ -396,6 +404,8 @@ impl Wal {
             file,
             len: good_len as u64,
             next_seq,
+            path: path.to_path_buf(),
+            max_record_len: cfg.max_record_len,
             max_batch,
             window: cfg.batch_window,
             faults: faults.clone(),
@@ -484,11 +494,23 @@ impl Wal {
         self.tx
             .as_ref()
             .ok_or(AtlasError::WalClosed)?
-            .send(Req { payload, reply })
+            .send(Msg::Append(Req { payload, reply }))
             .map_err(|_| closed())?;
         #[cfg(any(test, feature = "test-support"))]
         self.faults.hold.note_enqueued();
         rx.recv().map_err(|_| closed())?
+    }
+}
+
+impl Wal {
+    pub fn cut_prefix(&self, through: u64) -> Result<(), AtlasError> {
+        let (reply, rx) = channel();
+        self.tx
+            .as_ref()
+            .ok_or(AtlasError::WalClosed)?
+            .send(Msg::Cut { through, reply })
+            .map_err(|_| AtlasError::WalClosed)?;
+        rx.recv().map_err(|_| AtlasError::WalClosed)?
     }
 }
 
@@ -511,6 +533,8 @@ struct Committer {
     file: File,
     len: u64,
     next_seq: u64,
+    path: std::path::PathBuf,
+    max_record_len: u32,
     max_batch: usize,
     window: Duration,
     faults: Faults,
@@ -520,19 +544,57 @@ struct Committer {
 }
 
 impl Committer {
-    fn run(mut self, rx: Receiver<Req>) {
+    fn run(mut self, rx: Receiver<Msg>) {
         while let Ok(first) = rx.recv() {
-            let mut batch = vec![first];
+            let mut batch = Vec::new();
+            let mut cut = None;
+            match first {
+                Msg::Append(r) => batch.push(r),
+                Msg::Cut { through, reply } => cut = Some((through, reply)),
+            }
             let deadline = Instant::now() + self.window;
-            while batch.len() < self.max_batch {
+            while cut.is_none() && batch.len() < self.max_batch {
                 let left = deadline.saturating_duration_since(Instant::now());
                 match rx.recv_timeout(left) {
-                    Ok(r) => batch.push(r),
+                    Ok(Msg::Append(r)) => batch.push(r),
+                    Ok(Msg::Cut { through, reply }) => cut = Some((through, reply)),
                     Err(_) => break,
                 }
             }
-            if !self.commit(batch) {
+            if !batch.is_empty() && !self.commit(batch) {
+                if let Some((_, reply)) = cut {
+                    let _ = reply.send(Err(AtlasError::WalFailed));
+                }
                 return;
+            }
+            if let Some((through, reply)) = cut {
+                let _ = reply.send(self.cut(through));
+            }
+        }
+    }
+
+    fn cut(&mut self, through: u64) -> Result<(), AtlasError> {
+        if self.failed.load(Ordering::SeqCst) {
+            return Err(AtlasError::WalFailed);
+        }
+        truncate_prefix(&self.path, through, self.max_record_len)?;
+        let reopened = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&self.path)
+            .and_then(|mut f| {
+                let len = f.seek(SeekFrom::End(0))?;
+                Ok((f, len))
+            });
+        match reopened {
+            Ok((f, len)) => {
+                self.file = f;
+                self.len = len;
+                Ok(())
+            }
+            Err(e) => {
+                self.failed.store(true, Ordering::SeqCst);
+                Err(AtlasError::WalFlushFailed(format!("reopen after cut: {e}")))
             }
         }
     }
