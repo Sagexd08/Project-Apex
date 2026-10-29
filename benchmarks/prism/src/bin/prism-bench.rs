@@ -1,4 +1,3 @@
-//! Prism experiments. Synthetic data only; writes results/results.json.
 
 use prism::quant;
 use prism::rng::SplitMix64;
@@ -58,7 +57,6 @@ fn mse(ep: &Epoch, vs: &[Vec<f32>], b: usize) -> f64 {
     mean(&errs)
 }
 
-/// Returns (writes_vec_per_s, commits_per_s, reader latencies ms).
 fn workload(data: &[Vec<f32>], qs: &Arc<Vec<Vec<f32>>>, calib: &Calib, writer_on: bool, secs: u64, lut: bool) -> (f64, f64, Vec<f64>) {
     let store = build_store(data);
     let pool = &data[..2000];
@@ -133,7 +131,6 @@ fn rs_files(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
     }
 }
 
-/// FNV-1a over every `.rs` file under `src/` (including `src/bin/`), in sorted path order.
 fn checksum() -> u64 {
     let mut names = Vec::new();
     rs_files(std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/src")), &mut names);
@@ -183,7 +180,6 @@ fn time_runs(runs: &[(&str, Runner)], qs: &[Vec<f32>]) -> J {
 
 type Row = Vec<(&'static str, J)>;
 
-/// Common per-config metrics from `(recall, stats)` pairs.
 fn agg(res: &[(f64, Stats)]) -> (Row, String) {
     let col = |f: &dyn Fn(&Stats) -> f64| res.iter().map(|r| f(&r.1)).collect::<Vec<_>>();
     let rec: Vec<f64> = res.iter().map(|r| r.0).collect();
@@ -280,7 +276,6 @@ impl Acc {
     }
 }
 
-/// All (query, vector) pairs: error distribution at b=1,2,4 and per-vector bound violations.
 fn pair_analysis(ep: &Epoch, snap: &Snapshot, qs: &[Vec<f32>], calib: &Calib) -> Acc {
     let resid: Vec<Vec<f32>> = BS3.iter().map(|&b| residuals(snap, b)).collect();
     let c = pv_const(ep.p, DELTA);
@@ -371,7 +366,6 @@ fn gates_json(acc: &Acc, calib: &Calib, rows: Vec<J>) -> J {
     obj(vec![("delta", num(DELTA as f64)), ("per_vector_bound", J::Arr(viol.collect())), ("rows", J::Arr(rows))])
 }
 
-/// One dataset: z sweep (+ optionally error distribution and gate comparison).
 fn run_ds(name: &str, data: &[Vec<f32>], qs: &[Vec<f32>], pairs: bool) -> (J, Option<J>, Option<J>) {
     let store = build_store(data);
     let (ep, snap) = (store.epoch(), store.pin());
@@ -475,7 +469,6 @@ fn main() {
     let (ep, snap) = (store.epoch(), store.pin());
     let truth: Vec<Vec<Hit>> = par_map(NQ, |i| search_exact(&snap, &qs[i], K));
 
-    // 1. sigma and data-oblivious MSE
     let calib = calibrate(ep, &snap, &qs[..100], 1000);
     let mut e1 = Vec::new();
     println!("== 1. sigma_b (measured vs C/(sqrt(3P)2^b)) and MSE (orig vs shifted)");
@@ -493,7 +486,6 @@ fn main() {
         ]));
     }
 
-    // 2. flat fixed rerank baselines
     println!("== 2. flat fixed rerank_n=100");
     let mut e2 = Vec::new();
     for b in [1usize, 2, 4] {
@@ -502,7 +494,6 @@ fn main() {
         e2.push(obj(vec![("bits", num(b as f64)), ("recall", num(mean(&r)))]));
     }
 
-    // 3. cascade z sweep
     println!("== 3. cascade [1,2,4]\n z    recall  miss   bitsPfx(M) bitsInc(M) surv1   surv2   surv3  rerank(mean/p95)");
     let mut e3 = Vec::new();
     for z in ZS {
@@ -537,7 +528,6 @@ fn main() {
     }
     println!("(full 4-bit scan = {:.1}M bits/query)", (N * D * 4) as f64 / 1e6);
 
-    // 4. wall clock, single thread, sequential
     println!("== 4. wall-clock per query, single thread (machine not idle)");
     let mut e4 = Vec::new();
     let runs: Vec<(&str, Runner)> = vec![
@@ -559,7 +549,6 @@ fn main() {
         e4.push(obj(vec![("name", J::Str(name.to_string())), ("p50_ms", num(pct(&lat, 50.0))), ("p95_ms", num(pct(&lat, 95.0)))]));
     }
 
-    // 5. concurrency
     println!("== 5. concurrency ({WORKLOAD_SECS}s, 4 readers, cascade z=2)");
     let (_, _, off) = workload(&data, &qs, &calib, false, WORKLOAD_SECS, false);
     let (wps, cps, on) = workload(&data, &qs, &calib, true, WORKLOAD_SECS, false);
@@ -569,7 +558,6 @@ fn main() {
         pct(&off, 50.0), pct(&off, 95.0), pct(&off, 99.0), pct(&on, 50.0), pct(&on, 95.0), pct(&on, 99.0)
     );
 
-    // ---- extra: kernel timing, harder datasets, error distribution, gates, concurrency repeats
     let runs: Vec<(&str, Runner)> = vec![
         ("exact_scan_ref", Box::new(|q| search_exact(&snap, q, K).len())),
         ("exact_scan_opt", Box::new(|q| search_exact_fast(&snap, q, K).len())),

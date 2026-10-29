@@ -1,5 +1,3 @@
-//! Review-fix slice S3: float fidelity + idempotent retry, iterative depth cap, op-gate
-//! concurrency, bounded Incomplete reason, config-shrink pin, poisoned engine.
 mod common;
 
 use atlas_core::{AtlasError, Config, EffectiveScope, Metric, PermSet, VectorId};
@@ -23,7 +21,6 @@ fn wal_len(dir: &Path) -> u64 {
     std::fs::metadata(dir.join("wal.log")).unwrap().len()
 }
 
-/// Deterministic xorshift stream of ordinary doubles in [0, 1000).
 fn stream() -> impl Iterator<Item = f64> {
     let mut x: u64 = 0x9E37_79B9_7F4A_7C15;
     std::iter::repeat_with(move || {
@@ -34,9 +31,6 @@ fn stream() -> impl Iterator<Item = f64> {
     })
 }
 
-/// 50 doubles that drift under a shortest-repr serialize -> parse trip when serde_json lacks
-/// `float_roundtrip` (found by scanning up to 100_000 candidates). With the feature on none
-/// drift, so fall back to the first 50 values of the same stream (the tests stay meaningful).
 fn fifty_floats() -> Vec<f64> {
     let drift: Vec<f64> = stream()
         .take(100_000)
@@ -50,16 +44,12 @@ fn fifty_floats() -> Vec<f64> {
     }
 }
 
-/// Known-drifting literal from the review (985.6906946328695 -> ...696 without the feature).
 const REVIEW_VALUE: f64 = 985.6906946328695;
 
 fn md_for(x: f64) -> Value {
     json!({"x": x, "nested": [x, {"y": x}], "n": 1})
 }
 
-/// Metadata cases: edge doubles and integers, then the scanned drifting values.
-/// JSON-number semantics pinned here: serde_json keeps the sign of -0.0 ("-0.0"), `Value ==`
-/// treats 0.0 and -0.0 as equal, so every comparison also checks the serialized text.
 fn cases() -> Vec<Value> {
     let mut floats = vec![
         0.0,
@@ -92,8 +82,6 @@ fn cases() -> Vec<Value> {
 fn same(a: &Value, b: &Value) -> bool {
     a == b && serde_json::to_string(a).unwrap() == serde_json::to_string(b).unwrap()
 }
-
-// ---------------- F1 ----------------
 
 #[test]
 fn f1_metadata_comes_back_exactly_live_and_after_reopen() {
@@ -160,9 +148,6 @@ fn f1_insert_op_retry_returns_original_seq_live_and_after_reopen() {
     assert_eq!(e.count(&a).unwrap(), len, "retries must not add records");
 }
 
-// ---------------- F2 ----------------
-
-/// Metadata of exactly `depth` levels (scalar = 1, each nested array adds 1), built iteratively.
 fn with_depth(depth: usize) -> Value {
     let mut v = json!(0);
     for _ in 1..depth {
@@ -173,8 +158,6 @@ fn with_depth(depth: usize) -> Value {
 
 const CHILD_ENV: &str = "ATLAS_F2_CHILD";
 
-/// Parent: re-executes this test binary running only the `#[ignore]`d child, so a stack
-/// overflow (process abort) cannot take the runner down; asserts clean exit + typed-error marker.
 #[test]
 fn f2_extreme_depth_runs_in_an_isolated_subprocess_and_is_a_typed_error() {
     let out = std::process::Command::new(std::env::current_exe().unwrap())
@@ -200,9 +183,6 @@ fn f2_extreme_depth_runs_in_an_isolated_subprocess_and_is_a_typed_error() {
         stdout.contains("F2_TYPED_ERROR_OK insert=INVALID_METADATA insert_op=INVALID_METADATA"),
         "marker missing:\n{stdout}"
     );
-    // S6-4: the exit-path results are asserted too, so a child that skips `f1_exit_paths()` (or
-    // drops its marker) fails here instead of passing on the exit status alone. Tokens are
-    // compared individually: the marker line's internal spacing is not part of the contract.
     let line = stdout
         .lines()
         .find(|l| l.starts_with("F1_EXIT_PATHS_OK"))
@@ -221,8 +201,6 @@ fn f2_extreme_depth_runs_in_an_isolated_subprocess_and_is_a_typed_error() {
     }
 }
 
-/// Child: the whole public insert path (including rejection and cleanup of the owned input) on a
-/// 256 KiB stack. Any recursion over the 200_000-deep value (serialize, clone, drop) aborts.
 #[test]
 #[ignore = "run only by the subprocess parent"]
 fn f2_child_extreme_depth() {
@@ -252,10 +230,6 @@ fn f2_child_extreme_depth() {
     f1_exit_paths();
 }
 
-/// S5/F1: each non-success exit of insert/insert_op with a 200_000-deep owned value, on a 256 KiB
-/// stack. Before the fix `authz(..)?` / `check_poison()?` dropped the value recursively (abort).
-/// `bad_op_id` / `bad_dim` with the deep value are rejected by the depth cap first (also an
-/// iterative drop); the `shallow_*` variants exercise the later returns with a depth-100 value.
 fn f1_exit_paths() {
     let dir = tmp("f1exit");
     let e = Arc::new(
@@ -283,7 +257,6 @@ fn f1_exit_paths() {
             let bad_dim = code(e2.insert(&a2, VectorId(1), &[1.0], deep()));
             let shallow_op = code(e2.insert_op(&a2, "", VectorId(1), &[1.0, 0.0], with_depth(100)));
             let shallow_dim = code(e2.insert(&a2, VectorId(1), &[1.0], with_depth(100)));
-            // Poison the engine through the supported failure path, then insert again.
             let _ = e2.insert(&a2, VectorId(666), &[1.0, 0.0], json!(null));
             let poisoned = code(e2.insert(&a2, VectorId(1), &[1.0, 0.0], deep()));
             let poisoned_op = code(e2.insert_op(&a2, "o", VectorId(1), &[1.0, 0.0], deep()));
@@ -305,7 +278,6 @@ fn f1_exit_paths() {
     );
 }
 
-/// Rejected writes leave NO trace: no WAL bytes, no seq, no record, no op-map entry.
 #[test]
 fn f3_rejected_metadata_leaves_no_trace() {
     let dir = tmp("notrace");
@@ -342,7 +314,6 @@ fn f3_rejected_metadata_leaves_no_trace() {
         assert_eq!(e.count(&a).unwrap(), cnt0, "{name}: records");
         assert_eq!(e.len(), total0, "{name}: partitions");
     }
-    // No seq consumed; no op-map entry (a different payload under "rej" is not a conflict).
     assert_eq!(
         e.insert(&a, VectorId(2), &[1.0, 0.0], json!(1)).unwrap(),
         seq0 + 1
@@ -350,8 +321,6 @@ fn f3_rejected_metadata_leaves_no_trace() {
     let s = e.insert_op(&a, "rej", VectorId(3), &[1.0, 0.0], json!(2));
     assert_eq!(s.unwrap(), seq0 + 2);
 }
-
-// ---------------- F3 ----------------
 
 #[test]
 fn f3_concurrent_retries_of_one_op_id_make_exactly_one_record() {
@@ -422,7 +391,6 @@ fn f3_concurrent_same_op_id_different_payloads_exactly_one_wins() {
         );
         winners.push(w);
     }
-    // Exactly ITERS WAL records were written: the next seq is seq0 + ITERS + 1.
     assert_eq!(e.count(&a).unwrap() as u64, ITERS + 1);
     let next = e
         .insert(&a, VectorId(10_001), &[1.0, 0.0], json!(0))
@@ -469,15 +437,13 @@ fn f3_many_tenants_with_distinct_op_ids_all_succeed() {
     assert_eq!(e.len(), 12);
 }
 
-// ---------------- F5 ----------------
-
 #[test]
 fn f5_incomplete_reason_is_bounded_for_a_huge_sink_error() {
     let dir = tmp("f5");
     let e = Engine::open(&dir, Config::new(2)).unwrap();
     let a = full("a");
     e.insert(&a, VectorId(1), &[1.0, 0.0], json!(null)).unwrap();
-    let huge = "\u{20ac}".repeat(1 << 20); // ~1M chars, 3 MB
+    let huge = "\u{20ac}".repeat(1 << 20);
     let mut sink = |_i: Item| Err(AtlasError::Codec(huge.clone()));
     match e.snapshot(&a, &mut sink) {
         Err(AtlasError::Incomplete { emitted, reason }) => {
@@ -488,8 +454,6 @@ fn f5_incomplete_reason_is_bounded_for_a_huge_sink_error() {
         other => panic!("{other:?}"),
     }
 }
-
-// ---------------- F6 ----------------
 
 #[test]
 fn f6_reopen_with_smaller_max_record_len_fails_with_wal_corrupt() {
@@ -509,12 +473,9 @@ fn f6_reopen_with_smaller_max_record_len_fails_with_wal_corrupt() {
     let err = Engine::open(&dir, cfg).err().expect("must fail");
     assert_eq!(err.code(), "WAL_CORRUPT");
     assert!(err.to_string().contains("exceeds configured max"), "{err}");
-    // The operator fix (restore the limit) recovers everything.
     let e = Engine::open(&dir, Config::reopen()).unwrap();
     assert_eq!(e.count(&a).unwrap(), 1);
 }
-
-// ---------------- extras ----------------
 
 #[test]
 fn same_id_written_twice_in_one_group_commit_batch_snapshots_coherently() {
@@ -573,7 +534,6 @@ fn same_id_written_twice_in_one_group_commit_batch_snapshots_coherently() {
     snapper.join().unwrap();
 }
 
-/// Index that refuses id 666: stands in for a failing `AnnIndex` so the LIVE applier fails.
 struct Refuses(FlatIndex);
 
 impl AnnIndex for Refuses {
@@ -614,14 +574,12 @@ fn live_applier_failure_poisons_writes_but_not_reads_and_reopen_recovers() {
         .unwrap_err();
     assert_eq!(err.code(), "WAL_CORRUPT");
     assert!(err.to_string().contains("index refused"), "{err}");
-    // Writes of every tenant now fail; applied data stays readable.
     for t in ["a", "b"] {
         let r = e.insert(&full(t), VectorId(2), &[1.0, 0.0], json!(null));
         assert_eq!(r.unwrap_err().code(), "WAL_CORRUPT", "tenant {t}");
     }
     assert_eq!(e.count(&a).unwrap(), 1);
     drop(e);
-    // Reopen with a healthy index: the admitted record 666 replays fine.
     let e = Engine::open(&dir, Config::reopen()).unwrap();
     assert_eq!(e.count(&a).unwrap(), 2);
 }

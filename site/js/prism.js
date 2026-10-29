@@ -1,12 +1,9 @@
-// Prism page: progress bar, nav highlight, copy button, and three small labs.
-// The labs run a MODEL (Gaussian similarity tail, error formula from the paper). They are not measurements.
 (() => {
   "use strict";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // ---- reading progress + nav highlight
   const bar = $("#progress");
   const links = $$(".nav a.nl");
   const secs = links.map(a => $(a.getAttribute("href"))).filter(Boolean);
@@ -20,7 +17,6 @@
   addEventListener("scroll", onScroll, { passive: true });
   onScroll();
 
-  // ---- copy abstract
   const cp = $("#copy-abs");
   if (cp) cp.addEventListener("click", async () => {
     const txt = $("#abs-text").innerText.trim();
@@ -29,12 +25,9 @@
     setTimeout(() => (cp.querySelector(".odo").textContent = "Copy abstract"), 1800);
   });
 
-  // ---- seeded rng + gaussian
   function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
   function gauss(r) { let u = 0; while (!u) u = r(); const v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
 
-  // ---- lab 1: angle estimator. A random hyperplane meets the plane of q and x in a random line through the origin;
-  // it separates them iff the line's direction (mod pi) lies between the two vectors' directions.
   const geo = $("#geo");
   if (geo) {
     const th = $("#theta"), dd = $("#dim");
@@ -69,7 +62,6 @@
     drawGeo();
   }
 
-  // ---- lab 2: cascade model (errors are modelled as perfectly correlated across stages)
   const cv = $("#cascade");
   if (cv) {
     const N = 4000, K = 10, C = 3, P = 256, SD_S = 0.25;
@@ -128,7 +120,6 @@
     draw();
   }
 
-  // ---- lab 3: snapshots
   const tl = $("#tl");
   if (tl) {
     const MAX = 14; let lsn = 6, pinA = 3, pinB = 6, auto = null;
@@ -152,7 +143,6 @@
     render();
   }
 
-  // ================= enhancement layer: reveal, counters, tilt, equation stage, bit rain, plane peel =================
   const html = document.documentElement; html.classList.add("fx");
   const esc = s => s.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -200,7 +190,6 @@
   scan();
   setTimeout(() => $$(".rv-pre").forEach(el => { el.classList.add("rv-in"); el.classList.remove("rv-pre"); $$("b[data-count]", el).forEach(count); }), 6000);
 
-  // equation stage: letters rise in one by one, auto-advance, dots to choose
   const stage = $("#eqstage");
   if (stage) {
     const qs = $$(".eqq", stage), dots = $("#eqdots"); let cur = 0, timer = null;
@@ -216,7 +205,6 @@
     go(0); restart();
   }
 
-  // hero: bit rain + plane peel + parallax variable, one loop that sleeps when the hero is off screen
   const hero = $("#top"), rain = $("#rain"), stackEl = $(".stack");
   const setPeel = v => stackEl && stackEl.style.setProperty("--peel", v.toFixed(3));
   if (hero) {
@@ -252,7 +240,6 @@
       requestAnimationFrame(tick);
     }
   }
-  // manifesto: draw the 1px rules once the band is in view (main.js is not loaded on this page)
   const mfSec = $("#manifesto");
   if (mfSec) { if (reduce || !io) mfSec.classList.add("in"); else new IntersectionObserver(([e], o) => { if (e.isIntersecting) { mfSec.classList.add("in"); o.disconnect(); } }, { threshold: 0.15 }).observe(mfSec); }
   addEventListener("scroll", () => html.style.setProperty("--sy", scrollY), { passive: true });

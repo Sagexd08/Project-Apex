@@ -9,5 +9,4 @@ serde.workspace = true
 thiserror.workspace = true
 
 [features]
-# Adds AuthContext::for_test. Never enable in production builds.
 test-auth = []

@@ -8,7 +8,6 @@ version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0"
 
-# Exact pins (see docs/DEPS.md).
 [workspace.dependencies]
 crc32fast = "=1.5.3"
 serde = { version = "=1.0.229", features = ["derive"] }

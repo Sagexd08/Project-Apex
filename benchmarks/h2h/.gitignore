@@ -1,0 +1,3 @@
+results/*/*.log
+cache/
+atlas-bench/target/

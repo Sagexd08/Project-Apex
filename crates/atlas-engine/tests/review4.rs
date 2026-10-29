@@ -1,13 +1,3 @@
-//! Review-fix slice S5: poison vs the committer queue (F2), op-map lock scope (F3), canonical key
-//! order (F5), duplicate op-id records in a legacy WAL (F6).
-//!
-//! Timing (S6-5): the two `f2_*` race tests use NO sleeps and no wall-clock windows. Batch
-//! composition is controlled with the `test-support` committer hold latch and queued-request
-//! counter (`Engine::commit_hold_handle`) and, for the same-batch case, `max_batch = 2` with a
-//! 60 s batch window that can only end by the batch filling. The only remaining timeouts are
-//! the 30 s `SAFEGUARD` waits (and a 60 s self-release inside the hold): deadlock safeguards
-//! whose failure message says HANG/TIMEOUT, not a correctness failure. `f3_*` keeps its generous
-//! 5 s smoke bound (documented as a smoke test).
 mod common;
 
 use atlas_core::{AtlasError, Config, Metric, VectorId};
@@ -27,7 +17,6 @@ fn tmp(n: &str) -> PathBuf {
     d
 }
 
-/// Index that refuses id 666: stands in for a failing `AnnIndex` so the LIVE applier fails.
 struct Refuses(FlatIndex);
 
 impl AnnIndex for Refuses {
@@ -63,11 +52,6 @@ fn open_refusing(dir: &Path, cfg: Config) -> Arc<Engine> {
     )
 }
 
-// ---------------- F2: reviewer repro, poison arrives while a request is queued ----------------
-
-/// Reviewer repro: plain insert(666) is held in the committer (hold latch) after its batch was
-/// assembled; `insert_op` passes every check meanwhile and queues behind it. The poisoned engine
-/// must append nothing new: the queued request is rejected BEFORE it is written.
 #[test]
 fn f2_request_queued_behind_the_poisoning_batch_is_rejected_before_write() {
     let dir = tmp("queued");
@@ -82,7 +66,6 @@ fn f2_request_queued_behind_the_poisoning_batch_is_rejected_before_write() {
         hold.wait_held(SAFEGUARD),
         "HANG/TIMEOUT (not a correctness failure): committer never reached the hold"
     );
-    // The committer holds the batch [666] before writing: the next request cannot join it.
     let (e2, a2) = (e.clone(), a.clone());
     let l = std::thread::spawn(move || {
         e2.insert_op(&a2, "late", VectorId(7), &[1.0, 0.0], json!({"k": 1}))
@@ -101,10 +84,8 @@ fn f2_request_queued_behind_the_poisoning_batch_is_rejected_before_write() {
         "the rejected record was not applied"
     );
     drop(e);
-    // Healthy index: 1 and 666 are durable; "late" must be ABSENT (never written).
     let e = Engine::open(&dir, Config::reopen()).unwrap();
     assert_eq!(e.count(&a).unwrap(), 2, "late must not be durable");
-    // Retry with the same op id: a fresh insert (seq 3), then idempotent.
     let first = e
         .insert_op(&a, "late", VectorId(7), &[1.0, 0.0], json!({"k": 1}))
         .unwrap();
@@ -116,11 +97,6 @@ fn f2_request_queued_behind_the_poisoning_batch_is_rejected_before_write() {
     assert_eq!(e.count(&a).unwrap(), 3, "no duplicate execution");
 }
 
-/// Same batch as the poisoning record: it IS written and applied before poison is observable, so
-/// the caller gets OUTCOME_UNKNOWN (not WAL_CORRUPT); the culprit itself still gets WAL_CORRUPT.
-/// A retry with the same op id after reopen returns the original seq, executed exactly once.
-/// Batch = {666, late} by construction: `max_batch` 2 and a 60 s window, so the batch can only
-/// close by filling, and `late` is submitted only after 666 reached the queue.
 #[test]
 fn f2_record_written_in_the_poisoning_batch_is_outcome_unknown_and_retry_is_idempotent() {
     let dir = tmp("samebatch");
@@ -162,11 +138,6 @@ fn f2_record_written_in_the_poisoning_batch_is_outcome_unknown_and_retry_is_idem
     assert_eq!(e.count(&a).unwrap(), 3, "no duplicate execution");
 }
 
-// ---------------- F3: retries of a huge op ----------------
-
-/// SMOKE, not a proof: retrying an ~8 MiB op (byte comparison outside the ops mutex) does not
-/// stall unrelated writes beyond a generous bound. The structural guarantee that the mutex is
-/// released before the comparison is the unit test `lookup_op_releases_the_op_map_lock...`.
 #[test]
 fn f3_retries_of_a_huge_op_do_not_stall_unrelated_inserts() {
     let dir = tmp("hugeop");
@@ -197,8 +168,6 @@ fn f3_retries_of_a_huge_op_do_not_stall_unrelated_inserts() {
     );
 }
 
-// ---------------- F6: pins for hand-written / legacy WAL payloads ----------------
-
 fn legacy_wal(name: &str, records: &[&str]) -> PathBuf {
     let dir = tmp(name);
     std::fs::create_dir_all(&dir).unwrap();
@@ -212,9 +181,6 @@ fn legacy_wal(name: &str, records: &[&str]) -> PathBuf {
     dir
 }
 
-/// PIN of current behaviour (not a defect repro): two records with the same op id in a legacy WAL
-/// are BOTH applied on replay, the op map keeps the FIRST entry, so a retry of the first payload
-/// returns seq 1 and a retry of the second payload is OP_ID_CONFLICT.
 #[test]
 fn f6_pin_duplicate_op_id_records_in_a_wal_both_apply_first_entry_wins() {
     let r1 = r#"{"tenant":"a","id":1,"vector":[1.0,0.0],"metadata":{"v":1},"op_id":"dup"}"#;
@@ -230,9 +196,6 @@ fn f6_pin_duplicate_op_id_records_in_a_wal_both_apply_first_entry_wins() {
     assert_eq!(e.count(&a).unwrap(), 2);
 }
 
-/// PIN of current behaviour: replay stores the RAW WAL payload bytes (not re-canonicalised), so a
-/// semantically identical retry of a record whose bytes are not the engine's canonical encoding
-/// (foreign writer, tampering, legacy key order) is a false OP_ID_CONFLICT after reopen.
 #[test]
 fn f6_pin_non_canonical_wal_payload_gives_a_false_conflict_on_semantic_retry() {
     let raw = r#"{"op_id":"x","tenant":"a","id":1,"vector":[1.0,0.0],"metadata":null}"#;

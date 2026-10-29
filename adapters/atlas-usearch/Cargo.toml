@@ -5,8 +5,6 @@ edition = "2021"
 license = "Apache-2.0"
 publish = false
 
-# Detached from the core workspace on purpose: USearch is a C++ dependency and must not enter the
-# static musl image build or the core dependency / license audit. See docs/DEPS.md.
 [workspace]
 
 [dependencies]

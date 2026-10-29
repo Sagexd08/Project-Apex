@@ -1,4 +1,3 @@
-//! The engine enforces exactly the context an `Authenticator` hands it.
 use atlas_core::{
     AtlasError, Authenticator, Config, KeyScope, KeyVerifier, PermSet, Principal, TenantId,
     VectorId,
@@ -6,8 +5,6 @@ use atlas_core::{
 use atlas_engine::Engine;
 use serde_json::json;
 
-/// Embedder-side verifier: "ok" -> tenant a, all perms; "ro" -> search only;
-/// "split" -> principal tenant a but key tenant b.
 struct Fake;
 
 fn claims(pt: &str, kt: &str, p: PermSet, k: PermSet) -> (Principal, KeyScope) {
@@ -44,7 +41,6 @@ fn engine_enforces_authenticated_context() {
 
     e.insert(&scope(b"ok"), VectorId(1), &[1.0, 0.0], json!(null))
         .unwrap();
-    // Read-only key: search works, write and fetch are forbidden.
     let ro = scope(b"ro");
     assert_eq!(
         e.search(&ro, &[1.0, 0.0], 5, atlas_core::Metric::Dot)
@@ -55,12 +51,10 @@ fn engine_enforces_authenticated_context() {
     let w = e.insert(&ro, VectorId(2), &[1.0, 0.0], json!(null));
     assert_eq!(w.unwrap_err().code(), "FORBIDDEN");
     assert_eq!(e.fetch(&ro, VectorId(1)).unwrap_err().code(), "FORBIDDEN");
-    // Mismatched tenants never yield a context at all.
     assert!(matches!(
         auth.authenticate(b"split"),
         Err(AtlasError::Forbidden)
     ));
-    // Unknown secret never yields a context.
     assert!(matches!(
         auth.authenticate(b"nope"),
         Err(AtlasError::Forbidden)

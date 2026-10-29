@@ -1,10 +1,3 @@
-//! Slice S6: a PANICKING `AnnIndex` in the live applier (S6-1), generic poison errors for
-//! non-culprit tenants plus the operator diagnostics sink (S6-2), conditional OUTCOME_UNKNOWN
-//! wording (S6-3). Policy table: docs/SECURITY.md, "Poison and panic policy (S6)".
-//!
-//! No wall-clock assumptions: batch composition is controlled with the `test-support` committer
-//! hold latch and queued-request counter (`Engine::commit_hold_handle`). The only timeouts are
-//! 30 s deadlock safeguards; if one fires the failure message says HANG, not a wrong result.
 mod common;
 
 use atlas_core::{AtlasError, Config, Metric, VectorId};
@@ -31,13 +24,9 @@ fn tmp(n: &str) -> PathBuf {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum Mode {
-    /// insert(666) returns an error carrying ERR_MARK.
     Err,
-    /// insert(666) panics (payload PANIC_MARK) before touching its state.
     Panic,
-    /// insert(666) mutates its state, THEN panics: models a partially applied insert.
     PanicAfterMutate,
-    /// remove(777) panics.
     PanicRemove,
 }
 
@@ -97,7 +86,6 @@ fn wal_len(dir: &Path) -> u64 {
     std::fs::metadata(dir.join("wal.log")).unwrap().len()
 }
 
-/// Spawn one named call; its result arrives on `tx`.
 fn spawn_call(
     e: &Arc<Engine>,
     tx: &Sender<(&'static str, Res)>,
@@ -131,8 +119,6 @@ fn ins_op(t: &'static str, op: &'static str, id: u64) -> Box<dyn FnOnce(&Engine)
     Box::new(move |e| e.insert_op(&full(t), op, VectorId(id), &[1.0, 0.0], json!({"k": id})))
 }
 
-/// Submit `calls` in order, each only after the previous one reached the committer queue, so the
-/// arrival order (hence batch and seq order) is exactly the order given.
 fn submit_in_order(e: &Arc<Engine>, tx: &Sender<(&'static str, Res)>, calls: Calls) {
     let hold = e.commit_hold_handle();
     for (name, f) in calls {
@@ -149,18 +135,9 @@ struct Run {
     dir: PathBuf,
     e: Arc<Engine>,
     res: HashMap<&'static str, Res>,
-    /// WAL length with the poisoning batch held (nothing of phase 2 written yet).
     len_before: u64,
 }
 
-/// Phase 1: four acknowledged writes. Phase 2 (committer held until everything is queued):
-/// batch [before, culprit, after_x, after_plain] then the queued-behind plain insert `queued`.
-/// `max_batch` is 4 and the window 60 s, so the batch closes by size, never by the clock.
-/// Seqs: phase 1 = 1..=4, before 5, culprit 6, after_x 7, after_plain 8; `queued` is rejected
-/// before it is written (the next free seq stays 9).
-/// A batch holds at most ONE insert_op (they serialize on `op_gate` and do not group-commit), so
-/// either the culprit is the insert_op ("p-op", `op_culprit`) and `after_x` is a plain insert on
-/// tenant b, or the culprit is a plain insert and `after_x` is the insert_op "b-op" on tenant b.
 fn scenario(name: &str, mode: Mode, op_culprit: bool, setup: &dyn Fn(&Arc<Engine>)) -> Run {
     let dir = tmp(name);
     drop(Engine::open(&dir, Config::new(2)).unwrap());
@@ -238,7 +215,6 @@ fn msg(r: &Res) -> String {
     r.as_ref().unwrap_err().to_string()
 }
 
-/// Run `f` on its own thread: a panic in a caller thread is a test failure, not a result.
 fn no_unwind<T: Send + 'static>(what: &str, f: impl FnOnce() -> T + Send + 'static) -> T {
     std::thread::spawn(f)
         .join()
@@ -250,8 +226,6 @@ fn assert_clean(what: &str, s: &str) {
         assert!(!s.contains(bad), "{what}: leaked {bad:?} in {s:?}");
     }
 }
-
-// ---------------- S6-1 (a): panic after a durable append ----------------
 
 #[test]
 fn s6_1a_panic_in_apply_culprit_others_queued_and_nobody_hangs() {
@@ -273,16 +247,12 @@ fn s6_1a_panic_in_apply_culprit_others_queued_and_nobody_hangs() {
                 .all(|x| code(x) != "OK" && code(x) != "WAL_CLOSED"),
             "{ctx}"
         );
-        // The queued request passed both engine checks (it was queued before the poison existed):
-        // the WAL Failed flag layer, and only it, rejected it.
         let layers = r.e.poison_layer_counts();
         assert_eq!(
             (layers.cheap, layers.append_precheck, layers.wal_failed_flag),
             (0, 0, 1),
             "{ctx}"
         );
-        // Queued-behind was rejected BEFORE the write: header (12) + 4 phase-1 records only, then
-        // exactly the 4 batch records. Reopen below proves `q-op` is absent.
         assert!(
             wal_len(&r.dir) > r.len_before,
             "the batch itself was written"
@@ -305,8 +275,6 @@ fn s6_1a_panic_in_apply_culprit_others_queued_and_nobody_hangs() {
         );
     }
 }
-
-// ---------------- S6-1 (b): reads fail closed on every tenant ----------------
 
 #[test]
 fn s6_1b_after_a_panic_every_tenant_fails_closed_without_unwinding() {
@@ -369,12 +337,9 @@ fn s6_1b_after_a_panic_every_tenant_fails_closed_without_unwinding() {
             seen.iter().all(|(_, m)| m == first),
             "one generic poison message everywhere: {seen:?}"
         );
-        // The queued-behind request is the same generic error.
         assert_eq!(&msg(&r.res["queued"]), first);
     }
 }
-
-// ---------------- S6-1 (c): mixed tenants + acknowledged ops survive reopen ----------------
 
 #[test]
 fn s6_1c_mixed_tenant_batch_other_tenants_get_the_generic_error_and_acked_ops_survive() {
@@ -387,7 +352,6 @@ fn s6_1c_mixed_tenant_batch_other_tenants_get_the_generic_error_and_acked_ops_su
         };
         const GENERIC: &str = "WAL_CORRUPT: engine poisoned by an earlier internal failure; no further operations are accepted until the database is reopened";
         const PLAIN_UNKNOWN: &str = "OUTCOME_UNKNOWN: outcome unknown: the record may be durable; reopen the engine to learn the result (plain insert/delete have no operation id and are not idempotently retryable)";
-        // Each record individually (tenant a = culprit's tenant; b and c = other tenants).
         assert_eq!(
             code(&r.res["culprit"]),
             "WAL_CORRUPT",
@@ -442,7 +406,6 @@ fn s6_1c_mixed_tenant_batch_other_tenants_get_the_generic_error_and_acked_ops_su
             assert_clean(&format!("{mode:?}/{k}"), &m);
             assert_ne!(code(&r.res[k]), "WAL_CLOSED");
         }
-        // Later write by another tenant: the same generic text as the queued request.
         let late =
             r.e.insert(&full("b"), VectorId(9), &[1.0, 0.0], json!(null));
         assert_eq!(code(&late), "WAL_CORRUPT");
@@ -450,7 +413,6 @@ fn s6_1c_mixed_tenant_batch_other_tenants_get_the_generic_error_and_acked_ops_su
         let dir = r.dir.clone();
         drop(r);
         let e = Engine::open(&dir, Config::reopen()).unwrap();
-        // Every acknowledged op (phase 1) AND every written-but-unacknowledged record is present.
         for (t, id) in [
             ("a", 1),
             ("b", 2),
@@ -473,8 +435,6 @@ fn s6_1c_mixed_tenant_batch_other_tenants_get_the_generic_error_and_acked_ops_su
     }
 }
 
-// ---------------- S6-1 (d): dropping a poisoned engine, immediate reopen ----------------
-
 #[test]
 fn s6_1d_dropping_the_poisoned_engine_completes_and_the_directory_reopens() {
     for mode in [Mode::Panic, Mode::PanicAfterMutate] {
@@ -494,8 +454,6 @@ fn s6_1d_dropping_the_poisoned_engine_completes_and_the_directory_reopens() {
         assert_eq!(e.count(&full("a")).unwrap(), 4);
     }
 }
-
-// ---------------- S6-1 (e): reopen follows the documented contract ----------------
 
 #[test]
 fn s6_1e_reopen_recovers_the_durable_record_and_retry_returns_the_original_seq() {
@@ -564,8 +522,6 @@ fn s6_1_panic_in_remove_poisons_the_same_way() {
     );
 }
 
-// ---------------- S6-2: generic errors, diagnostics sink ----------------
-
 #[test]
 fn s6_2_index_error_poison_gives_non_culprits_a_generic_message_and_keeps_reads() {
     let r = scenario("idx", Mode::Err, true, &|_| {});
@@ -584,11 +540,9 @@ fn s6_2_index_error_poison_gives_non_culprits_a_generic_message_and_keeps_reads(
         assert_clean("later write", &msg(&w));
         assert_eq!(msg(&w), msg(&r.res["queued"]));
     }
-    // Index-error poison (the index is consistent): applied data stays readable.
     assert!(r.e.count(&full("a")).is_ok());
 }
 
-/// Records every sink call; optionally panics (to prove the engine survives a hostile sink).
 fn recording_sink(calls: &Arc<Mutex<Vec<String>>>, boom: bool) -> Arc<dyn Fn(&str) + Send + Sync> {
     let calls = calls.clone();
     Arc::new(move |d: &str| {
@@ -619,7 +573,6 @@ fn s6_2_sink_receives_the_full_detail_exactly_once() {
             Some(got[0].as_str()),
             "accessor == sink detail"
         );
-        // More failing/rejected calls never re-invoke it.
         let _ =
             r.e.insert(&full("a"), VectorId(1), &[1.0, 0.0], json!(null));
         assert_eq!(calls.lock().unwrap().len(), 1);
@@ -665,8 +618,6 @@ fn s6_2_sink_runs_outside_every_engine_lock() {
     let tx = Mutex::new(tx);
     let weak: Arc<Mutex<Weak<Engine>>> = Arc::new(Mutex::new(Weak::new()));
     let w2 = weak.clone();
-    // The sink re-enters the engine (a read and a write attempt). Were it called under the parts
-    // write lock or the op map lock, the read would deadlock; the safeguard turns that into a failure.
     let r = scenario("lockfree", Mode::Err, true, &move |e| {
         *w2.lock().unwrap() = Arc::downgrade(e);
         let w3 = w2.clone();
@@ -694,8 +645,6 @@ fn s6_2_sink_runs_outside_every_engine_lock() {
     drop(r);
 }
 
-// ---------------- S6-3: OUTCOME_UNKNOWN wording ----------------
-
 #[test]
 fn s6_3_outcome_unknown_text_depends_on_whether_the_call_has_an_op_id() {
     const PLAIN: &str = "OUTCOME_UNKNOWN: outcome unknown: the record may be durable; reopen the engine to learn the result (plain insert/delete have no operation id and are not idempotently retryable)";
@@ -714,7 +663,6 @@ fn s6_3_outcome_unknown_text_depends_on_whether_the_call_has_an_op_id() {
 
 #[test]
 fn s6_3_plain_delete_gets_the_plain_text() {
-    // delete in the poisoned batch: phase 1 stores id 3 for tenant c, then a batch deletes it.
     let dir = tmp("deltext");
     drop(Engine::open(&dir, Config::new(2)).unwrap());
     let mut cfg = Config::reopen();
@@ -744,11 +692,6 @@ fn s6_3_plain_delete_gets_the_plain_text() {
     assert!(!msg(&res["del"]).contains("retry the same op id"));
 }
 
-// ---------------- panic recovery needs unwinding ----------------
-
-/// `catch_unwind` around the applier only works with `panic = "unwind"`. With `panic = "abort"` a
-/// panicking index aborts the process (fail-closed in the crudest way) and none of the S6-1
-/// recovery applies. No profile in this workspace sets abort; this pins it for the test build.
 #[test]
 fn s6_panic_recovery_requires_unwinding() {
     if !cfg!(panic = "unwind") {
@@ -762,8 +705,6 @@ fn s6_panic_recovery_requires_unwinding() {
     );
 }
 
-// ---------------- poison-race layer attribution ----------------
-
 fn open_default(name: &str, mode: Mode) -> (PathBuf, Arc<Engine>) {
     let dir = tmp(name);
     let e = Engine::open_with_index(&dir, Config::new(2), factory(mode)).unwrap();
@@ -775,9 +716,6 @@ fn layers(e: &Engine) -> (usize, usize, usize) {
     (l.cheap, l.append_precheck, l.wal_failed_flag)
 }
 
-/// A request that passed the CHEAP check and is paused (existing before_gate hook) while the
-/// engine becomes poisoned is rejected by the authoritative engine layer, the `append`
-/// pre-check, not by the cheap one, and writes nothing.
 #[test]
 fn layers_a_request_paused_after_the_cheap_check_is_rejected_by_the_append_precheck() {
     let (dir, e) = open_default("layer-pause", Mode::Err);
@@ -817,8 +755,6 @@ fn layers_a_request_paused_after_the_cheap_check_is_rejected_by_the_append_prech
     assert_eq!(wal_len(&dir), len, "T wrote nothing");
 }
 
-/// With the engine's own poison checks bypassed (test flag) the WAL Failed flag layer alone still
-/// rejects the write, before anything is written, and the caller sees the generic poison error.
 #[test]
 fn layers_with_the_engine_checks_bypassed_the_wal_failed_flag_alone_rejects() {
     let (dir, e) = open_default("layer-bypass", Mode::Err);
@@ -840,7 +776,6 @@ fn layers_with_the_engine_checks_bypassed_the_wal_failed_flag_alone_rejects() {
     assert_eq!(layers(&e), (1, 0, 2), "bypass off: the cheap check is back");
 }
 
-/// Open-time replay with an index that panics: a typed `WAL_CORRUPT`, no unwind out of `open`.
 #[test]
 fn s6_1_panic_during_open_time_replay_is_a_typed_error() {
     let dir = tmp("replay");

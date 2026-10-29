@@ -1,8 +1,3 @@
-//! Reusable conformance suite: every `AnnIndex` impl must pass `run`. `FlatIndex` is the oracle.
-//! Small data (60 x 8) so exact agreement with the oracle is required, even from ANN impls.
-//! NOTE: passing this suite does NOT make an ANN adapter acceptable: it must also override
-//! `search_filtered` (the default post-filters) and show filtered recall at low selectivity
-//! (docs/GATES.md, "ANN notes"). Small data cannot demonstrate that.
 use crate::{AnnIndex, FlatIndex, Hit};
 use atlas_core::{Metric, VectorId};
 use serde_json::json;
@@ -69,14 +64,12 @@ fn agree(ix: &dyn AnnIndex, oracle: &FlatIndex, what: &str) {
     }
 }
 
-/// `make(dim)` builds an empty index of the impl under test.
 pub fn run(make: impl Fn(usize) -> Boxed) {
     let mut oracle = FlatIndex::new(DIM);
     let mut ix = make(DIM);
     assert!(ix.is_empty());
     let data = vecs(60, 1);
 
-    // insert, update (same id new vector), delete
     let mut log: Vec<Op> = (0..60)
         .map(|i| Op::Put(i, data[i as usize].clone()))
         .collect();
@@ -87,7 +80,7 @@ pub fn run(make: impl Fn(usize) -> Boxed) {
             .map(|(i, v)| Op::Put(i as u64 * 3, v)),
     );
     log.extend((0..60).step_by(4).map(Op::Del));
-    log.push(Op::Del(1000)); // absent id is a no-op
+    log.push(Op::Del(1000));
     apply(&mut *ix, &log);
     apply(&mut oracle, &log);
     assert!(!ix.remove(VectorId(0)), "already removed");
@@ -98,14 +91,12 @@ pub fn run(make: impl Fn(usize) -> Boxed) {
     assert!(ix.insert(VectorId(7), &[1.0], json!(null)).is_err());
     assert!(ix.search(&[1.0], 1, Metric::Dot).is_err());
 
-    // restart: derived index rebuilt by replaying the log into a fresh instance
     let mut full = log.clone();
     full.push(Op::Del(1));
     let mut rebuilt = make(DIM);
     apply(&mut *rebuilt, &full);
     agree(&*rebuilt, &oracle, "rebuild");
 
-    // deterministic tie-break: identical vectors come back by ascending id, any insert order
     let mut t = make(DIM);
     for id in [9u64, 2, 7, 4, 1] {
         t.insert(VectorId(id), &data[0], json!(null)).unwrap();
@@ -120,7 +111,6 @@ pub fn run(make: impl Fn(usize) -> Boxed) {
         assert_eq!(got, [1, 2, 4, 7, 9], "tie-break {m:?}");
     }
 
-    // filtered search == oracle's filtered top-k, and never leaks a disallowed id
     let filters: [(&str, Allow); 3] = [
         ("even", |id| id.0.is_multiple_of(2)),
         ("sparse", |id| id.0.is_multiple_of(17)),
@@ -140,7 +130,6 @@ pub fn run(make: impl Fn(usize) -> Boxed) {
         }
     }
 
-    // concurrent readers during writes, behind the same RwLock shape Engine uses
     let shared = Arc::new(RwLock::new(make(DIM)));
     let writer = {
         let s = shared.clone();
@@ -184,7 +173,6 @@ mod tests {
         super::run(|d| Box::new(FlatIndex::new(d)));
     }
 
-    /// Implements only the required methods, so the trait's default `search_filtered` runs.
     struct Plain(FlatIndex);
     impl AnnIndex for Plain {
         fn dim(&self) -> usize {

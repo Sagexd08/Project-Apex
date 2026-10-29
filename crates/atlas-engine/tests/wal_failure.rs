@@ -29,7 +29,6 @@ fn flush_and_truncate_failure_enters_failed_state() {
         .insert(&single_tenant_full(), VectorId(2), &[1.0; 4], json!(null))
         .unwrap_err();
     assert_eq!(e.code(), "WAL_FLUSH_FAILED");
-    // all further writes are rejected until reopen
     let e = eng
         .insert(&single_tenant_full(), VectorId(3), &[1.0; 4], json!(null))
         .unwrap_err();

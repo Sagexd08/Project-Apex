@@ -14,7 +14,7 @@ fn noop() -> atlas_storage::Applier {
 }
 
 const HEADER: usize = 12;
-const REC_HDR: usize = 28; // v2 record header
+const REC_HDR: usize = 28;
 const REC: usize = REC_HDR + 10;
 
 fn write_five(p: &Path, cfg: &Config) {
@@ -57,7 +57,7 @@ fn complete_final_record_with_bad_crc_fails_closed_and_is_not_discarded() {
     let cfg = Config::new(1);
     write_five(&p, &cfg);
     let mut b = std::fs::read(&p).unwrap();
-    b[HEADER + 4 * REC + REC_HDR + 2] ^= 0xFF; // payload byte of the LAST, complete record
+    b[HEADER + 4 * REC + REC_HDR + 2] ^= 0xFF;
     std::fs::write(&p, &b).unwrap();
     let e = Wal::open(&p, &cfg, noop()).err().expect("must fail closed");
     assert_eq!(e.code(), "RECOVERY_REQUIRED");
@@ -97,7 +97,6 @@ fn flipped_length_in_final_header_fails_closed_with_bytes_identical() {
     let cfg = Config::new(1);
     write_five(&p, &cfg);
     let mut b = std::fs::read(&p).unwrap();
-    // length field of the last record, header checksum NOT updated
     b[HEADER + 4 * REC..HEADER + 4 * REC + 4].copy_from_slice(&u32::MAX.to_le_bytes());
     std::fs::write(&p, &b).unwrap();
     let e = Wal::open(&p, &cfg, noop()).err().expect("must fail closed");
@@ -110,7 +109,7 @@ fn header_handling_and_record_limit() {
     let p = tmp("hdr");
     let mut cfg = Config::new(1);
     cfg.max_record_len = 8;
-    std::fs::write(&p, b"ATLAS").unwrap(); // partial header: rewritten
+    std::fs::write(&p, b"ATLAS").unwrap();
     let (wal, recs) = Wal::open(&p, &cfg, noop()).unwrap();
     assert!(recs.is_empty());
     assert_eq!(
@@ -138,7 +137,7 @@ fn sync_per_commit_and_failed_flush_rollback() {
         wal.append(vec![2; 10]).unwrap_err().code(),
         "WAL_FLUSH_FAILED"
     );
-    assert_eq!(wal.append(vec![3; 10]).unwrap(), 2); // seq not consumed by failure
+    assert_eq!(wal.append(vec![3; 10]).unwrap(), 2);
     drop(wal);
     let (_w, recs) = Wal::open(&p, &cfg, noop()).unwrap();
     let got: Vec<_> = recs.iter().map(|r| r.1[0]).collect();

@@ -1,11 +1,3 @@
-//! Measures op-map growth. The op map is unbounded and retains each op's canonical payload bytes
-//! (docs/SECURITY.md, "Capacity and availability risk").
-//!
-//! A counting global allocator wraps `System` and tracks current and peak heap bytes. It
-//! measures heap allocations made by this process (all threads), NOT resident set size (RSS).
-//! The WAL is pre-written through `Wal::append` from many threads (cheap group commit), then
-//! `Engine::open` replays it: that builds the op map exactly as a live `insert_op` would, and
-//! it also measures reopen cost. Identical retries are then issued live.
 mod common;
 use atlas_core::{Config, VectorId};
 use atlas_engine::Engine;
@@ -39,12 +31,10 @@ unsafe impl GlobalAlloc for Counting {
 #[global_allocator]
 static A: Counting = Counting;
 
-/// Allocation counters are process-wide: run the measuring tests one at a time.
 static SERIAL: Mutex<()> = Mutex::new(());
 const TENANTS: usize = 4;
 const BIG: usize = 1 << 20;
 
-/// The exact bytes `serde_json::to_vec` produces for the request below (the retry check proves it).
 fn payload(i: usize, pad: usize) -> Vec<u8> {
     format!(
         r#"{{"tenant":"t{}","id":{i},"vector":[1.0,0.0,0.0,0.0],"metadata":{{"p":"{}"}},"op_id":"op-{i}"}}"#,
@@ -83,7 +73,6 @@ struct Run {
     total_payload: usize,
 }
 
-/// Replays `payloads` via open; returns heap growth and checks identical retries add nothing.
 fn run(name: &str, n: usize, pad: usize, bigs: usize) -> Run {
     let dir = std::env::temp_dir().join(format!("atlas-opmem-{name}-{}", std::process::id()));
     let mut payloads: Vec<Vec<u8>> = (0..n).map(|i| payload(i, pad)).collect();
@@ -97,7 +86,6 @@ fn run(name: &str, n: usize, pad: usize, bigs: usize) -> Run {
     let (after, peak) = (CUR.load(SeqCst), PEAK.load(SeqCst));
     assert_eq!(e.len(), n + bigs);
 
-    // Identical retries: same bytes, original seq, no net heap growth.
     let md = |p: usize| json!({ "p": "x".repeat(p) });
     let retry = |i: usize, p: usize| {
         let t = format!("t{}", i % TENANTS);
@@ -138,15 +126,12 @@ fn op_map_memory_is_bounded_per_entry_and_retries_do_not_grow_it() {
     let _g = SERIAL.lock().unwrap();
     let (n, bigs) = (20_000, 5);
     let r = run("default", n, 150, bigs);
-    // Retained per entry: the payload copy in the op map, the record in the index, keys and
-    // table overhead. Documented generous bound: 2 x payload + 1 KiB per entry.
     let bound = 2 * r.total_payload + 1024 * (n + bigs);
     assert!(
         r.retained <= bound,
         "retained {} > bound {bound}",
         r.retained
     );
-    // Reopen holds every payload once more while replaying (records list): peak <= retained + payloads.
     assert!(
         r.peak <= bound + r.total_payload + (8 << 20),
         "peak {}",

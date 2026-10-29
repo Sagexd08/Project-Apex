@@ -1,0 +1,3 @@
+vmhwm_qdrant_process: VmHWM:	 3268024 kB VmRSS:	 1332168 kB 
+storage_bytes: 1130491865
+version: qdrant 1.17.1

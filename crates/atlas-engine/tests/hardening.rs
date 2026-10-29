@@ -1,4 +1,3 @@
-//! Review-fix slice S2: metadata round-trip admission, error echo bounds, adversarial snapshot.
 mod common;
 
 use atlas_core::{AtlasError, Config, Metric, PermSet, VectorId};
@@ -21,7 +20,6 @@ fn wal_len(dir: &Path) -> u64 {
     std::fs::metadata(dir.join("wal.log")).unwrap().len()
 }
 
-/// `[[...[0]...]]` with `depth` array levels, built iteratively.
 fn nested(depth: usize) -> Value {
     let mut v = json!(0);
     for _ in 0..depth {
@@ -30,14 +28,11 @@ fn nested(depth: usize) -> Value {
     v
 }
 
-/// Drop deep values without recursion-sensitive surprises: peel layers one at a time.
 fn drop_nested(mut v: Value) {
     while let Value::Array(mut a) = v {
         v = a.pop().unwrap_or(Value::Null);
     }
 }
-
-// ---------------- P0-1 ----------------
 
 #[test]
 fn deep_metadata_is_rejected_before_the_wal_and_engine_stays_healthy() {
@@ -58,7 +53,6 @@ fn deep_metadata_is_rejected_before_the_wal_and_engine_stays_healthy() {
     }
     assert_eq!(wal_len(&dir), before, "WAL bytes must be untouched");
 
-    // Not poisoned; seq not consumed; other tenant and same tenant keep working.
     assert_eq!(
         e.insert(&b, VectorId(1), &[0.0, 1.0], json!({"ok": true}))
             .unwrap(),
@@ -66,7 +60,6 @@ fn deep_metadata_is_rejected_before_the_wal_and_engine_stays_healthy() {
     );
     assert_eq!(e.search(&b, &[0.0, 1.0], 5, Metric::Dot).unwrap().len(), 1);
     e.insert(&a, VectorId(2), &[1.0, 0.0], json!(null)).unwrap();
-    // A rejected op id was never recorded: the same op id works with valid metadata.
     e.insert_op(&a, "op-deep", VectorId(11), &[1.0, 0.0], json!(null))
         .unwrap();
     drop(e);
@@ -78,9 +71,6 @@ fn deep_metadata_is_rejected_before_the_wal_and_engine_stays_healthy() {
 
 #[test]
 fn accepted_metadata_depths_replay_after_reopen() {
-    // Documented contract (docs/SECURITY.md, S3): depth counts a scalar as 1 and each nested
-    // array/object as +1; MAX_METADATA_DEPTH = 100 is the max ACCEPTED depth. 1..=100 is accepted
-    // and must replay; 101..=130 is INVALID_METADATA (S2: "whatever decode accepts").
     let dir = tmp("boundary");
     let e = Engine::open(&dir, Config::new(2)).unwrap();
     let a = full("a");
@@ -126,18 +116,14 @@ fn oversized_metadata_is_a_typed_error_and_leaves_the_wal_alone() {
     assert_eq!(e.count(&a).unwrap(), 1);
 }
 
-// ---------------- P1-3 ----------------
-
 const MB: usize = 1 << 20;
 
 #[test]
 fn huge_untrusted_strings_are_not_echoed_in_errors() {
-    // Tenant parse.
     let long = "t".repeat(MB);
     let msg = atlas_core::TenantId::parse(&long).unwrap_err().to_string();
     assert!(msg.len() < 200, "tenant error echoed {} bytes", msg.len());
     assert!(msg.contains("truncated"), "{msg}");
-    // Multibyte input is cut on a char boundary (would panic otherwise).
     let wide = "\u{20ac}".repeat(MB / 3);
     let msg = atlas_core::TenantId::parse(&wide).unwrap_err().to_string();
     assert!(
@@ -145,11 +131,9 @@ fn huge_untrusted_strings_are_not_echoed_in_errors() {
         "{}",
         msg.len()
     );
-    // Short invalid input is still echoed whole, without the marker.
     let msg = atlas_core::TenantId::parse("a b").unwrap_err().to_string();
     assert!(msg.contains("a b") && !msg.contains("truncated"), "{msg}");
 
-    // op_id: rejected before use, never echoed.
     let dir = tmp("echo");
     let e = Engine::open(&dir, Config::new(2)).unwrap();
     let a = full("a");
@@ -159,7 +143,6 @@ fn huge_untrusted_strings_are_not_echoed_in_errors() {
         .unwrap_err();
     assert_eq!(err.code(), "INVALID_OP_ID");
     assert!(err.to_string().len() < 200, "{err}");
-    // op_id conflict echoes at most a bounded op id.
     let ok_op = "p".repeat(128);
     e.insert_op(&a, &ok_op, VectorId(1), &[1.0, 0.0], json!(1))
         .unwrap();
@@ -191,8 +174,6 @@ fn replayed_bad_tenant_error_is_bounded() {
     assert_eq!(err.code(), "WAL_CORRUPT");
     assert!(err.to_string().len() < 400, "{}", err.to_string().len());
 }
-
-// ---------------- P1-1 ----------------
 
 #[test]
 fn incomplete_carries_the_emitted_count_as_a_typed_field() {
@@ -226,8 +207,6 @@ fn incomplete_carries_the_emitted_count_as_a_typed_field() {
         }
     }
 }
-
-// ---------------- P1-2 ----------------
 
 fn collect_all(e: &Engine, s: &atlas_core::EffectiveScope) -> (Vec<Item>, u64) {
     let mut items = vec![];
@@ -268,7 +247,6 @@ fn panicking_sink_unwinds_without_result_or_poison() {
         assert!(r.is_err(), "panic must propagate; no Ok/Err result");
         assert_eq!(seen, 2);
     }
-    // Locks were not held across the sink: every surface still works, nothing changed.
     assert_eq!(e.count(&a).unwrap(), 5);
     assert_eq!(e.count(&b).unwrap(), 1);
     e.insert(&b, VectorId(2), &[0.0, 1.0], json!(null)).unwrap();
@@ -288,7 +266,6 @@ fn snapshot_under_concurrent_writes_is_coherent_and_single_tenant() {
     let (a, b) = (full("a"), full("b"));
     const IDS: u64 = 20;
     const ROUNDS: u64 = 15;
-    // value written for (id, round): vector [id, round], metadata {t,id,r}
     let write =
         |e: &Engine, s: &atlas_core::EffectiveScope, t: &str, base: u64, id: u64, r: u64| {
             e.insert(
@@ -336,10 +313,8 @@ fn snapshot_under_concurrent_writes_is_coherent_and_single_tenant() {
                     assert_eq!(md["id"], it.id.0);
                     let r = md["r"].as_u64().unwrap();
                     assert!(r <= ROUNDS);
-                    // vector and metadata belong to the same write
                     assert_eq!(it.vector, vec![it.id.0 as f32, r as f32]);
                 }
-                // seeded before the snapshot started, so every id is present.
                 assert_eq!(items.len() as u64, IDS);
                 snaps += 1;
             }
@@ -351,7 +326,6 @@ fn snapshot_under_concurrent_writes_is_coherent_and_single_tenant() {
     }
     done.store(true, SeqCst);
     assert!(snapper.join().unwrap() >= 3);
-    // Final state after quiescence: every id at its last round.
     let (items, n) = collect_all(&e, &a);
     assert_eq!((items.len() as u64, n), (IDS, IDS));
     assert!(items.iter().all(|i| i.metadata["r"] == ROUNDS));
@@ -384,15 +358,7 @@ fn case_distinct_tenants_are_distinct_partitions_and_lookalikes_fail_replay() {
     );
     drop(e);
 
-    let lookalikes = [
-        "\u{430}", // Cyrillic a
-        "a\u{200b}",
-        "\u{ff41}", // fullwidth a
-        "a ",
-        " a",
-        "a\0",
-        "a\n",
-    ];
+    let lookalikes = ["\u{430}", "a\u{200b}", "\u{ff41}", "a ", " a", "a\0", "a\n"];
     let long = "a".repeat(65);
     for (n, t) in lookalikes
         .iter()

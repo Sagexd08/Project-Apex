@@ -1,4 +1,3 @@
-//! End-to-end tests: real engine + WAL, real TCP, real HTTP bytes.
 use atlas_cli::{serve, Server, StaticKeys};
 use atlas_core::{Authenticator, Config};
 use atlas_engine::Engine;
@@ -41,7 +40,6 @@ impl Running {
         if let Some(t) = self.thread.take() {
             t.join().unwrap();
         }
-        // Connection threads are short-lived; let any in-flight one release the engine.
         std::thread::sleep(std::time::Duration::from_millis(100));
     }
 }
@@ -156,7 +154,6 @@ fn tenants_cannot_see_each_other() {
         call(srv.addr, "GET", "/v1/count", Some(ALICE), "").1,
         json!({ "count": 1 })
     );
-    // The tenant is never read from the body.
     let spoof = json!({ "id": 8, "vector": [1.0, 0.0, 0.0, 0.0], "tenant": "alice" }).to_string();
     call(srv.addr, "POST", "/v1/insert", Some(BOB), &spoof);
     assert_eq!(
@@ -194,7 +191,7 @@ fn hostile_input_is_rejected_not_fatal() {
     let dir = tmp("bad");
     let srv = Running::start(&dir);
     let post = |p: &str, b: &str| call(srv.addr, "POST", p, Some(ALICE), b).0;
-    assert_eq!(post("/v1/insert", r#"{"id":1,"vector":[1,2]}"#), 400); // wrong dimension
+    assert_eq!(post("/v1/insert", r#"{"id":1,"vector":[1,2]}"#), 400);
     assert_eq!(post("/v1/search", r#"{"vector":[1,0,0,0],"k":0}"#), 400);
     assert_eq!(post("/v1/search", r#"{"vector":[1,0,0,0],"k":1001}"#), 400);
     assert_eq!(
@@ -206,7 +203,6 @@ fn hostile_input_is_rejected_not_fatal() {
     let deep = format!("{}1{}", "[".repeat(5000), "]".repeat(5000));
     let nested = format!(r#"{{"id":1,"vector":[1,0,0,0],"metadata":{deep}}}"#);
     assert_eq!(post("/v1/insert", &nested), 400);
-    // Oversized declared body, chunked encoding, and an unterminated header block.
     let big = format!(
         "POST /v1/insert HTTP/1.1\r\nContent-Length: {}\r\n\r\n",
         9 * 1024 * 1024
@@ -215,7 +211,6 @@ fn hostile_input_is_rejected_not_fatal() {
     let chunked = b"POST /v1/insert HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n";
     assert_eq!(raw(srv.addr, chunked).0, 400);
     assert_eq!(raw(srv.addr, &vec![b'a'; 40_000]).0, 413);
-    // The server is still healthy afterwards.
     assert_eq!(call(srv.addr, "GET", "/v1/count", Some(ALICE), "").0, 200);
     srv.shutdown();
     let _ = std::fs::remove_dir_all(dir);
@@ -256,4 +251,97 @@ fn key_parsing_rejects_weak_or_malformed_specs() {
     assert!(StaticKeys::parse("no-equals-sign").is_err());
     assert!(StaticKeys::parse("bad tenant!=longenoughsecret").is_err());
     assert!(StaticKeys::parse("alice=longenoughsecret").is_ok());
+    assert!(StaticKeys::parse("alice=samesecret1234,bob=samesecret1234").is_err());
+    assert!(StaticKeys::parse("alice=samesecret1234,bob=othersecret5678").is_ok());
+}
+
+#[test]
+fn duplicate_content_length_is_rejected() {
+    let dir = tmp("dup-len");
+    let srv = Running::start(&dir);
+    let req = format!("POST /v1/count HTTP/1.1\r\nauthorization: Bearer {ALICE}\r\ncontent-length: 2\r\ncontent-length: 2\r\n\r\n{{}}");
+    let (status, _) = raw(srv.addr, req.as_bytes());
+    assert_eq!(status, 400);
+    srv.shutdown();
+}
+
+#[test]
+fn slow_drip_request_is_cut_off_by_total_deadline() {
+    let dir = tmp("slowloris");
+    let srv = Running::start(&dir);
+    let mut s = TcpStream::connect(srv.addr).unwrap();
+    let started = std::time::Instant::now();
+    let head = b"POST /v1/insert HTTP/1.1\r\nauthorization: Bearer x\r\n";
+    let limit = atlas_cli::http::REQUEST_DEADLINE + std::time::Duration::from_secs(6);
+    let mut cut = false;
+    for b in head.iter().cycle().take(200) {
+        if s.write_all(&[*b]).is_err() {
+            cut = true;
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(400));
+        if started.elapsed() > limit {
+            break;
+        }
+    }
+    let mut out = Vec::new();
+    let _ = s.read_to_end(&mut out);
+    let text = String::from_utf8_lossy(&out);
+    assert!(
+        cut || text.starts_with("HTTP/1.1 408"),
+        "connection still open after deadline: {text}"
+    );
+    assert!(started.elapsed() < limit + std::time::Duration::from_secs(2));
+    srv.shutdown();
+}
+
+#[test]
+fn metadata_filter_search_over_http() {
+    let dir = tmp("filter-http");
+    let srv = Running::start(&dir);
+    for (id, color, n) in [(1u64, "red", 5), (2, "blue", 7), (3, "red", 50)] {
+        let body = json!({"id": id, "vector": [1.0, 0.0, 0.0, id as f32], "metadata": {"c": color, "n": n}});
+        let (st, _) = call(
+            srv.addr,
+            "POST",
+            "/v1/insert",
+            Some(ALICE),
+            &body.to_string(),
+        );
+        assert_eq!(st, 200);
+    }
+    let q = json!({"vector": [1.0, 0.0, 0.0, 1.0], "k": 5,
+        "filter": {"and": [{"eq": ["c", "red"]}, {"range": {"field": "n", "lt": 10}}]}});
+    let (st, out) = call(srv.addr, "POST", "/v1/search", Some(ALICE), &q.to_string());
+    assert_eq!(st, 200);
+    let ids: Vec<u64> = out["hits"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|h| h["id"].as_u64().unwrap())
+        .collect();
+    assert_eq!(ids, vec![1]);
+    let bad = json!({"vector": [1.0, 0.0, 0.0, 1.0], "filter": {"nope": 1}});
+    let (st, out) = call(
+        srv.addr,
+        "POST",
+        "/v1/search",
+        Some(ALICE),
+        &bad.to_string(),
+    );
+    assert_eq!((st, out["error"].as_str()), (400, Some("INVALID_FILTER")));
+    let both =
+        json!({"vector": [1.0, 0.0, 0.0, 1.0], "filter": {"eq": ["c", "red"]}, "allow_ids": [1]});
+    let (st, _) = call(
+        srv.addr,
+        "POST",
+        "/v1/search",
+        Some(ALICE),
+        &both.to_string(),
+    );
+    assert_eq!(st, 400);
+    let (st, out) = call(srv.addr, "POST", "/v1/search", Some(BOB), &q.to_string());
+    assert_eq!(st, 200);
+    assert!(out["hits"].as_array().unwrap().is_empty());
+    srv.shutdown();
 }

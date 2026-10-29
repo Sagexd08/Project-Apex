@@ -1,10 +1,12 @@
-//! Minimal strict HTTP/1.1 request reader and response writer.
 use crate::{api, Server};
 use std::io::{Read, Write};
 use std::net::TcpStream;
+use std::time::{Duration, Instant};
 
 pub const MAX_HEADER: usize = 16 * 1024;
 pub const MAX_BODY: usize = 8 * 1024 * 1024;
+pub const REQUEST_DEADLINE: Duration = Duration::from_secs(15);
+const READ_SLICE: Duration = Duration::from_secs(5);
 const CONSOLE: &str = include_str!("console.html");
 
 pub struct Request {
@@ -22,6 +24,7 @@ pub fn respond(s: &mut TcpStream, status: u16, ctype: &str, body: &[u8]) {
         403 => "Forbidden",
         404 => "Not Found",
         409 => "Conflict",
+        408 => "Request Timeout",
         413 => "Payload Too Large",
         503 => "Service Unavailable",
         _ => "Internal Server Error",
@@ -30,7 +33,6 @@ pub fn respond(s: &mut TcpStream, status: u16, ctype: &str, body: &[u8]) {
         "HTTP/1.1 {status} {reason}\r\nContent-Type: {ctype}\r\nContent-Length: {}\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nConnection: close\r\n\r\n",
         body.len()
     );
-    // A client that hung up is not an error worth surfacing.
     let _ = s.write_all(head.as_bytes()).and_then(|_| s.write_all(body));
 }
 
@@ -38,7 +40,20 @@ fn find_end(buf: &[u8]) -> Option<usize> {
     buf.windows(4).position(|w| w == b"\r\n\r\n")
 }
 
-fn read_head(s: &mut TcpStream, chunk: &mut [u8]) -> Result<(Vec<u8>, usize), u16> {
+fn arm(s: &TcpStream, started: Instant) -> Result<(), u16> {
+    let left = REQUEST_DEADLINE
+        .checked_sub(started.elapsed())
+        .filter(|d| !d.is_zero())
+        .ok_or(408u16)?;
+    s.set_read_timeout(Some(left.min(READ_SLICE))).ok();
+    Ok(())
+}
+
+fn read_head(
+    s: &mut TcpStream,
+    chunk: &mut [u8],
+    started: Instant,
+) -> Result<(Vec<u8>, usize), u16> {
     let mut buf = Vec::with_capacity(1024);
     loop {
         if let Some(i) = find_end(&buf) {
@@ -47,27 +62,43 @@ fn read_head(s: &mut TcpStream, chunk: &mut [u8]) -> Result<(Vec<u8>, usize), u1
         if buf.len() > MAX_HEADER {
             return Err(413);
         }
+        arm(s, started)?;
         match s.read(chunk) {
-            Ok(0) | Err(_) => return Err(400),
+            Ok(0) => return Err(400),
+            Err(e) if is_timeout(&e) => return Err(408),
+            Err(_) => return Err(400),
             Ok(n) => buf.extend_from_slice(&chunk[..n]),
         }
     }
 }
 
-/// Reads head + body. `Err(status)` is the status to answer with.
+fn is_timeout(e: &std::io::Error) -> bool {
+    matches!(
+        e.kind(),
+        std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
+    )
+}
+
 pub fn read_request(s: &mut TcpStream) -> Result<Request, u16> {
+    let started = Instant::now();
     let mut chunk = [0u8; 4096];
-    let (buf, end) = read_head(s, &mut chunk)?;
+    let (buf, end) = read_head(s, &mut chunk, started)?;
     let head = std::str::from_utf8(&buf[..end]).map_err(|_| 400u16)?;
     let mut lines = head.split("\r\n");
     let mut first = lines.next().ok_or(400u16)?.split(' ');
     let (method, path) = (first.next().ok_or(400u16)?, first.next().ok_or(400u16)?);
-    let (mut len, mut bearer) = (0usize, None);
+    let (mut len, mut bearer, mut saw_len) = (0usize, None, false);
     for l in lines {
         let (k, v) = l.split_once(':').ok_or(400u16)?;
         let (k, v) = (k.trim().to_ascii_lowercase(), v.trim());
         match k.as_str() {
-            "content-length" => len = v.parse().map_err(|_| 400u16)?,
+            "content-length" => {
+                if saw_len {
+                    return Err(400);
+                }
+                saw_len = true;
+                len = v.parse().map_err(|_| 400u16)?
+            }
             "transfer-encoding" => return Err(400),
             "authorization" => {
                 bearer = v
@@ -85,8 +116,11 @@ pub fn read_request(s: &mut TcpStream) -> Result<Request, u16> {
         return Err(400);
     }
     while body.len() < len {
+        arm(s, started)?;
         match s.read(&mut chunk) {
-            Ok(0) | Err(_) => return Err(400),
+            Ok(0) => return Err(400),
+            Err(e) if is_timeout(&e) => return Err(408),
+            Err(_) => return Err(400),
             Ok(n) => body.extend_from_slice(&chunk[..n.min(len - body.len())]),
         }
     }

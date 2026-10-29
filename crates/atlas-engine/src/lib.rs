@@ -1,4 +1,3 @@
-//! Embedded Atlas engine: insert -> WAL (durable ack) -> exact index.
 use atlas_core::{
     clip_echo, clip_text, validate_vector, AtlasError, Config, EffectiveScope, Metric, PermSet,
     TenantId, VectorId,
@@ -17,7 +16,8 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError, RwLock, RwLockReadGuard};
 
 pub use atlas_index::Hit;
 
-/// One stored record as returned by `fetch` and streamed by `snapshot` / `export`.
+pub use atlas_index::Filter;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Item {
     pub id: VectorId,
@@ -25,12 +25,10 @@ pub struct Item {
     pub metadata: Value,
 }
 
-/// Receives streamed records. An `Err` aborts the stream.
 pub type Sink<'a> = &'a mut dyn FnMut(Item) -> Result<(), AtlasError>;
 
 type Factory = Box<dyn Fn(usize) -> BoxedIndex + Send + Sync>;
 
-/// One index per tenant, created lazily. A key is always (tenant, id): there is no shared id space.
 struct Parts {
     map: HashMap<TenantId, BoxedIndex>,
     make: Factory,
@@ -53,60 +51,42 @@ impl Parts {
 
 #[derive(Serialize, Deserialize, PartialEq)]
 struct Record {
-    /// Owning tenant. Required: a record without a valid tenant is corruption, never defaulted.
     tenant: String,
     id: VectorId,
     #[serde(default)]
     vector: Vec<f32>,
     #[serde(default)]
     metadata: Value,
-    /// Tombstone: removes `id`.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     deleted: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     op_id: Option<String>,
 }
 
-/// The index is derived from the WAL and rebuilt on every open; any `AnnIndex` can be swapped in.
 pub type BoxedIndex = Box<dyn AnnIndex + Send + Sync>;
 
 const MAX_OP_ID_LEN: usize = 128;
 
-/// First request seen for an (tenant, operation id): its seq, a cheap fingerprint, and the exact
-/// canonical payload bytes (the encoded record: tenant, id, vector, metadata, op_id; no seq or
-/// timestamp). Byte equality decides whether a retry is identical; the fingerprint is only a
-/// pre-check.
 struct OpEntry {
     seq: u64,
     fp: u64,
     payload: Arc<[u8]>,
 }
 
-/// Payload fingerprint function (replaceable only under `test-support`, to force collisions).
 type FpFn = fn(&[u8]) -> u64;
 
-/// (seq, fingerprint, payload) copied out of an `OpEntry`.
 type OpLookup = (u64, u64, Arc<[u8]>);
 
-/// Bounded by `Config.max_ops` for new writes (CAPACITY_EXCEEDED); replay always admits what is
-/// already durable. Retains each op's payload bytes (up to max_record_len). ponytail: no expiry;
-/// add expiry/compaction when snapshots exist.
 type OpMap = HashMap<(TenantId, String), OpEntry>;
 
-/// Documented cap on metadata nesting (arrays/objects). Below serde_json recursion limit of 128
-/// (the record itself adds one level) so every admitted record replays.
 pub const MAX_METADATA_DEPTH: usize = 100;
 
-/// FNV-1a 64 over the WAL payload bytes. Live retries hash the bytes they are about to write
-/// (admit proved these decode back to the same record); replay hashes the bytes read from the
-/// WAL. Only a pre-check: equality of the stored bytes decides idempotency.
 fn fingerprint(payload: &[u8]) -> u64 {
     payload.iter().fold(0xcbf29ce484222325u64, |h, b| {
         (h ^ *b as u64).wrapping_mul(0x100000001b3)
     })
 }
 
-/// Nesting depth of `v` (scalar = 1, each nested array/object adds 1), computed with an explicit stack: no recursion.
 fn metadata_depth(v: &Value) -> usize {
     let (mut max, mut stack) = (0, vec![(v, 1usize)]);
     while let Some((v, d)) = stack.pop() {
@@ -120,7 +100,6 @@ fn metadata_depth(v: &Value) -> usize {
     max
 }
 
-/// Drop a value without recursion (the derived drop of `Value` is recursive).
 fn drop_iteratively(v: Value) {
     let mut stack = vec![v];
     while let Some(v) = stack.pop() {
@@ -132,8 +111,6 @@ fn drop_iteratively(v: Value) {
     }
 }
 
-/// Owns a caller's metadata from the first line of a write until it has passed the depth cap, so
-/// EVERY early return (authz, poison, depth, ...) tears a deep value down iteratively.
 struct Metadata(Option<Value>);
 
 impl Drop for Metadata {
@@ -144,8 +121,6 @@ impl Drop for Metadata {
     }
 }
 
-/// Reject over-deep metadata before any clone/serialize. Past this, depth <= MAX_METADATA_DEPTH
-/// and the derived drop is safe.
 fn check_depth(mut guard: Metadata) -> Result<Value, AtlasError> {
     let metadata = guard.0.take().unwrap_or(Value::Null);
     if metadata_depth(&metadata) <= MAX_METADATA_DEPTH {
@@ -164,14 +139,10 @@ fn decode(seq: u64, payload: &[u8]) -> Result<(TenantId, Record), AtlasError> {
     Ok((t, r))
 }
 
-/// Lock a mutex that guards plain data with no invariant a panic could break (poison text, test
-/// hooks, the op gate): a poisoned lock is recovered, never turned into a panic.
 fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
     m.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
-/// What every caller except the culprit sees once the engine is poisoned. Deliberately constant:
-/// no index error text, no seq or tenant of anyone's record (detail: `set_diagnostics_sink`).
 const POISON_MESSAGE: &str = "engine poisoned by an earlier internal failure; no further \
      operations are accepted until the database is reopened";
 
@@ -179,7 +150,6 @@ fn generic_poison() -> AtlasError {
     AtlasError::WalCorrupt(POISON_MESSAGE.into())
 }
 
-/// OUTCOME_UNKNOWN text for a record that was written before the poison became visible.
 fn outcome_unknown(has_op_id: bool) -> AtlasError {
     AtlasError::OutcomeUnknown(
         if has_op_id {
@@ -206,7 +176,6 @@ fn panic_text(p: &(dyn std::any::Any + Send)) -> String {
     }
 }
 
-/// Drop a panic payload; a payload whose own drop panics must not unwind further.
 fn drop_quietly(p: Box<dyn std::any::Any + Send>) {
     let _ = catch_unwind(AssertUnwindSafe(move || drop(p)));
 }
@@ -217,8 +186,6 @@ fn panic_error(seq: u64, p: Box<dyn std::any::Any + Send>) -> AtlasError {
     AtlasError::WalCorrupt(format!("seq {seq}: index panicked: {text}"))
 }
 
-/// Decode, note the op id and apply one WAL payload; MAY PANIC if the `AnnIndex` does. The live
-/// applier calls this inside `catch_unwind`; everything else goes through `replay_one`.
 fn replay_inner(
     parts: &RwLock<Parts>,
     ops: &Mutex<OpMap>,
@@ -244,7 +211,6 @@ fn replay_inner(
         .map_err(|e| AtlasError::WalCorrupt(format!("seq {seq}: {e}")))
 }
 
-/// `replay_inner` with an index panic turned into a typed error (used by open-time replay).
 fn replay_one(
     parts: &RwLock<Parts>,
     ops: &Mutex<OpMap>,
@@ -260,8 +226,6 @@ fn replay_one(
     }
 }
 
-/// Remember the first applier failure; later writes surface it instead of dropping it. Returns
-/// the recorded detail iff THIS call recorded the first failure.
 fn note_failure(poison: &Mutex<Option<String>>, res: Result<(), AtlasError>) -> Option<String> {
     let e = res.err()?;
     let mut g = lock(poison);
@@ -273,10 +237,8 @@ fn note_failure(poison: &Mutex<Option<String>>, res: Result<(), AtlasError>) -> 
     Some(detail)
 }
 
-/// Embedder-registered operator channel for the full poison detail (see docs/SECURITY.md).
 pub type DiagnosticsSink = Arc<dyn Fn(&str) + Send + Sync>;
 
-/// Call the sink (if any) with no engine lock held; a panicking sink changes nothing.
 fn call_sink(sink: &Mutex<Option<DiagnosticsSink>>, detail: &str) {
     let s = lock(sink).clone();
     if let Some(s) = s {
@@ -286,19 +248,14 @@ fn call_sink(sink: &Mutex<Option<DiagnosticsSink>>, detail: &str) {
     }
 }
 
-/// Which layer rejected a request because of poison (test-support counters).
 #[cfg(any(test, feature = "test-support"))]
 #[derive(Clone, Copy)]
 enum Layer {
-    /// The cheap check before any payload work.
     Cheap = 0,
-    /// The pre-check at the top of `append`, right before the WAL is touched.
     AppendPrecheck = 1,
-    /// The WAL Failed flag (set by the applier; enforced by `Wal::append` / the committer).
     WalFailedFlag = 2,
 }
 
-/// Per-layer poison rejection counts (test-support).
 #[cfg(any(test, feature = "test-support"))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PoisonLayers {
@@ -316,25 +273,16 @@ pub struct Engine {
     parts: Arc<RwLock<Parts>>,
     ops: Arc<Mutex<OpMap>>,
     fp: FpFn,
-    /// Full detail of the first applier failure (decode error, index error or index panic),
-    /// bounded by `clip_text`. PRIVATE: only the culprit's error and the diagnostics sink carry it.
     poison: Arc<Mutex<Option<String>>>,
-    /// Set (before the poison text) when an `AnnIndex` PANICKED in the applier: the index may be
-    /// partially mutated, so every read fails closed too.
     panicked: Arc<AtomicBool>,
     sink: Arc<Mutex<Option<DiagnosticsSink>>>,
-    /// Test-only: skip the engine's own poison checks (cheap + append pre-check).
     #[cfg(any(test, feature = "test-support"))]
     bypass_poison_checks: AtomicBool,
     #[cfg(any(test, feature = "test-support"))]
     layer_counts: [AtomicUsize; 3],
-    /// Seq of the record whose apply failed first (0 = unknown). Lets `append` tell the culprit
-    /// (WAL_CORRUPT) from an innocent record written in the same batch (OUTCOME_UNKNOWN).
     poison_seq: Arc<AtomicU64>,
-    /// Test-only pause point (see `set_before_gate_hook`).
     #[cfg(any(test, feature = "test-support"))]
     before_gate: Mutex<Option<Arc<dyn Fn() + Send + Sync>>>,
-    /// Serializes op-id inserts so check-then-append is atomic (they do not group-commit together).
     op_gate: Mutex<()>,
 }
 
@@ -357,7 +305,6 @@ fn resolve_dim(dir: &Path, requested: Option<usize>) -> Result<usize, AtlasError
     }
 }
 
-/// Permission check first (Forbidden), yielding the caller's tenant.
 fn authz(scope: &EffectiveScope, perm: PermSet) -> Result<&TenantId, AtlasError> {
     match scope.tenant() {
         Some(t) if scope.allows(perm) => Ok(t),
@@ -366,15 +313,10 @@ fn authz(scope: &EffectiveScope, perm: PermSet) -> Result<&TenantId, AtlasError>
 }
 
 impl Engine {
-    /// Create (`cfg.dim` required) or reopen (`cfg.dim` optional; if given it must match
-    /// the persisted dimension, else DIMENSION_MISMATCH).
     pub fn open(dir: impl AsRef<Path>, cfg: Config) -> Result<Engine, AtlasError> {
         Self::open_with_index(dir, cfg, |dim| Box::new(FlatIndex::new(dim)))
     }
 
-    /// Like `open`, with a caller-chosen empty-index factory, called once per tenant (lazily)
-    /// with the resolved dimension. The WAL is replayed into it; persisted index files are
-    /// never trusted. Any record without a valid tenant fails the open (WAL_CORRUPT).
     pub fn open_with_index(
         dir: impl AsRef<Path>,
         cfg: Config,
@@ -383,8 +325,6 @@ impl Engine {
         Self::open_inner(dir.as_ref(), cfg, make_index, fingerprint)
     }
 
-    /// Test-only (feature `test-support`): `open` with a replacement fingerprint function, used
-    /// by live and replay alike, to force fingerprint collisions.
     #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn open_with_fingerprint(
@@ -417,12 +357,9 @@ impl Engine {
         let (ap, ao, apo) = (parts.clone(), ops.clone(), poison.clone());
         let (aps, awf) = (poison_seq.clone(), wal_failed.clone());
         let (apanic, asink) = (panicked.clone(), sink.clone());
-        // The whole per-record apply (decode, op-map note, index mutation) runs inside
-        // catch_unwind: a panicking `AnnIndex` must never kill the committer (see SECURITY.md,
-        // "Poison and panic policy"). Requires `panic = "unwind"`.
         let applier: Applier = Box::new(move |seq, payload| {
             if apanic.load(Ordering::SeqCst) {
-                return; // the index may be partially mutated: apply nothing more (still durable)
+                return;
             }
             let (res, did_panic) = match catch_unwind(AssertUnwindSafe(|| {
                 replay_inner(&ap, &ao, seq, payload, fp)
@@ -434,11 +371,10 @@ impl Engine {
                 return;
             }
             if did_panic {
-                apanic.store(true, Ordering::SeqCst); // reads fail closed from now on
+                apanic.store(true, Ordering::SeqCst);
             }
             let _ = aps.compare_exchange(0, seq, Ordering::SeqCst, Ordering::SeqCst);
             let first = note_failure(&apo, res);
-            // Poison is recorded first; the committer then refuses to write anything queued.
             awf.store(true, Ordering::SeqCst);
             if let Some(detail) = first {
                 call_sink(&asink, &detail);
@@ -472,8 +408,6 @@ impl Engine {
         })
     }
 
-    /// Reject with the GENERIC poison error if the engine is poisoned. `layer` only matters to the
-    /// test-support attribution counters and bypass flag.
     #[cfg(any(test, feature = "test-support"))]
     fn reject_if_poisoned(&self, layer: Layer) -> Result<(), AtlasError> {
         if self.bypass_poison_checks.load(Ordering::SeqCst) {
@@ -494,7 +428,6 @@ impl Engine {
         }
     }
 
-    /// The cheap check, before any payload work.
     fn check_poison(&self) -> Result<(), AtlasError> {
         #[cfg(any(test, feature = "test-support"))]
         return self.reject_if_poisoned(Layer::Cheap);
@@ -502,9 +435,6 @@ impl Engine {
         self.reject_if_poisoned()
     }
 
-    /// Fail-closed read access: after an index PANIC the in-memory state may be inconsistent and
-    /// is never served; a poisoned lock (a panic while the write guard was held) is the same
-    /// condition. Both give the generic poison error.
     fn read_parts(&self) -> Result<RwLockReadGuard<'_, Parts>, AtlasError> {
         if self.panicked.load(Ordering::SeqCst) {
             return Err(generic_poison());
@@ -512,9 +442,6 @@ impl Engine {
         self.parts.read().map_err(|_| generic_poison())
     }
 
-    /// Admission check run BEFORE the WAL is touched: the exact bytes about to be written must be
-    /// within the record limit, decode through `decode` (the function replay and the live
-    /// applier use) and decode to a record EQUAL to `rec`; anything else is INVALID_METADATA.
     fn admit(&self, payload: &[u8], rec: &Record) -> Result<(), AtlasError> {
         if payload.len() > self.max_record_len as usize {
             return Err(AtlasError::RecordTooLarge {
@@ -532,7 +459,6 @@ impl Engine {
         }
     }
 
-    /// Encode + admit + fingerprint: everything expensive, done without any engine lock.
     fn prepare(&self, rec: &Record) -> Result<(Vec<u8>, u64), AtlasError> {
         let payload = serde_json::to_vec(rec).map_err(|e| AtlasError::Codec(e.to_string()))?;
         self.admit(&payload, rec)?;
@@ -540,7 +466,6 @@ impl Engine {
         Ok((payload, fp))
     }
 
-    /// Test-only pause point, run after the cheap poison check and before the gate / append.
     #[cfg(any(test, feature = "test-support"))]
     fn pause_point(&self) {
         let hook = lock(&self.before_gate).clone();
@@ -553,14 +478,6 @@ impl Engine {
     #[inline(always)]
     fn pause_point(&self) {}
 
-    /// Poison handling around the WAL append (under op_gate for insert_op). `has_op_id` only
-    /// selects the OUTCOME_UNKNOWN wording.
-    /// - already poisoned: reject before writing (generic error);
-    /// - poison set while the request was queued: the committer refuses to write it and returns
-    ///   WAL_FAILED (or drops it when it stops), reported as the generic poison error (the record
-    ///   is provably absent);
-    /// - poison set once the record was written: the record IS durable. Its own apply failure is
-    ///   WAL_CORRUPT with the detail; any other record is OUTCOME_UNKNOWN with no detail.
     fn append(&self, payload: Vec<u8>, has_op_id: bool) -> Result<u64, AtlasError> {
         #[cfg(any(test, feature = "test-support"))]
         self.reject_if_poisoned(Layer::AppendPrecheck)?;
@@ -584,8 +501,6 @@ impl Engine {
         }
     }
 
-    /// Returns the WAL seq once the record reached the configured durability boundary
-    /// and has been applied to the caller's tenant partition (in WAL order).
     pub fn insert(
         &self,
         scope: &EffectiveScope,
@@ -595,7 +510,7 @@ impl Engine {
     ) -> Result<u64, AtlasError> {
         let metadata = Metadata(Some(metadata));
         let t = authz(scope, PermSet::WRITE)?;
-        self.check_poison()?; // cheap: before any depth/encode/admit work
+        self.check_poison()?;
         let metadata = check_depth(metadata)?;
         validate_vector(self.dim, vector)?;
         self.check_tenant_capacity(t)?;
@@ -611,14 +526,6 @@ impl Engine {
         self.append(payload, false)
     }
 
-    /// Idempotent insert keyed by (tenant, operation id) (1..=128 bytes).
-    ///
-    /// Retrying the same `op_id` with the same payload (after OUTCOME_UNKNOWN, a crash or a
-    /// restart) never applies twice and returns the ORIGINAL seq. Same `op_id` with a different
-    /// payload is OP_ID_CONFLICT. Op ids of different tenants are independent namespaces.
-    /// The dedupe window is the whole WAL, bounded by `Config.max_ops` (see OpMap).
-    /// OUTCOME_UNKNOWN means the record may be durable (e.g. the engine was poisoned by another
-    /// record in the same batch): treat it as unknown and retry the same op id after reopen.
     pub fn insert_op(
         &self,
         scope: &EffectiveScope,
@@ -629,13 +536,12 @@ impl Engine {
     ) -> Result<u64, AtlasError> {
         let metadata = Metadata(Some(metadata));
         let t = authz(scope, PermSet::WRITE)?;
-        self.check_poison()?; // cheap: before any depth/encode/admit work
+        self.check_poison()?;
         let metadata = check_depth(metadata)?;
         if op_id.is_empty() || op_id.len() > MAX_OP_ID_LEN {
             return Err(AtlasError::InvalidOpId);
         }
         validate_vector(self.dim, vector)?;
-        // Encode/admit/fingerprint outside the gate; under it only the op-map check + append.
         let (payload, fp) = self.prepare(&Record {
             tenant: t.as_str().to_string(),
             deleted: false,
@@ -646,9 +552,6 @@ impl Engine {
         })?;
         self.pause_point();
         let _gate = lock(&self.op_gate);
-        // Decision under the gate: identical retry only if the stored bytes (this tenant's entry)
-        // equal ours; the fingerprint merely short-circuits the byte comparison. The ops mutex is
-        // held only to copy (seq, fp, Arc) out; the (up to 16 MiB) comparison runs without it.
         if let Some((seq, stored_fp, stored)) = self.lookup_op(t, op_id)? {
             let same = stored_fp == fp && *stored == payload[..];
             return if same {
@@ -657,8 +560,6 @@ impl Engine {
                 Err(AtlasError::OpIdConflict(clip_echo(op_id)))
             };
         }
-        // New op id: capacity is checked only now so a retry of a known op still succeeds when
-        // full. The gate serialises insert_op, so the op-map bound is exact.
         if self.ops.lock().map_err(|_| generic_poison())?.len() >= self.max_ops {
             return Err(AtlasError::CapacityExceeded("operation map"));
         }
@@ -666,9 +567,6 @@ impl Engine {
         self.append(payload, true)
     }
 
-    /// Refuse an upsert when the tenant partition is at `max_tenant_vectors` (updates of existing
-    /// ids are refused too: conservative, no per-id lookup). ponytail: read-then-append is not
-    /// atomic, concurrent writers can overshoot by the in-flight count; tighten if that matters.
     fn check_tenant_capacity(&self, t: &TenantId) -> Result<(), AtlasError> {
         let n = self.read_parts()?.map.get(t).map_or(0, |ix| ix.len());
         if n >= self.max_tenant_vectors {
@@ -677,7 +575,6 @@ impl Engine {
         Ok(())
     }
 
-    /// Copy one op-map entry out and release the map lock before returning.
     fn lookup_op(&self, t: &TenantId, op_id: &str) -> Result<Option<OpLookup>, AtlasError> {
         let ops = self.ops.lock().map_err(|_| generic_poison())?;
         let found = ops.get(&(t.clone(), op_id.to_string()));
@@ -699,8 +596,6 @@ impl Engine {
         }
     }
 
-    /// Top-k among the caller's ids accepted by `allow`; the filter only narrows (exact for
-    /// the default index).
     pub fn search_filtered(
         &self,
         scope: &EffectiveScope,
@@ -713,6 +608,26 @@ impl Engine {
         validate_vector(self.dim, q)?;
         match self.read_parts()?.map.get(t) {
             Some(ix) => ix.search_filtered(q, k, metric, allow),
+            None => Ok(vec![]),
+        }
+    }
+
+    pub fn search_where(
+        &self,
+        scope: &EffectiveScope,
+        q: &[f32],
+        k: usize,
+        metric: Metric,
+        filter: &Filter,
+    ) -> Result<Vec<Hit>, AtlasError> {
+        let t = authz(scope, PermSet::SEARCH)?;
+        validate_vector(self.dim, q)?;
+        match self.read_parts()?.map.get(t) {
+            Some(ix) => {
+                let allowed: std::collections::HashSet<VectorId> =
+                    ix.matching_ids(filter).into_iter().collect();
+                ix.search_filtered(q, k, metric, &|id| allowed.contains(&id))
+            }
             None => Ok(vec![]),
         }
     }
@@ -731,10 +646,9 @@ impl Engine {
         Ok(g.map.get(t).map_or(0, |ix| ix.len()))
     }
 
-    /// Ok(true) if a record was removed.
     pub fn delete(&self, scope: &EffectiveScope, id: VectorId) -> Result<bool, AtlasError> {
         let t = authz(scope, PermSet::DELETE)?;
-        self.check_poison()?; // cheap: before any lookup/encode work
+        self.check_poison()?;
         if !self.items(t)?.iter().any(|i| i.id == id) {
             return Ok(false);
         }
@@ -751,16 +665,10 @@ impl Engine {
         Ok(true)
     }
 
-    /// Streams the caller's records to `sink` after authorization. `Ok(n)` is the only
-    /// complete result; any failure mid-stream is `Incomplete { emitted, reason }`. The view
-    /// is a point-in-time copy of ONE tenant taken under a single read guard, released before
-    /// the sink runs. A sink that panics unwinds through this call: no result is returned (so
-    /// never `Ok`), no lock is held and no state changes (see docs/SECURITY.md).
     pub fn snapshot(&self, scope: &EffectiveScope, sink: Sink) -> Result<u64, AtlasError> {
         self.stream(authz(scope, PermSet::SNAPSHOT)?, sink)
     }
 
-    /// Same contract as `snapshot`, under the EXPORT permission.
     pub fn export(&self, scope: &EffectiveScope, sink: Sink) -> Result<u64, AtlasError> {
         self.stream(authz(scope, PermSet::EXPORT)?, sink)
     }
@@ -777,7 +685,6 @@ impl Engine {
         Ok(n)
     }
 
-    /// Records of one tenant only (empty if it has no partition).
     fn items(&self, t: &TenantId) -> Result<Vec<Item>, AtlasError> {
         let g = self.read_parts()?;
         Ok(g.map.get(t).map_or_else(Vec::new, |ix| {
@@ -796,24 +703,16 @@ impl Engine {
         self.dim
     }
 
-    /// Register the operator diagnostics sink: called ONCE, at poison time, with the full (bounded)
-    /// detail of the first applier failure (index error or index panic), on the committer thread,
-    /// with no engine lock held. A panic inside the sink is caught and ignored. The sink must not
-    /// block: the committer waits for it before acknowledging the batch. A sink registered after
-    /// the engine is already poisoned is never called. It is an in-process trust boundary: the
-    /// detail may contain index internals and must not be forwarded to tenants.
     pub fn set_diagnostics_sink(&self, sink: DiagnosticsSink) {
         *lock(&self.sink) = Some(sink);
     }
 
-    /// Test-only: the private full poison detail.
     #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn poison_detail(&self) -> Option<String> {
         lock(&self.poison).clone()
     }
 
-    /// Test-only: how many requests each layer rejected because of poison.
     #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn poison_layer_counts(&self) -> PoisonLayers {
@@ -825,16 +724,12 @@ impl Engine {
         }
     }
 
-    /// Test-only: when `on`, the engine's own poison checks (cheap and `append` pre-check) are
-    /// skipped, so only the WAL Failed flag layer can reject a request.
     #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn bypass_engine_poison_check(&self, on: bool) {
         self.bypass_poison_checks.store(on, Ordering::SeqCst);
     }
 
-    /// Total records across ALL tenants. Test-only (feature `test-support`); tenant-visible
-    /// counts go through `count`.
     #[cfg(any(test, feature = "test-support"))]
     pub fn len(&self) -> usize {
         self.read_parts()
@@ -846,9 +741,6 @@ impl Engine {
         self.len() == 0
     }
 
-    /// Test-only (feature `test-support`): run `hook` at the pause point of every write, i.e.
-    /// after the cheap poison check and immediately before `op_gate` (insert_op) or the append
-    /// (insert, delete). The hook runs without any engine lock held and may block.
     #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn set_before_gate_hook(&self, hook: impl Fn() + Send + Sync + 'static) {
@@ -897,7 +789,6 @@ impl Engine {
         self.wal.flush_delay_handle()
     }
 
-    /// Test-only: committer hold latch + queued-request counter (deterministic batch control).
     #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn commit_hold_handle(&self) -> Arc<atlas_storage::CommitHold> {
@@ -933,13 +824,11 @@ mod tests {
         let e = Engine::open(&dir, Config::new(2)).unwrap();
         let s = scope("a");
         e.insert(&s, VectorId(1), &[1.0, 0.0], Value::Null).unwrap();
-        // A tenantless payload reaching the live applier must poison the instance.
         let res = replay_one(&e.parts, &e.ops, 99, br#"{"id":1}"#, e.fp);
         assert_eq!(res.as_ref().unwrap_err().code(), "WAL_CORRUPT");
         note_failure(&e.poison, res);
         let err = e.insert(&s, VectorId(2), &[1.0, 0.0], Value::Null);
         assert_eq!(err.unwrap_err().code(), "WAL_CORRUPT");
-        // Reads of already-applied data still work; denied calls stay Forbidden first.
         assert_eq!(e.count(&s).unwrap(), 1);
         let none = EffectiveScope::default();
         let err = e.insert(&none, VectorId(3), &[1.0, 0.0], Value::Null);
@@ -997,7 +886,6 @@ mod tests {
         let s = scope("a");
         let seq0 = e.insert(&s, VectorId(1), &[1.0, 0.0], Value::Null).unwrap();
         let len0 = std::fs::metadata(dir.join("wal.log")).unwrap().len();
-        // NaN serializes as null and cannot decode back to f32: not a round trip.
         let bad = Record {
             tenant: "a".into(),
             id: VectorId(2),
@@ -1042,7 +930,6 @@ mod tests {
         let big = Value::String("x".repeat(20 * 1024 * 1024));
         let r = e.insert_op(&s, "op", VectorId(1), &[1.0, 0.0], big);
         assert_eq!(r.unwrap_err().code(), "WAL_CORRUPT", "record too large");
-        // Authorization still comes first.
         let r = e.insert(
             &EffectiveScope::default(),
             VectorId(1),
@@ -1054,8 +941,6 @@ mod tests {
 
     #[test]
     fn append_rejects_when_already_poisoned() {
-        // PIN of existing behaviour (not a race): `append` on an already-poisoned engine
-        // rejects before writing. The real race is tests/review4.rs (pause hook + queued cases).
         let dir = std::env::temp_dir().join(format!("atlas-gate-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         let e = Engine::open(&dir, Config::new(2)).unwrap();
@@ -1075,7 +960,6 @@ mod tests {
         assert!(e.ops.lock().unwrap().is_empty());
     }
 
-    /// Index that refuses id 666 (a failing `AnnIndex`), so the live applier poisons the engine.
     struct Refuses(FlatIndex);
 
     impl AnnIndex for Refuses {
@@ -1102,10 +986,6 @@ mod tests {
         }
     }
 
-    /// Deterministic race: T (insert_op) passes the cheap poison check and prepares its payload,
-    /// then is paused right before `op_gate`. The engine is poisoned through the supported
-    /// failure path while T is paused; when released, T must be rejected without touching the
-    /// WAL, a seq, the op map or the index, and without any acknowledgement.
     #[test]
     fn poison_between_cheap_check_and_gate_rejects_the_paused_insert_op() {
         use std::sync::mpsc::channel;
@@ -1132,7 +1012,6 @@ mod tests {
         reached_rx
             .recv_timeout(std::time::Duration::from_secs(20))
             .expect("T reached the pause point");
-        // Poison via the supported failure path (applier rejects id 666), then wait for it.
         let culprit = e.insert(&s, VectorId(666), &[1.0, 0.0], Value::Null);
         assert_eq!(culprit.unwrap_err().code(), "WAL_CORRUPT");
         let wal_len = || std::fs::metadata(dir.join("wal.log")).unwrap().len();
@@ -1145,7 +1024,6 @@ mod tests {
         assert!(e.ops.lock().unwrap().is_empty(), "no op-map entry for T");
         assert_eq!(e.count(&s).unwrap(), count, "count unchanged");
         drop(e);
-        // Healthy index after reopen: T's record is absent and consumed no seq (1, 666 -> next 3).
         let e = Engine::open(&dir, Config::reopen()).unwrap();
         assert_eq!(e.count(&s).unwrap(), 2);
         let seq = e
@@ -1161,8 +1039,6 @@ mod tests {
         fingerprint(payload)
     }
 
-    /// `prepare` is the only caller of the fingerprint fn (with encode + admit): a poisoned engine
-    /// must reject before any of that work, including for would-be RECORD_TOO_LARGE inputs.
     #[test]
     fn poisoned_engine_rejects_before_any_encoding_work() {
         let dir = std::env::temp_dir().join(format!("atlas-fpcount-{}", std::process::id()));
@@ -1171,10 +1047,8 @@ mod tests {
         cfg.max_record_len = 256;
         let e = Engine::open_with_fingerprint(&dir, cfg, counting_fp).unwrap();
         let s = scope("a");
-        // Control: a healthy engine does reach the fingerprint.
         e.insert_op(&s, "ok", VectorId(1), &[1.0, 0.0], Value::Null)
             .unwrap();
-        // prepare (live) and the applier (replay_one) each fingerprint once.
         let base = FP_CALLS.load(Ordering::SeqCst);
         assert!(
             base >= 1,
@@ -1205,7 +1079,6 @@ mod tests {
             .unwrap();
         let t = TenantId::parse("a").unwrap();
         let held = e.lookup_op(&t, "op").unwrap().expect("entry");
-        // While the caller holds the copied-out entry (and would compare it), the map is free.
         assert!(e.ops.try_lock().is_ok(), "ops mutex must not be held");
         assert!(e.lookup_op(&t, "absent").unwrap().is_none());
         drop(held);

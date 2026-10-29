@@ -1,4 +1,3 @@
-// Renders the evidence section from data/prism-results.json. Values are formatted numbers only.
 (() => {
   "use strict";
   const root = document.getElementById("evidence-root");

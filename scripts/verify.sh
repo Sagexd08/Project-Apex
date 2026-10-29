@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# One-command Windows verification with a compact summary (replaces scout agents). Full logs: target/verify/*.log
-# Usage: bash scripts/verify.sh [--cov]
 set -uo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p target/verify

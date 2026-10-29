@@ -1,4 +1,3 @@
-//! Caller-supplied operation ids: retries must not double-apply.
 mod common;
 use atlas_core::{Config, Metric, RecoverMode, VectorId};
 use atlas_engine::Engine;
@@ -105,7 +104,6 @@ fn concurrent_retries_of_one_op_id_apply_once() {
 
 #[test]
 fn retry_after_outcome_unknown_is_safe_whether_or_not_the_record_survived() {
-    // 1) record discarded by Repair: the retry applies it exactly once
     let dir = tmp("unknown-absent");
     let eng = Engine::open(&dir, Config::new(4)).unwrap();
     plain(&eng, 1);
@@ -124,7 +122,6 @@ fn retry_after_outcome_unknown_is_safe_whether_or_not_the_record_survived() {
     assert_eq!(op(&eng, "k", 2, json!({"v": 1})).unwrap(), 2);
     assert_eq!(eng.len(), 2);
 
-    // 2) record survived (nothing could be persisted): the retry returns the original seq
     let dir = tmp("unknown-present");
     let eng = Engine::open(&dir, Config::new(4)).unwrap();
     plain(&eng, 1);

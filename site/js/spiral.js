@@ -1,12 +1,10 @@
-// GPU text rings: text is baked into one texture, then rotated / twisted / zoomed in a fragment shader.
-// Per-frame cost is one fullscreen quad; no 2D text drawing after startup.
 import * as THREE from '../vendor/three.module.min.js';
 
-const SIZE = 4096;        // texture px
-const SPAN = 1.9;         // texture covers SPAN view-heights
-const PITCH_PX = 44;      // radial gap between rings, in texture px
+const SIZE = 4096;
+const SPAN = 1.9;
+const PITCH_PX = 44;
 const R0_PX = 66;
-const FS = 19;            // glyph size, texture px
+const FS = 19;
 const WORD = 'PROJECT APEX · ATLAS · ';
 const PITCH = (PITCH_PX / SIZE) * SPAN;
 const R0 = (R0_PX / SIZE) * SPAN;
@@ -55,7 +53,6 @@ function bakeTexture() {
   const max = (SIZE / 2) * 1.04;
   x.font = `500 ${FS}px "Geist Mono", monospace`;
   for (let r = R0_PX; r <= max; r += PITCH_PX) {
-    // whole repeats of WORD per ring, so there is no seam and the ring is symmetrical
     const n = Math.max(1, Math.round((Math.PI * 2 * r) / (FS * 0.7 * WORD.length))) * WORD.length;
     for (let i = 0; i < n; i++) {
       const th = (i / n) * Math.PI * 2;
@@ -74,14 +71,13 @@ function bakeTexture() {
   return tex;
 }
 
-/** @param {HTMLElement} host element containing a <canvas>. @param {{ticker:any,reduce:boolean}} o */
 export async function createSpiral(host, { ticker, reduce }) {
   const canvas = host.querySelector('canvas');
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false, powerPreference: 'high-performance' });
   } catch {
-    return null; // no WebGL: the dark panel still reads fine
+    return null;
   }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   const scene = new THREE.Scene();
@@ -129,14 +125,12 @@ export async function createSpiral(host, { ticker, reduce }) {
   });
 
   size();
-  // bake after fonts + first paint so the page is interactive immediately
   await document.fonts.load('500 20px "Geist Mono"');
   await new Promise((r) => (window.requestIdleCallback ? requestIdleCallback(r, { timeout: 400 }) : setTimeout(r, 60)));
   u.tMap.value = bakeTexture();
   size();
 
   return {
-    /** dive progress 0..1: zoom in and slide the spiral centre from the right half to the middle */
     dive(p) { state.zoom = 1 + p * 1.55; state.center = 0.75 - p * 0.25; },
     pause(v) { state.paused = v; },
     show(v) { u.uShow.value = v; if (reduce) render(); },

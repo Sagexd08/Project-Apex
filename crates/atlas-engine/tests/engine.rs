@@ -131,7 +131,6 @@ fn dimension_mismatch_is_rejected_and_not_logged() {
     assert!(eng.is_empty());
     drop(eng);
     assert!(Engine::open(&dir, Config::new(DIM)).unwrap().is_empty());
-    // reopening with a different dim is refused as a config error
     let eng = Engine::open(&dir, Config::new(DIM)).unwrap();
     eng.insert(&single_tenant_full(), VectorId(1), &[0.5; DIM], json!(null))
         .unwrap();

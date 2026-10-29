@@ -1,6 +1,3 @@
-# Scratch consumer of the production API. Each `use_<name>` feature touches ONE test-only API.
-# Without `hooks` every one must fail to compile with an error naming that API; with `hooks` every
-# one must compile (so a typo cannot pass vacuously). Driven by ci/check-prod-graph.sh.
 [package]
 name = "hook-absence"
 version = "0.0.0"

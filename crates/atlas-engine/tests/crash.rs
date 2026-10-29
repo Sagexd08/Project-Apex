@@ -1,12 +1,3 @@
-//! Slice 3: process-termination crash loop (NOT power loss: a killed process leaves the OS
-//! page cache intact, so this proves nothing about unflushed OS/drive caches).
-//!
-//! A child process (this test binary re-invoked) runs concurrent writers over 8 hot ids and
-//! prints `ACK <seq> <id> <thread> <iter>` only after `insert` returned Ok. The parent kills it
-//! hard (TerminateProcess / SIGKILL) at a randomized point, reopens, and checks:
-//! every acked write survives, no invented ids, same-id order never regresses behind an acked
-//! write, seq stays monotonic, and reopening twice yields identical state.
-//! `ATLAS_CRASH_ITERS` overrides the default of 100 iterations.
 mod common;
 use atlas_core::{Config, Metric, VectorId};
 use atlas_engine::Engine;
@@ -28,7 +19,6 @@ fn env_u64(k: &str, d: u64) -> u64 {
         .unwrap_or(d)
 }
 
-/// Child body; a no-op unless re-invoked by the parent tests below.
 #[test]
 fn crash_child() {
     let Ok(dir) = std::env::var("ATLAS_CRASH_DIR") else {
@@ -79,7 +69,7 @@ struct Params {
     extra_sleep_ms: u64,
 }
 
-type Ack = (u64, u64, u64, u64); // seq, id, thread, iter
+type Ack = (u64, u64, u64, u64);
 
 fn snapshot(eng: &Engine) -> HashMap<u64, Value> {
     eng.search(&single_tenant_full(), &[0.0; 4], 1000, Metric::Dot)
@@ -124,7 +114,6 @@ fn run_once(tag: &str, p: &Params) -> Result<(usize, usize), String> {
     let mut ready = false;
     while !ready || acked.len() < p.target_acks {
         match rx.recv_timeout(std::time::Duration::from_secs(30)) {
-            // the libtest harness prefixes the first line: "test crash_child ... READY"
             Ok(l) if l.ends_with("READY") => ready = true,
             Ok(l) => parse(&l, &mut acked),
             Err(e) => {
@@ -134,10 +123,10 @@ fn run_once(tag: &str, p: &Params) -> Result<(usize, usize), String> {
         }
     }
     std::thread::sleep(std::time::Duration::from_millis(p.extra_sleep_ms));
-    child.kill().map_err(|e| format!("kill: {e}"))?; // TerminateProcess / SIGKILL
-    let _ = reader.join(); // drains everything the child printed before dying
+    child.kill().map_err(|e| format!("kill: {e}"))?;
+    let _ = reader.join();
     for l in rx.try_iter() {
-        parse(&l, &mut acked); // a partially printed final line fails to parse: not an ack
+        parse(&l, &mut acked);
     }
     let _ = child.wait();
 
@@ -176,7 +165,6 @@ fn run_once(tag: &str, p: &Params) -> Result<(usize, usize), String> {
     }
     let present = state.len();
     let max_acked = acked.iter().map(|a| a.0).max().unwrap_or(0);
-    // restart idempotency + monotonic seq
     let next = eng
         .insert(
             &single_tenant_full(),
@@ -207,7 +195,6 @@ fn run_once(tag: &str, p: &Params) -> Result<(usize, usize), String> {
 
 #[test]
 fn kill_during_pending_group_commit_never_exposes_invalid_records() {
-    // 4 writers, 300 ms flush delay: killed while a batch is queued/being flushed.
     let p = Params {
         threads: 4,
         batch: 128,

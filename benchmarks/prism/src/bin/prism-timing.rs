@@ -1,11 +1,3 @@
-//! Interleaved, repeated timing of the exact scan against the cascade. Synthetic data only.
-//!
-//! Every query is timed once per kernel in a rotating order, repeated `reps` times, so slow drift
-//! (CPU frequency, other processes) hits every kernel alike. The per-repetition p50 of each kernel
-//! is divided by the exact scan's p50 from the same repetition, and a bootstrap over repetitions
-//! gives a 95% interval for the median ratio. Writes results/timing_interleaved.json.
-//!
-//! prism-timing [--n 20000,100000,400000] [--reps 20] [--queries 200]
 
 use prism::rng::SplitMix64;
 use prism::search::{calibrate, search_cascade_lut, search_exact_fast, search_exact_stream, search_flat_lut, Calib, Gate};
@@ -19,7 +11,6 @@ const SCHED: [usize; 3] = [1, 2, 4];
 const WARMUP: usize = 20;
 const BOOTSTRAP: usize = 4000;
 const NAMES: [&str; 5] = ["exact_scan_opt", "exact_scan_stream", "flat4_lut_rerank100", "cascade_lut_z2", "cascade_lut_z3"];
-/// Kernels 0 and 1 are exact scans; the baseline of each repetition is the faster of the two.
 const RECALL_QUERIES: usize = 50;
 
 fn run_ids(i: usize, ep: &Epoch, snap: &Snapshot, q: &[f32], calib: &Calib) -> Vec<(u64, f32)> {
@@ -36,7 +27,6 @@ fn run_kernel(i: usize, ep: &Epoch, snap: &Snapshot, q: &[f32], calib: &Calib) -
     run_ids(i, ep, snap, q, calib).len()
 }
 
-/// Mean recall@K of kernel `i` against the exact scan over the first queries.
 fn recall(i: usize, ep: &Epoch, snap: &Snapshot, qs: &[Vec<f32>], calib: &Calib) -> f64 {
     let n = RECALL_QUERIES.min(qs.len());
     let hits: usize = qs[..n]
@@ -97,7 +87,6 @@ fn measure(n: usize, reps: usize, nq: usize) -> J {
             std::hint::black_box(run_kernel(k, ep, &snap, q, &calib));
         });
     }
-    // lat[rep][kernel][query]
     let mut lat = vec![vec![Vec::with_capacity(nq); NAMES.len()]; reps];
     for (r, per_rep) in lat.iter_mut().enumerate() {
         for (qi, q) in qs.iter().enumerate() {

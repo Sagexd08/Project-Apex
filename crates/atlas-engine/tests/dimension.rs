@@ -63,16 +63,15 @@ fn create_requires_dimension_and_bad_meta_is_detected() {
     let good = std::fs::read(&meta).unwrap();
     let open_code = || Engine::open(&dir, Config::reopen()).err().unwrap().code();
     let mut b = good.clone();
-    b[14] ^= 1; // dimension byte: checksum mismatch
+    b[14] ^= 1;
     std::fs::write(&meta, &b).unwrap();
     assert_eq!(open_code(), "META_CORRUPT");
     std::fs::write(&meta, &good[..10]).unwrap();
     assert_eq!(open_code(), "META_CORRUPT");
     let mut b = good.clone();
-    b[8] = 9; // version
+    b[8] = 9;
     std::fs::write(&meta, &b).unwrap();
     assert_eq!(open_code(), "META_CORRUPT");
-    // wal without meta (single_tenant_full / damaged) is refused rather than guessed
     std::fs::remove_file(&meta).unwrap();
     assert_eq!(open_code(), "INVALID_CONFIG");
 }

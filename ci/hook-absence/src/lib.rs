@@ -1,4 +1,3 @@
-//! One probe per test-only API, each behind its own `use_<name>` feature (see Cargo.toml).
 #![allow(unused_imports)]
 use atlas_core::{AuthContext, KeyScope, PermSet, Principal, TenantId};
 use atlas_engine::Engine;

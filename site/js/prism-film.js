@@ -1,5 +1,3 @@
-// Prism math film: a time-driven canvas "video". Every frame is a pure function of the clock, so play, pause and scrub are exact.
-// Numbers in the last scenes are measured values from data/prism-results.json (synthetic data, one machine).
 (() => {
   "use strict";
   const cv = document.getElementById("film");
@@ -23,7 +21,6 @@
   const typed = (s, p) => s.slice(0, Math.floor(s.length * p));
   function L(x1, y1, x2, y2, col, w = 2, a = 1) { ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore(); }
 
-  // ---------- scene 1: ranking is an angle
   const CX = 380, CY = 390, R = 230, TH = 55 * Math.PI / 180;
   function circle(a = 1) { ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = C.line; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(CX, CY, R, 0, 7); ctx.stroke(); ctx.restore(); }
   function vecs(th, qa = 1, xa = 1) {
@@ -41,7 +38,6 @@
     T("bigger inner product", 700, 430, 30, { c: C.mid, w: 500, a: seg(t, .78, .9) }); T("= smaller angle", 700, 470, 30, { c: C.acc, a: seg(t, .84, .95) });
   }
 
-  // ---------- scene 2: one bit is a biased coin
   const NL = 44;
   function s2(t) {
     circle(); vecs(TH); const show = Math.floor(NL * ease(seg(t, .08, .72)));
@@ -57,7 +53,6 @@
     T("H = disagreeing bits, d = bits", 700, 525, 24, { c: C.mid, w: 500, a: seg(t, .85, 1) });
   }
 
-  // ---------- scene 3: rotation makes every vector look alike
   const r3 = rngf(5), N3 = 48;
   const spiky = Array.from({ length: N3 }, (_, i) => (i % 9 === 3 ? 1 : .08 + r3() * .1) * (r3() < .5 ? -1 : 1));
   const gs = Array.from({ length: N3 }, () => gauss(r3));
@@ -76,7 +71,6 @@
     T("same length, nothing to train", 700, 640, 26, { c: C.acc, a: seg(t, .85, 1) });
   }
 
-  // ---------- scene 4: nested cells
   function s4(t) {
     const x0 = 140, x1 = 1140, y = 330, hh = 110, v = .685, idx = 10;
     ctx.strokeStyle = C.line; ctx.lineWidth = 2; ctx.strokeRect(x0, y, x1 - x0, hh);
@@ -99,7 +93,6 @@
     void idx;
   }
 
-  // ---------- scene 5: each bit halves the error
   function s5(t) {
     const sig = [.0541, .0271, .0135, .0068], base = 560, sc = 6200;
     sig.forEach((s, i) => {
@@ -115,7 +108,6 @@
     T("measured: 0.061, 0.027, –, 0.007", 160, 660, 26, { c: C.mid, w: 500, a: seg(t, .9, 1) });
   }
 
-  // ---------- scene 6: the gate
   const r6 = rngf(9), dots = [];
   for (let i = 0; i < 5; i++) dots.push({ s: .8 + r6() * .15, top: 1 });
   for (let i = 0; i < 110; i++) dots.push({ s: clamp(.18 + gauss(r6) * .24, -.2, .77), top: 0 });
@@ -136,7 +128,6 @@
     T("keep c  ⇔  ŝ + zσ ≥ τ − zσ", 120, 100, 50, { a: seg(t, .05, .25) });
   }
 
-  // ---------- scene 7: cascade funnel (measured, z = 2)
   function s7(t) {
     const rows = [["1 bit, all vectors", 20000], ["2 bits, survivors", 399], ["4 bits, survivors", 356], ["exact rerank", 107], ["top k", 10]];
     rows.forEach(([lab, n], i) => {
@@ -149,7 +140,6 @@
     T("log scale", 1090, 150, 22, { c: C.dim, w: 500 });
   }
 
-  // ---------- scene 8: snapshots
   function s8(t) {
     const n = Math.floor(1 + 11 * ease(seg(t, .08, .6))), pa = 4, pb = 9, X = i => 150 + i * 80;
     const row = (label, y, up, pin) => {
@@ -167,7 +157,6 @@
     T("commits keep arriving; each reader keeps its own view", 150, 130, 28, { c: C.mid, w: 500 });
   }
 
-  // ---------- scene 9: honest summary
   function s9(t) {
     const lines = [["1.06 bits per coordinate at z = 3, vs 4 flat", C.off], ["exact top 10 on 1000 of 1000 queries", C.off], ["0.61 vs 0.55 ms in one run, reversed in a re-run: inconclusive", C.acc], ["a live writer adds 21% to median P99", C.acc], ["next: real embeddings, SIMD, sharper bounds", C.mid]];
     T("what we measured", 110, 130, 30, { c: C.mid, w: 500 });

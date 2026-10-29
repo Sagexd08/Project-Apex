@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Runs INSIDE the rust container (copied to /work). Prints a compact summary; logs in /tmp/v.
 set -uo pipefail
 export PATH=/usr/local/cargo/bin:$PATH
 cd /work

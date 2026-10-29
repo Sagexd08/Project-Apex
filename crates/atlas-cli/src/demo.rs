@@ -1,5 +1,3 @@
-//! Scripted walk-through: real engine, real WAL, real tenant scopes. Prints what happens.
-//! Data is synthetic and deterministic; this shows behaviour, not performance.
 use atlas_cli::StaticKeys;
 use atlas_core::{AtlasError, Authenticator, Config, EffectiveScope, Metric, VectorId};
 use atlas_engine::{Engine, Hit};
@@ -8,7 +6,6 @@ use serde_json::json;
 const DIM: usize = 8;
 const CLUSTERS: u64 = 5;
 
-/// Deterministic xorshift in [-1, 1).
 fn next(state: &mut u64) -> f32 {
     *state ^= *state << 13;
     *state ^= *state >> 7;

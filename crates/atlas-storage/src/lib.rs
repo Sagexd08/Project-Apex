@@ -1,23 +1,3 @@
-//! Append-only WAL with a committer thread (group commit).
-//!
-//! File layout: header `b"ATLASWAL"` + u32 LE version, then records
-//! `[len u32][seq u64][crc32(payload) u32][payload]`, all little-endian.
-//!
-//! Durability: `append` returns Ok only after `sync_all` succeeded for the batch
-//! containing the record. Covers process crash and OS-level flush via sync_all.
-//! The parent directory is fsynced when the WAL/meta file is created on Unix; on
-//! non-Unix targets (Windows) this is a documented no-op. See docs/DURABILITY.md.
-//! Power-loss safety is NOT claimed.
-//!
-//! Apply order: records are applied (via the `Applier`) by the committer thread in
-//! seq order, after the flush succeeded and before any ack is sent.
-//!
-//! On flush failure every commit in the batch gets Err and the file is truncated
-//! back to the pre-batch length, so failed records are absent after reopen. If that
-//! rollback (truncate) fails, the WAL best-effort zeroes the batch's first record
-//! header and enters the Failed state: every later append returns `WAL_FAILED`
-//! until the database is reopened. If the zeroing also fails, the outcome of the
-//! failed batch is indeterminate after reopen (Err means "unknown").
 use atlas_core::{AtlasError, Config, Durability};
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
@@ -33,19 +13,16 @@ use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
 const MAGIC: &[u8; 8] = b"ATLASWAL";
-/// WAL format version. v1 (16-byte unprotected record header) is refused, no migration.
 const VERSION: u32 = 2;
 const META_VERSION: u32 = 1;
 const MARKER_VERSION: u32 = 1;
 const HEADER_LEN: usize = 12;
-/// v2 header: len u32 | !len u32 | seq u64 | flags u32 | payload_crc u32 | header_crc u32
 const REC_HDR: usize = 28;
 const HDR_CRC_COVERS: usize = 24;
 const META_FILE: &str = "meta.bin";
 const META_MAGIC: &[u8; 8] = b"ATLASMTA";
-const META_LEN: usize = 24; // magic 8 + version 4 + dim 8 + crc32(first 20) 4
+const META_LEN: usize = 24;
 
-/// Called by the committer for each durable record, in seq order.
 pub type Applier = Box<dyn FnMut(u64, &[u8]) + Send>;
 pub type Replayed = Vec<(u64, Vec<u8>)>;
 type Reply = Sender<Result<u64, AtlasError>>;
@@ -55,11 +32,6 @@ struct Req {
     reply: Reply,
 }
 
-/// Test-only (feature `test-support`) deterministic synchronisation for the committer: a
-/// "hold before write" latch and a counter of requests handed to it, so a test controls batch
-/// composition without wall-clock assumptions. The latch is armed for ONE commit: the committer
-/// blocks at the start of that commit (batch already assembled, nothing written) until
-/// `release`. Every wait here is a deadlock safeguard, not a timing assumption.
 #[cfg(any(test, feature = "test-support"))]
 #[derive(Default)]
 pub struct CommitHold {
@@ -76,7 +48,6 @@ struct HoldState {
     enqueued: usize,
 }
 
-/// A hold that is never released frees itself after this long (deadlock safeguard).
 #[cfg(any(test, feature = "test-support"))]
 const HOLD_SAFEGUARD: Duration = Duration::from_secs(60);
 
@@ -85,14 +56,12 @@ impl CommitHold {
     fn state(&self) -> std::sync::MutexGuard<'_, HoldState> {
         self.st.lock().unwrap_or_else(|p| p.into_inner())
     }
-    /// The next commit blocks (before writing) until `release`.
     pub fn arm(&self) {
         let mut g = self.state();
         (g.held, g.released) = (false, false);
         drop(g);
         self.armed.store(true, Ordering::SeqCst);
     }
-    /// Wait until the committer is blocked at the hold. False on timeout (a hang, not a result).
     pub fn wait_held(&self, limit: Duration) -> bool {
         let g = self.state();
         let (g, _) = self
@@ -105,11 +74,9 @@ impl CommitHold {
         self.state().released = true;
         self.cv.notify_all();
     }
-    /// Requests handed to the committer so far (counted right after the send).
     pub fn enqueued(&self) -> usize {
         self.state().enqueued
     }
-    /// Wait until at least `n` requests were handed over. False on timeout.
     pub fn wait_enqueued(&self, n: usize, limit: Duration) -> bool {
         let g = self.state();
         let (g, _) = self
@@ -135,9 +102,6 @@ impl CommitHold {
     }
 }
 
-/// Fault-injection state. The real one exists only with `test-support` (or in unit tests);
-/// production builds get a zero-sized stub whose `take_*` are constant `false`, so no hook
-/// state, handle or setter is reachable from a release artifact.
 #[cfg(any(test, feature = "test-support"))]
 #[derive(Default, Clone)]
 struct Faults {
@@ -218,8 +182,6 @@ pub struct Wal {
     max_record_len: u32,
 }
 
-/// fsync a directory so a newly created entry is durable. Unix only; elsewhere a
-/// documented no-op (Windows cannot fsync a directory through std).
 pub fn sync_dir(dir: &Path) -> std::io::Result<()> {
     #[cfg(unix)]
     {
@@ -245,19 +207,13 @@ enum Parsed<'a> {
         end: usize,
         payload: &'a [u8],
     },
-    /// REC_HDR zero bytes: explicit invalidation marker, ends the log.
     Marker,
-    /// Header cut short, or a valid header whose payload is cut short (torn write).
     Incomplete,
-    /// Complete header whose checksum / complement / reserved flags are invalid.
     BadHeader,
-    /// Valid header, but the length exceeds the configured maximum.
     TooLarge(u32),
-    /// Complete record with an invalid payload checksum.
     Invalid,
 }
 
-/// The header checksum is verified BEFORE the length is trusted.
 fn parse(rest: &[u8], max_len: u32) -> Parsed<'_> {
     if rest.len() < REC_HDR {
         return Parsed::Incomplete;
@@ -291,8 +247,6 @@ fn parse(rest: &[u8], max_len: u32) -> Parsed<'_> {
     }
 }
 
-/// Is there any valid record with seq > `last_seq` at or after `from`?
-/// ponytail: byte-wise resync is O(n) per candidate offset; only runs on the error path.
 fn valid_record_follows(bytes: &[u8], from: usize, last_seq: u64, max_len: u32) -> bool {
     (from..bytes.len())
         .any(|o| matches!(parse(&bytes[o..], max_len), Parsed::Valid { seq, .. } if seq > last_seq))
@@ -301,15 +255,9 @@ fn valid_record_follows(bytes: &[u8], from: usize, last_seq: u64, max_len: u32) 
 struct Scan {
     records: Replayed,
     good_len: usize,
-    /// Set (repair mode only) when a COMPLETE final record with an invalid checksum was cut.
     invalid_seq: Option<u64>,
 }
 
-/// Policy (see docs/WAL_FORMAT.md):
-/// - incomplete final header/payload: torn tail, stop at the last valid boundary;
-/// - complete final record that is invalid: RECOVERY_REQUIRED (it may be an acked record that
-///   rotted), unless `repair`, which cuts it and reports it so the caller keeps the bytes;
-/// - damage with a valid record after it, or a valid record with an unexpected seq: WAL_CORRUPT.
 fn scan(bytes: &[u8], max_len: u32, repair: bool) -> Result<Scan, AtlasError> {
     let mut off = HEADER_LEN;
     let mut records = Vec::new();
@@ -363,8 +311,6 @@ fn scan(bytes: &[u8], max_len: u32, repair: bool) -> Result<Scan, AtlasError> {
 }
 
 impl Wal {
-    /// Open (creating if needed), replay, truncate any torn/corrupt tail.
-    /// `applier` is invoked by the committer for every record appended afterwards.
     pub fn open(
         path: &Path,
         cfg: &Config,
@@ -373,9 +319,6 @@ impl Wal {
         Self::open_with_failed_flag(path, cfg, applier, Arc::new(AtomicBool::new(false)))
     }
 
-    /// Like `open`, with a caller-owned Failed flag. Setting it (e.g. from the `applier` when an
-    /// applied record is rejected downstream) puts the WAL in the Failed state: the committer
-    /// rejects every request that has not been written yet with `WAL_FAILED` and stops.
     pub fn open_with_failed_flag(
         path: &Path,
         cfg: &Config,
@@ -470,63 +413,54 @@ impl Wal {
         Ok((wal, records))
     }
 
-    /// Test hook: the next flush fails once (after the write, before it counts as durable).
     #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn fail_next_flush_handle(&self) -> Arc<AtomicBool> {
         self.faults.fail_flush.clone()
     }
 
-    /// Test hook: the next rollback truncate fails once.
     #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn fail_next_truncate_handle(&self) -> Arc<AtomicBool> {
         self.faults.fail_truncate.clone()
     }
 
-    /// Test hook: the next best-effort header zeroing fails once.
     #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn fail_next_zero_handle(&self) -> Arc<AtomicBool> {
         self.faults.fail_zero.clone()
     }
 
-    /// Test hook: the next batch write is interrupted after half its bytes.
     #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn partial_write_handle(&self) -> Arc<AtomicBool> {
         self.faults.partial_write.clone()
     }
 
-    /// Test hook: the next recovery-marker write fails once.
     #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn fail_next_marker_handle(&self) -> Arc<AtomicBool> {
         self.faults.fail_marker.clone()
     }
 
-    /// Test hook: simulate process death right after the marker is written during rollback.
     #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn die_after_marker_handle(&self) -> Arc<AtomicBool> {
         self.faults.die_after_marker.clone()
     }
 
-    /// Test hook: milliseconds to sleep before every `sync_all` (widens the pending window).
     #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn flush_delay_handle(&self) -> Arc<AtomicU64> {
         self.faults.flush_delay_ms.clone()
     }
 
-    /// Test hook: the committer hold latch and queued-request counter (see `CommitHold`).
     #[cfg(any(test, feature = "test-support"))]
     #[doc(hidden)]
     pub fn commit_hold_handle(&self) -> Arc<CommitHold> {
         self.faults.hold.clone()
     }
 
-    /// Blocks until the record is durable and applied; returns its seq.
     pub fn append(&self, payload: Vec<u8>) -> Result<u64, AtlasError> {
         if payload.len() > self.max_record_len as usize {
             return Err(AtlasError::RecordTooLarge {
@@ -566,11 +500,8 @@ impl Drop for Wal {
 }
 
 enum Rollback {
-    /// Truncated back: the batch is provably absent and the WAL stays usable.
     Restored,
-    /// Header zeroed: provably absent after restart, but this instance is poisoned.
     ProvenAbsent,
-    /// Could not establish the on-disk state.
     Unknown,
 }
 
@@ -599,23 +530,16 @@ impl Committer {
                 }
             }
             if !self.commit(batch) {
-                return; // Failed state: refuse all further writes
+                return;
             }
         }
     }
 
-    /// Restore the pre-batch file state.
-    ///
-    /// Design: the recovery marker is persisted FIRST, before any destructive step, so a
-    /// crash or failure at any later point cannot leave a replayable failed batch unflagged.
-    /// It is cleared again only once the WAL is provably valid (truncated, or header zeroed).
-    /// `Unknown` means the on-disk state of the failed batch could not be established: the
-    /// writer gets OUTCOME_UNKNOWN, which does NOT promise the batch is absent after restart.
     fn rollback(&mut self) -> Rollback {
         let marker_ok =
             !self.faults.take_fail_marker() && write_marker(&self.dir, self.len).is_ok();
         if marker_ok && self.faults.take_die_after_marker() {
-            return Rollback::Unknown; // test hook: simulated process death after the marker
+            return Rollback::Unknown;
         }
         let truncated = !self.faults.take_fail_truncate()
             && self
@@ -645,10 +569,8 @@ impl Committer {
         Rollback::Unknown
     }
 
-    /// Returns false if the WAL entered the Failed state.
     fn commit(&mut self, batch: Vec<Req>) -> bool {
         self.faults.hold_point();
-        // Failed (possibly set by the applier after the previous batch): write nothing new.
         if self.failed.load(Ordering::SeqCst) {
             for r in batch {
                 let _ = r.reply.send(Err(AtlasError::WalFailed));
@@ -663,7 +585,7 @@ impl Committer {
             h.extend_from_slice(&len.to_le_bytes());
             h.extend_from_slice(&(!len).to_le_bytes());
             h.extend_from_slice(&seq.to_le_bytes());
-            h.extend_from_slice(&0u32.to_le_bytes()); // flags (reserved)
+            h.extend_from_slice(&0u32.to_le_bytes());
             h.extend_from_slice(&crc32fast::hash(&r.payload).to_le_bytes());
             let hcrc = crc32fast::hash(&h);
             h.extend_from_slice(&hcrc.to_le_bytes());
@@ -698,9 +620,6 @@ impl Committer {
                 for (i, r) in batch.into_iter().enumerate() {
                     let _ = r.reply.send(Ok(first + i as u64));
                 }
-                // The applier may have set Failed (poison): stop now, in a controlled way. Dropping
-                // the receiver wakes every queued request (they see Failed) and nothing more is
-                // written; `Wal::drop` joins this thread.
                 !self.failed.load(Ordering::SeqCst)
             }
             Err(e) => {
@@ -708,7 +627,7 @@ impl Committer {
                 let unknown = matches!(outcome, Rollback::Unknown);
                 let keep_going = matches!(outcome, Rollback::Restored);
                 if !keep_going {
-                    self.failed.store(true, Ordering::SeqCst); // poisoned until reopen
+                    self.failed.store(true, Ordering::SeqCst);
                 }
                 for r in batch {
                     let err = if unknown {
@@ -727,7 +646,6 @@ impl Committer {
     }
 }
 
-/// Read the persisted dimension; None if no meta file exists.
 pub fn read_meta(dir: &Path) -> Result<Option<usize>, AtlasError> {
     let b = match std::fs::read(dir.join(META_FILE)) {
         Ok(b) => b,
@@ -749,7 +667,6 @@ pub fn read_meta(dir: &Path) -> Result<Option<usize>, AtlasError> {
         .map_err(|_| AtlasError::MetaCorrupt("dimension out of range".into()))
 }
 
-/// Atomically create the meta file: write tmp, sync_all, rename, fsync directory.
 pub fn write_meta(dir: &Path, dim: usize) -> Result<(), AtlasError> {
     let mut b = Vec::with_capacity(META_LEN);
     b.extend_from_slice(META_MAGIC);
@@ -769,7 +686,6 @@ pub fn write_meta(dir: &Path, dim: usize) -> Result<(), AtlasError> {
 const MARKER_FILE: &str = "recovery.required";
 const MARKER_MAGIC: &[u8; 8] = b"ATLASREC";
 
-/// Persist "the WAL is not provably valid; discard everything at/after `safe_len`".
 fn write_marker(dir: &Path, safe_len: u64) -> Result<(), AtlasError> {
     let mut b = Vec::with_capacity(24);
     b.extend_from_slice(MARKER_MAGIC);
@@ -800,8 +716,6 @@ fn read_marker(path: &Path) -> Result<u64, AtlasError> {
     Ok(u64::from_le_bytes(b[12..20].try_into().expect("8 bytes")))
 }
 
-/// Normal: refuse to open while a recovery marker exists. Repair: truncate the WAL to the
-/// marker's safe length (dropping the never-acknowledged failed batch), then clear it.
 fn handle_recovery_marker(
     wal_path: &Path,
     dir: &Path,
@@ -837,7 +751,6 @@ fn clear_marker(dir: &Path) -> Result<(), AtlasError> {
     Ok(())
 }
 
-/// Save the bytes about to be cut by a repair, durably, before touching the WAL.
 fn keep_evidence(dir: &Path, seq: u64, removed: &[u8]) -> Result<(), AtlasError> {
     let mut name = format!("wal.corrupt-{seq}.bak");
     let mut n = 1;

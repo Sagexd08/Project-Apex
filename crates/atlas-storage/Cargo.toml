@@ -12,5 +12,4 @@ crc32fast.workspace = true
 atlas-storage = { path = ".", features = ["test-support"] }
 
 [features]
-# Fault-injection hooks on Wal. Tests only; never enable in production builds.
 test-support = []

@@ -1,10 +1,7 @@
-// Interaction components: odometer labels + numbers, press-and-hold, drawer dialog, minimap, terminal typer.
 const gsap = window.gsap;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-/* ---------- odometer ---------- */
-/** Splits `.odo` text into per-letter rolling cells. CSS rolls them on hover/focus of the parent control. */
 export function buildOdoLabels(root = document) {
   $$('.odo', root).forEach((el) => {
     const text = el.textContent;
@@ -14,14 +11,12 @@ export function buildOdoLabels(root = document) {
       const g = c === ' ' ? '&nbsp;' : c;
       const ch = document.createElement('span');
       ch.className = 'ch'; ch.setAttribute('aria-hidden', 'true'); ch.style.setProperty('--i', i);
-      // two stacked copies in one element; CSS translates it by one line on hover
       ch.innerHTML = `<span><i>${g}</i><i>${g}</i></span>`;
       el.appendChild(ch);
     });
   });
 }
 
-/** Rolling-digit number. set('4,911') animates each digit column to its new value. */
 export function createNumber(el, initial) {
   let sig = '';
   const build = (str) => {
@@ -49,8 +44,6 @@ export function createNumber(el, initial) {
   return { set };
 }
 
-/* ---------- press and hold ---------- */
-/** Decorative hold fill + squash on any `.btn[data-hold]`. Clicks still work normally. */
 export function initHold(root = document) {
   $$('.btn[data-hold]', root).forEach((btn) => {
     const prog = { v: 0 };
@@ -71,7 +64,6 @@ export function initHold(root = document) {
   });
 }
 
-/** Magnetic pull for pointer devices. */
 export function initMagnetic(root = document) {
   if (!matchMedia('(hover:hover) and (pointer:fine)').matches) return;
   $$('.btn', root).forEach((b) => {
@@ -85,7 +77,6 @@ export function initMagnetic(root = document) {
   });
 }
 
-/* ---------- drawer dialog ---------- */
 export function initDrawer({ lenis, reduce }) {
   const btn = $('#w-btn'), drawer = $('#drawer'), scrim = $('#scrim'), ring = $('#w-btn circle');
   const closeBtn = $('#d-close'), tabs = $$('#d-tabs [role=tab]'), panes = $$('.pane');
@@ -130,7 +121,6 @@ export function initDrawer({ lenis, reduce }) {
     gsap.to(drawer, { clipPath: 'circle(0% at 100% 100%)', duration: 0.6, ease: 'expo.inOut', onComplete: done });
   }
 
-  /* press & hold: the ring fills; completing it opens with a burst, an early release behaves as a tap */
   const HOLD_MS = 700;
   btn.addEventListener('pointerdown', (e) => {
     if (e.button !== 0 || isOpen) return;
@@ -153,7 +143,7 @@ export function initDrawer({ lenis, reduce }) {
   addEventListener('keydown', (e) => {
     if (!isOpen) return;
     if (e.key === 'Escape') close();
-    if (e.key === 'Tab') { // focus trap
+    if (e.key === 'Tab') {
       const f = $$(FOCUSABLE, drawer).filter((n) => !n.disabled && n.offsetParent !== null);
       const first = f[0], last = f[f.length - 1];
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
@@ -163,7 +153,6 @@ export function initDrawer({ lenis, reduce }) {
   return { open, close };
 }
 
-/* ---------- minimap ---------- */
 export function createMinimap(el) {
   const W = 118, H = 68;
   const vp = document.createElement('div'); vp.className = 'vp';
@@ -193,7 +182,6 @@ export function createMinimap(el) {
   return { rebuild, move };
 }
 
-/* ---------- terminal typer ---------- */
 export function typeLines(el, lines, { reduce }) {
   el.textContent = '';
   const cur = document.createElement('span'); cur.className = 'cur';

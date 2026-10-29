@@ -1,4 +1,3 @@
-// ASCII dither dividers (scroll-scrubbed) and the rotating ASCII globe. Both draw only when visible.
 const GLYPHS = '01ABCDEF/\\<>[]{}()=+-*_.:#%&$@';
 const CELL_W = 11, CELL_H = 15;
 
@@ -12,7 +11,6 @@ const vnoise = (x) => {
   return hash(i, 7) * (1 - s) + hash(i + 1, 7) * s;
 };
 
-/** One divider: canvas fills `from` colour; as p goes 0->1 the `to` colour pours in with a glyph-noise frontier. */
 export function createDivider(canvas, from, to) {
   const ctx = canvas.getContext('2d', { alpha: false });
   let w = 0, h = 0, cols = 0, rows = 0, last = -1, dpr = 1;
@@ -33,11 +31,11 @@ export function createDivider(canvas, from, to) {
     ctx.font = `500 ${CELL_H - 3}px "Geist Mono", monospace`;
     ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
     const flick = Math.floor(p * 60);
-    const base = h * 0.5 + (p - 0.5) * h * 0.7; /* frontier stays inside the strip and drifts with scroll */
+    const base = h * 0.5 + (p - 0.5) * h * 0.7;
     for (let i = 0; i < cols; i++) {
       const front = base + (vnoise(i * 0.09) - 0.5) * 110 + (vnoise(i * 0.31 + 40) - 0.5) * 28;
       for (let j = 0; j < rows; j++) {
-        const d = j * CELL_H + CELL_H / 2 - front; // >0: inside `to`
+        const d = j * CELL_H + CELL_H / 2 - front;
         const r = hash(i, j);
         const cx = i * CELL_W + CELL_W / 2, cy = j * CELL_H + CELL_H / 2;
         if (d > 0) {
@@ -59,7 +57,6 @@ export function createDivider(canvas, from, to) {
   return { draw };
 }
 
-/** Rotating ASCII globe on a canvas; throttled to ~14fps, paused off-screen. */
 export function createGlobe(canvas, ticker, reduce) {
   const ctx = canvas.getContext('2d');
   const RAMP = ' .·:-=+*#%@';
@@ -74,7 +71,6 @@ export function createGlobe(canvas, ticker, reduce) {
     cols = Math.floor(w / cw); rows = Math.floor(h / ch);
     draw();
   }
-  // crude continents: sum of lat/lon waves above a threshold
   const land = (lon, lat) => Math.sin(lon * 2 + 1.3) * Math.cos(lat * 3) + Math.sin(lon * 5 - lat * 2) * 0.45 + Math.cos(lon * 3 + lat * 4) * 0.35;
 
   function draw() {
@@ -106,7 +102,7 @@ export function createGlobe(canvas, ticker, reduce) {
     ticker.add((_t, dt) => {
       if (!visible) return;
       acc += dt;
-      if (acc < 70) return; // ~14fps
+      if (acc < 70) return;
       spin += acc * 0.00026; acc = 0; draw();
     });
   }

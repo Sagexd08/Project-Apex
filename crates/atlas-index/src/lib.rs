@@ -1,5 +1,8 @@
-//! `AnnIndex` seam plus the exact flat-scan index (correctness oracle and fallback).
-//! ponytail: FlatIndex is O(n log n) per query; ANN impls plug in via `AnnIndex`.
+mod filter;
+pub use filter::{
+    Filter, MAX_FIELD_CHARS, MAX_FILTER_DEPTH, MAX_FILTER_NODES, MAX_IN_VALUES, MAX_PATH_SEGMENTS,
+};
+
 use atlas_core::{validate_vector, AtlasError, Metric, VectorId};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -7,7 +10,6 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Hit {
     pub id: VectorId,
-    /// Higher is better. Euclidean is the negated distance.
     pub score: f32,
     pub metadata: Value,
 }
@@ -44,27 +46,23 @@ pub fn score(metric: Metric, a: &[f32], b: &[f32]) -> f32 {
     }
 }
 
-/// Pluggable nearest-neighbour index. A derived structure: the WAL is the source of truth and
-/// implementations are rebuilt from it on open (never trust persisted index files).
 pub trait AnnIndex {
     fn dim(&self) -> usize;
     fn len(&self) -> usize;
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
-    /// Insert or replace (same id, new vector/metadata).
     fn insert(&mut self, id: VectorId, v: &[f32], metadata: Value) -> Result<(), AtlasError>;
-    /// Every stored (id, vector, metadata), in no particular order.
     fn entries(&self) -> Vec<(VectorId, Vec<f32>, Value)>;
-    /// Returns whether the id was present.
+    fn matching_ids(&self, filter: &Filter) -> Vec<VectorId> {
+        self.entries()
+            .into_iter()
+            .filter(|(_, _, m)| filter.matches(m))
+            .map(|(id, _, _)| id)
+            .collect()
+    }
     fn remove(&mut self, id: VectorId) -> bool;
-    /// Top-k, best first; ties break by ascending id.
     fn search(&self, q: &[f32], k: usize, metric: Metric) -> Result<Vec<Hit>, AtlasError>;
-    /// Top-k among ids where `allow` is true. The default is exact but POST-filters (full
-    /// search, then filter): O(n) per query and NOT acceptable as the final ANN implementation.
-    /// ANN adapters MUST override it with filter-aware retrieval (pre-filter plus exact scan at
-    /// low selectivity, filtered graph walk otherwise) and demonstrate filtered recall against
-    /// the `FlatIndex` oracle (see docs/GATES.md, "ANN notes").
     fn search_filtered(
         &self,
         q: &[f32],
@@ -90,12 +88,10 @@ impl FlatIndex {
         }
     }
 
-    /// Every stored id, in storage order (lets an ANN wrapper size a filter's allowed set).
     pub fn ids(&self) -> &[VectorId] {
         &self.ids
     }
 
-    /// One stored vector with its metadata (lets an ANN wrapper rescore its candidates).
     pub fn get(&self, id: VectorId) -> Option<(&[f32], &Value)> {
         let &p = self.pos.get(&id)?;
         Some((&self.data[p * self.dim..(p + 1) * self.dim], &self.meta[p]))
@@ -123,6 +119,15 @@ impl AnnIndex for FlatIndex {
             self.meta.push(metadata);
         }
         Ok(())
+    }
+
+    fn matching_ids(&self, filter: &Filter) -> Vec<VectorId> {
+        self.ids
+            .iter()
+            .zip(&self.meta)
+            .filter(|(_, m)| filter.matches(m))
+            .map(|(id, _)| *id)
+            .collect()
     }
 
     fn entries(&self) -> Vec<(VectorId, Vec<f32>, Value)> {
@@ -176,8 +181,6 @@ impl AnnIndex for FlatIndex {
         let cmp = |a: &(f32, usize), b: &(f32, usize)| {
             b.0.total_cmp(&a.0).then_with(|| ids[a.1].cmp(&ids[b.1]))
         };
-        // Top-k selection first (O(m)), then sort only the k survivors. `cmp` is a total order
-        // (ids are unique), so the result equals a full sort, ties included.
         if k > 0 && hits.len() > k {
             hits.select_nth_unstable_by(k - 1, cmp);
         }
@@ -201,7 +204,6 @@ mod tests {
     use super::*;
     use serde_json::json;
 
-    /// Naive oracle: score everything eligible, full sort, truncate.
     fn oracle(
         ix: &FlatIndex,
         q: &[f32],
@@ -233,7 +235,6 @@ mod tests {
             let v: Vec<f32> = (0..8).map(|_| rnd()).collect();
             ix.insert(VectorId(id), &v, json!(null)).unwrap();
         }
-        // Duplicate vectors force score ties, so the id tie-break is exercised too.
         let dup = vec![0.5; 8];
         for id in 3000..3010u64 {
             ix.insert(VectorId(id), &dup, json!(null)).unwrap();

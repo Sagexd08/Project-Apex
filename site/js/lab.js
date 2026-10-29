@@ -1,4 +1,3 @@
-// Prism lab pages: dropdown, mobile menu, contents scrollspy, reading progress. No dependencies.
 (() => {
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -23,7 +22,6 @@
     });
   }
 
-  // Contents: highlight the section nearest the top.
   const links = $$('.toc a');
   const secs = links.map((a) => $(a.getAttribute('href'))).filter(Boolean);
   if ('IntersectionObserver' in window && secs.length) {
@@ -36,7 +34,6 @@
     secs.forEach((s) => io.observe(s));
   }
 
-  // Reading progress.
   const bar = $('.lb-prog');
   let ticking = false;
   const paint = () => {

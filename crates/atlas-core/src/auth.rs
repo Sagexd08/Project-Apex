@@ -1,63 +1,25 @@
-//! Tenant identity, permissions and the scope every engine call is made under.
-//!
-//! `EffectiveScope` and `AuthContext` have private fields and no public constructor (the
-//! `test-auth` feature adds a test-only one), so code outside this crate cannot mint a scope.
-//!
-//! ```
-//! use atlas_core::{EffectiveScope, PermSet};
-//! // Default is the empty scope: no tenant, no permissions.
-//! assert!(EffectiveScope::default().tenant().is_none());
-//! assert!(!EffectiveScope::default().allows(PermSet::SEARCH));
-//! ```
-//!
-//! Struct-literal construction is rejected (private fields):
-//! ```compile_fail,E0451
-//! use atlas_core::{EffectiveScope, PermSet};
-//! let _ = EffectiveScope { tenant: None, perms: PermSet::ALL };
-//! ```
-//!
-//! The crate-private constructor is not callable from outside:
-//! ```compile_fail,E0624
-//! use atlas_core::{EffectiveScope, PermSet, TenantId};
-//! let t = TenantId::parse("a").unwrap();
-//! let _ = EffectiveScope::new(t, PermSet::ALL);
-//! ```
-//!
-//! `AuthContext` cannot be built by a literal either:
-//! ```compile_fail,E0451
-//! use atlas_core::{AuthContext, KeyScope, Principal, PermSet, TenantId};
-//! let t = TenantId::parse("a").unwrap();
-//! let _ = AuthContext {
-//!     principal: Principal { tenant: t.clone(), perms: PermSet::ALL },
-//!     key: KeyScope { tenant: t, allowed: PermSet::ALL },
-//! };
-//! ```
-//!
-//! `AuthContext` is not `Clone`:
-//! ```compile_fail,E0277
-//! fn needs_clone<T: Clone>() {}
-//! needs_clone::<atlas_core::AuthContext>();
-//! ```
-//!
-//! `AuthContext` is not `Serialize`:
-//! ```compile_fail,E0277
-//! fn needs_ser<T: serde::Serialize>() {}
-//! needs_ser::<atlas_core::AuthContext>();
-//! ```
-//!
-//! `AuthContext` is not `Deserialize`:
-//! ```compile_fail,E0277
-//! fn needs_de<T: for<'de> serde::Deserialize<'de>>() {}
-//! needs_de::<atlas_core::AuthContext>();
-//! ```
+#[cfg(doctest)]
+mod scope_forgery_doctests {
+    #[doc = "```\nuse atlas_core::{EffectiveScope, PermSet};\nassert!(EffectiveScope::default().tenant().is_none());\nassert!(!EffectiveScope::default().allows(PermSet::SEARCH));\n```"]
+    pub struct EmptyScopeAllowsNothing;
+    #[doc = "```compile_fail,E0451\nuse atlas_core::{EffectiveScope, PermSet};\nlet _ = EffectiveScope { tenant: None, perms: PermSet::ALL };\n```"]
+    pub struct StructLiteralScope;
+    #[doc = "```compile_fail,E0624\nuse atlas_core::{EffectiveScope, PermSet, TenantId};\nlet t = TenantId::parse(\"a\").unwrap();\nlet _ = EffectiveScope::new(t, PermSet::ALL);\n```"]
+    pub struct PrivateScopeConstructor;
+    #[doc = "```compile_fail,E0451\nuse atlas_core::{AuthContext, KeyScope, Principal, PermSet, TenantId};\nlet t = TenantId::parse(\"a\").unwrap();\nlet _ = AuthContext {\n    principal: Principal { tenant: t.clone(), perms: PermSet::ALL },\n    key: KeyScope { tenant: t, allowed: PermSet::ALL },\n};\n```"]
+    pub struct StructLiteralAuthContext;
+    #[doc = "```compile_fail,E0277\nfn needs_clone<T: Clone>() {}\nneeds_clone::<atlas_core::AuthContext>();\n```"]
+    pub struct AuthContextNotClone;
+    #[doc = "```compile_fail,E0277\nfn needs_ser<T: serde::Serialize>() {}\nneeds_ser::<atlas_core::AuthContext>();\n```"]
+    pub struct AuthContextNotSerialize;
+    #[doc = "```compile_fail,E0277\nfn needs_de<T: for<'de> serde::Deserialize<'de>>() {}\nneeds_de::<atlas_core::AuthContext>();\n```"]
+    pub struct AuthContextNotDeserialize;
+}
 use crate::AtlasError;
 use std::ops::{BitAnd, BitOr};
 
-/// Max characters of untrusted input echoed in an error message.
 pub const MAX_ECHO_CHARS: usize = 64;
 
-/// Debug-quote untrusted input for an error message, cut to `MAX_ECHO_CHARS` characters
-/// (char-boundary safe) with an explicit marker when cut.
 pub fn clip_echo(s: &str) -> String {
     let mut it = s.chars();
     let head: String = it.by_ref().take(MAX_ECHO_CHARS).collect();
@@ -68,10 +30,8 @@ pub fn clip_echo(s: &str) -> String {
     }
 }
 
-/// Max characters of an upstream error text kept in `Incomplete.reason` / the poison message.
 pub const MAX_TEXT_CHARS: usize = 256;
 
-/// Cut `s` to `MAX_TEXT_CHARS` characters (char-boundary safe), marking the cut.
 pub fn clip_text(s: &str) -> String {
     let mut it = s.chars();
     let head: String = it.by_ref().take(MAX_TEXT_CHARS).collect();
@@ -82,7 +42,6 @@ pub fn clip_text(s: &str) -> String {
     }
 }
 
-/// Validated tenant id: 1..=64 bytes of `[A-Za-z0-9_-]`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct TenantId(String);
 
@@ -106,7 +65,6 @@ impl TenantId {
     }
 }
 
-/// Set of permissions (bit flags).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct PermSet(u8);
 
@@ -121,12 +79,10 @@ impl PermSet {
     pub const EXPORT: PermSet = PermSet(1 << 6);
     pub const ALL: PermSet = PermSet(0x7f);
 
-    /// True if every permission in `other` is in `self`.
     pub fn contains(self, other: PermSet) -> bool {
         self.0 & other.0 == other.0
     }
 
-    /// `self` minus the permissions in `other`.
     pub fn without(self, other: PermSet) -> PermSet {
         PermSet(self.0 & !other.0)
     }
@@ -146,21 +102,18 @@ impl BitOr for PermSet {
     }
 }
 
-/// What the caller is authorised to do, as proven by the authenticator.
 #[derive(Debug, Clone)]
 pub struct Principal {
     pub tenant: TenantId,
     pub perms: PermSet,
 }
 
-/// What the presented key may be used for.
 #[derive(Debug, Clone)]
 pub struct KeyScope {
     pub tenant: TenantId,
     pub allowed: PermSet,
 }
 
-/// The tenant and permissions one engine call runs under. Default = empty (denies everything).
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct EffectiveScope {
     tenant: Option<TenantId>,
@@ -183,14 +136,11 @@ impl EffectiveScope {
         self.perms
     }
 
-    /// True if the scope has a tenant and holds every permission in `p`.
     pub fn allows(&self, p: PermSet) -> bool {
         self.tenant.is_some() && self.perms.contains(p)
     }
 }
 
-/// Authenticated caller. Built only by the auth module (`test-auth` adds a test constructor).
-/// Deliberately not `Clone`, `Serialize` or `Deserialize`.
 #[derive(Debug)]
 pub struct AuthContext {
     principal: Principal,
@@ -198,13 +148,11 @@ pub struct AuthContext {
 }
 
 impl AuthContext {
-    /// Test-only constructor.
     #[cfg(any(test, feature = "test-auth"))]
     pub fn for_test(principal: Principal, key: KeyScope) -> Self {
         Self { principal, key }
     }
 
-    /// Empty scope if principal.tenant != key.tenant, else principal.perms & key.allowed.
     pub fn effective(&self) -> EffectiveScope {
         if self.principal.tenant != self.key.tenant {
             return EffectiveScope::default();
@@ -216,13 +164,10 @@ impl AuthContext {
     }
 }
 
-/// Embedder-supplied credential check. Key storage and hashing live behind this trait and are
-/// out of scope for Atlas. Returns the principal and key claims for a valid secret, else `None`.
 pub trait KeyVerifier {
     fn verify(&self, secret: &[u8]) -> Option<(Principal, KeyScope)>;
 }
 
-/// The only public way to obtain an `AuthContext`.
 pub struct Authenticator<V: KeyVerifier> {
     verifier: V,
 }
@@ -232,7 +177,6 @@ impl<V: KeyVerifier> Authenticator<V> {
         Self { verifier }
     }
 
-    /// `Forbidden` if the verifier rejects the secret or the principal and key tenants differ.
     pub fn authenticate(&self, secret: &[u8]) -> Result<AuthContext, AtlasError> {
         let (principal, key) = self.verifier.verify(secret).ok_or(AtlasError::Forbidden)?;
         if principal.tenant != key.tenant {

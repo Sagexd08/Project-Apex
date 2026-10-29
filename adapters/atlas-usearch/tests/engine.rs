@@ -1,5 +1,3 @@
-//! The adapter inside the real engine: WAL durability, rebuild-on-open, tenant isolation, and
-//! the zero-leak rule for filtered search.
 use atlas_core::{
     AuthContext, Config, EffectiveScope, KeyScope, Metric, PermSet, Principal, TenantId, VectorId,
 };
@@ -8,7 +6,7 @@ use atlas_usearch::UsearchIndex;
 use serde_json::json;
 
 const DIM: usize = 16;
-const N: u64 = 5000; // above the adapter's exact-scan floor, so the graph is exercised
+const N: u64 = 5000;
 
 fn scope(tenant: &str) -> EffectiveScope {
     let t = TenantId::parse(tenant).unwrap();
@@ -69,13 +67,11 @@ fn engine_on_usearch_survives_reopen_and_isolates_tenants() {
     assert_eq!(tb[0].metadata, json!({ "b": true }));
     drop(eng);
 
-    // The graph is derived data: reopening rebuilds it from the WAL.
     let eng = Engine::open_with_index(&dir, Config::reopen(), UsearchIndex::factory()).unwrap();
     let after = eng.search(&a, &q, 5, Metric::Cosine).unwrap();
     assert_eq!(after[0].id, VectorId(777));
     assert_eq!(eng.count(&a).unwrap(), N as usize);
 
-    // Filtered search never returns a rejected id, at high and low selectivity.
     for keep in [2u64, 50] {
         let hits = eng
             .search_filtered(&a, &q, 10, Metric::Cosine, &|id| id.0 % keep == 0)

@@ -1,4 +1,3 @@
-//! Prism: rotated, nested-bit-plane vector store with an error-gated cascade and MVCC snapshots.
 #![warn(missing_docs)]
 
 pub mod lut;

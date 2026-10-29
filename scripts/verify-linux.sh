@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Linux verification in Docker (Docker Desktop VM: process-kill evidence only, not power loss, not macOS).
-# Usage: bash scripts/verify-linux.sh [--keep]   Logs are copied to target/verify-linux/.
 set -uo pipefail
 export MSYS_NO_PATH_CONV=1 MSYS2_ARG_CONV_EXCL="*"
 cd "$(dirname "$0")/.."

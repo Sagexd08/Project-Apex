@@ -1,4 +1,3 @@
-/* Prism research page. Builds on main.css tokens (black, off, accent, mono). Single look, dark-first with cream bands, like the home page. */
 body.pp{background:var(--black);color:var(--off)}
 .pp main{display:block}
 .pp section.s{padding:clamp(72px,10vw,150px) var(--gutter)}
@@ -17,14 +16,12 @@ body.pp{background:var(--black);color:var(--off)}
 .pp a.u{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
 .pp a.u:hover{color:var(--accent-ink)}.pp .dark a.u:hover{color:var(--accent)}
 
-/* hero */
 .p-hero{position:relative;min-height:min(900px,100svh);padding:150px var(--gutter) 80px;display:grid;grid-template-columns:7fr 5fr;gap:clamp(24px,5vw,90px);align-items:center}
 .p-hero h1{font-size:var(--t-h2);line-height:.98;letter-spacing:-.03em;max-width:18ch;margin:18px 0 28px}
 .p-hero .status-line{font-family:var(--mono);font-size:12px;line-height:1.55;color:var(--off);max-width:52ch;margin:18px 0 0}
 .p-hero .lead{font-size:var(--t-lead);color:var(--mid);max-width:46ch}
 .p-hero .btns{margin:34px 0 22px}
 .p-hero .fine{font-family:var(--mono);font-size:12px;color:var(--mid);max-width:460px;line-height:1.55}
-/* hero matches the home page: cream copy panel left, dark panel right */
 .p-hero.dark{background:linear-gradient(90deg,var(--off) 58.33%,var(--black) 58.33%);color:var(--black)}
 .p-hero .rain{display:none}
 .p-hero .status-line{color:var(--black)}
@@ -51,17 +48,14 @@ body.pp{background:var(--black);color:var(--off)}
 .tag{font-family:var(--mono);font-size:12px;text-transform:uppercase;padding:6px 10px;border-radius:6px;background:var(--ghost);color:var(--black)}
 .tag.acc{background:var(--accent)}
 
-/* abstract + manifesto */
 .abs-grid{display:grid;grid-template-columns:5fr 7fr;gap:clamp(24px,5vw,90px);align-items:start}
 .abs-box{position:relative;border-top:1px solid var(--black);padding-top:22px}
 .abs-box p{font-size:var(--t-lead);max-width:58ch}
 .copy{margin-top:22px}
-/* .mf rows are styled in main.css; the rules draw on via #manifesto.in */
 .pp .mf h3{font-size:clamp(26px,3.6vw,52px);line-height:1.05;letter-spacing:-.03em;margin:0}
 .vision{margin-top:56px;display:grid;grid-template-columns:1fr 1fr;gap:clamp(20px,4vw,60px)}
 .vision>div{border-top:1px solid var(--line);padding-top:20px}
 
-/* labs */
 .lab{border:1px solid var(--black);border-radius:14px;padding:clamp(16px,3vw,32px);background:#f8f2e4;margin-top:34px}
 .dark .lab{background:#4a1626;border-color:var(--line)}
 .lab-grid{display:grid;grid-template-columns:7fr 5fr;gap:clamp(18px,3vw,44px);align-items:start}
@@ -92,7 +86,6 @@ svg.geo text{font-family:var(--mono);font-size:11px;fill:currentColor}
 .tl .cell.new{animation:pop .5s var(--ease)}
 @keyframes pop{from{transform:scale(.4)}to{transform:scale(1)}}
 
-/* algorithm + paper */
 .code{background:var(--black);color:var(--off);border-radius:12px;padding:22px;overflow-x:auto;font-size:13px;line-height:1.65;margin:22px 0;white-space:pre}
 .eqs{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 .eq{border-top:1px solid var(--black);padding-top:14px;min-width:0}
@@ -134,10 +127,8 @@ svg.geo text{font-family:var(--mono);font-size:11px;fill:currentColor}
 }
 @media (prefers-reduced-motion:reduce){.stack .pl,.tl .cell{transition:none;animation:none}}
 
-/* =================== enhancement layer: weight, depth, motion =================== */
 .lim-c li{border-color:var(--black);color:var(--black)}
 
-/* bolder type, math first */
 .pp h3,.mf h3,.read dd{font-weight:600}
 .pp h2{font-weight:500;letter-spacing:-.035em}
 .pp .eq h3{font-weight:700;color:var(--accent);letter-spacing:0}
@@ -147,7 +138,6 @@ svg.geo text{font-family:var(--mono);font-size:11px;fill:currentColor}
 .pp .tbl td{font-weight:500}
 .pp b,.pp strong{font-weight:700}
 
-/* depth: grid texture, glow, floating planes */
 .pp .dark{background-image:linear-gradient(rgba(239,230,211,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(239,230,211,.035) 1px,transparent 1px);background-size:64px 64px}
 .p-hero>*{position:relative;z-index:1}
 .p-hero>.rain{position:absolute;inset:0;width:100%;height:100%;z-index:0;opacity:.28;pointer-events:none}
@@ -157,19 +147,16 @@ svg.geo text{font-family:var(--mono);font-size:11px;fill:currentColor}
 .stack .pl:nth-child(1){--k:64}.stack .pl:nth-child(2){--k:34}.stack .pl:nth-child(3){--k:8}.stack .pl:nth-child(4){--k:-20}
 .stack .pl:nth-child(n){transform:rotateX(62deg) translateZ(calc(var(--peel,0) * var(--k) * 1px));box-shadow:0 24px 60px -24px rgba(0,0,0,.55)}
 .p-hero h1{font-weight:600;letter-spacing:-.04em}
-/* split hero (must come after the grid-texture and bottom-fade rules above) */
 .pp .p-hero.dark{background-image:linear-gradient(90deg,var(--off) 58.33%,var(--black) 58.33%);background-size:auto}
 .p-hero::after{display:none}
 @media (max-width:900px){.pp .p-hero.dark{background-image:none;background-color:var(--off)}}
 
-/* scrolling equation ribbon */
 .ribbon-wrap{overflow-x:clip;padding:18px 0 10px;margin-top:-18px;position:relative;z-index:3}
 .ribbon{display:flex;overflow:hidden;background:var(--accent);color:var(--black);padding:14px 0;white-space:nowrap;transform:rotate(-1.2deg);margin:-18px -2vw 0;position:relative;z-index:3;box-shadow:0 18px 50px rgba(0,0,0,.35)}
 .ribbon div{display:flex;flex:none;animation:mq 38s linear infinite}
 .ribbon span{font-family:var(--mono);font-weight:800;font-size:clamp(16px,2.2vw,26px);padding-right:56px}
 .ribbon span::after{content:"◆";margin-left:56px;font-size:.6em;vertical-align:middle}
 
-/* headline measurements */
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:clamp(64px,8vw,110px) var(--gutter) clamp(40px,5vw,70px)}
 .kpi{padding:0 clamp(12px,2vw,28px) 0 0;border-right:1px solid var(--line);margin-right:clamp(12px,2vw,28px);min-width:0}
 .kpi:last-child{border:0;margin:0}
@@ -177,10 +164,8 @@ svg.geo text{font-family:var(--mono);font-size:11px;fill:currentColor}
 .kpi.warn b{color:var(--accent)}
 .kpi span{display:block;margin-top:12px;font-family:var(--mono);font-size:12px;text-transform:uppercase;color:var(--mid);line-height:1.5;max-width:28ch}
 
-/* equation stage */
 .eqband .lbl{max-width:none;text-align:center}
 
-/* film player */
 .film{border:1px solid var(--line);border-radius:14px;padding:clamp(10px,2vw,22px);background:#2a0a12}
 .film canvas{width:100%;height:auto;aspect-ratio:16/9;display:block;border-radius:8px;background:var(--black)}
 .film-bar{display:grid;grid-template-columns:auto 1fr auto auto;gap:14px;align-items:center;margin-top:16px}
@@ -211,7 +196,6 @@ svg.geo text{font-family:var(--mono);font-size:11px;fill:currentColor}
 .dots button{width:60px;height:6px;border-radius:3px;background:var(--line);transform:scaleX(.57);transition:background .3s,transform .3s var(--ease)}
 .dots button[aria-selected=true]{background:var(--accent);transform:scaleX(1)}
 
-/* cards with tilt */
 .pp .eq{border:1px solid var(--line);border-radius:14px;padding:22px;background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,0));transition:transform .25s var(--ease),border-color .3s,box-shadow .3s;will-change:transform}
 .pp .eq:hover{border-color:var(--accent);box-shadow:0 30px 70px -34px rgba(0,0,0,.55)}
 .pp .kpi,.pp .lab{will-change:transform}
@@ -221,7 +205,6 @@ svg.geo text{font-family:var(--mono);font-size:11px;fill:currentColor}
 .pp .paper details[open]{background:rgba(59,15,28,.04)}
 .pp .paper summary:hover{color:var(--accent-ink)}
 
-/* scroll reveal (content stays visible without JS) */
 .rv{transition:opacity .9s var(--ease),transform .9s var(--ease);transition-delay:calc(var(--d,0) * 80ms)}
 .rv-pre{opacity:0;transform:translateY(34px)}
 .rv-in{opacity:1;transform:none}
@@ -241,7 +224,6 @@ html.fx .bars:not(.rv-in) .bar i b{transform:scaleX(0)}
 
 .tbl.wrapc table{min-width:760px}.tbl.wrapc td,.tbl.wrapc th{white-space:normal;vertical-align:top;line-height:1.4;padding-right:18px}.tbl.wrapc td:first-child{font-weight:600;min-width:150px}
 
-/* algorithm panels: two filled columns, readable size, visible on the dark section */
 .algo-pair{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:18px;margin:22px 0}
 .algo{margin:0;background:var(--black);border:1px solid var(--line);border-radius:12px;padding:20px 22px;box-shadow:0 30px 80px -30px rgba(0,0,0,.6)}
 .algo figcaption{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--off);margin-bottom:14px;display:flex;gap:10px;align-items:baseline}

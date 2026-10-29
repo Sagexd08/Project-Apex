@@ -1,5 +1,3 @@
-//! The adapter must pass the shared AnnIndex conformance suite and, on larger data, keep recall
-//! against the exact FlatIndex oracle and never return an id the filter rejects.
 use atlas_core::{Metric, VectorId};
 use atlas_index::{AnnIndex, FlatIndex};
 use atlas_usearch::UsearchIndex;
@@ -10,7 +8,6 @@ fn passes_shared_conformance_suite() {
     atlas_index::conformance::run(|dim| Box::new(UsearchIndex::new(dim)));
 }
 
-/// Deterministic pseudo-random vectors (splitmix-style), no extra dependency.
 fn vec_for(i: u64, dim: usize) -> Vec<f32> {
     let mut z = i.wrapping_mul(0x9E3779B97F4A7C15) ^ 0xA5A5;
     (0..dim)
@@ -54,7 +51,6 @@ fn large_index_recall_and_zero_leak_vs_oracle() {
             let got = ix.search_filtered(&q, 10, Metric::Cosine, &allow).unwrap();
             assert!(got.iter().all(|h| allow(h.id)), "leak at {pm}/1000");
             if pm <= 40 {
-                // at or below 4% selectivity the path is an exact scan
                 let want = oracle
                     .search_filtered(&q, 10, Metric::Cosine, &allow)
                     .unwrap();

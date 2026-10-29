@@ -1,5 +1,3 @@
-//! Hard-kill test: a child process inserts with acks and is killed mid-write;
-//! every id it acknowledged on stdout must be present after reopen.
 mod common;
 use atlas_core::{Config, Metric, VectorId};
 use atlas_engine::Engine;
@@ -10,7 +8,6 @@ use std::process::{Command, Stdio};
 
 const CHILD_DIR: &str = "ATLAS_KILL_CHILD_DIR";
 
-/// Child body; a no-op unless re-invoked by `acked_ids_survive_hard_kill`.
 #[test]
 fn child_writer() {
     let Ok(dir) = std::env::var(CHILD_DIR) else {
@@ -47,7 +44,7 @@ fn acked_ids_survive_hard_kill() {
             acked.push(id.parse::<u64>().unwrap());
         }
     }
-    child.kill().unwrap(); // TerminateProcess / SIGKILL
+    child.kill().unwrap();
     for line in lines.map_while(Result::ok) {
         if let Some(id) = line.strip_prefix("ACK ") {
             acked.push(id.parse::<u64>().unwrap());

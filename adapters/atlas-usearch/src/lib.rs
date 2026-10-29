@@ -1,32 +1,14 @@
-//! `AnnIndex` backed by a USearch HNSW graph, with `FlatIndex` as the exact store and fallback.
-//!
-//! The graph is DERIVED data: it is rebuilt from the WAL on open and never persisted or trusted.
-//! `FlatIndex` holds the authoritative vectors and metadata (so memory is about 2x the vectors;
-//! ponytail: drop the duplicate by reading vectors back from the graph when memory matters).
-//!
-//! Routing (every path returns scores computed by `atlas_index::score`, ties by ascending id):
-//! - metric differs from the graph metric, or the index is small: exact scan (`FlatIndex`);
-//! - unfiltered, large: HNSW candidates, rescored exactly;
-//! - filtered: count the allowed set; at or below 4% of the index an exact scan over only the
-//!   allowed ids (native HNSW filtering degrades at low selectivity, see docs/evidence), above it
-//!   a filtered HNSW walk.
 use atlas_core::{validate_vector, AtlasError, Metric, VectorId};
-use atlas_index::{score, AnnIndex, FlatIndex, Hit};
+use atlas_index::{score, AnnIndex, Filter, FlatIndex, Hit};
 use serde_json::Value;
 use usearch::{Index, IndexOptions, MetricKind, ScalarKind};
 
-/// Below this many vectors an exact scan is faster than a graph walk and exactly right.
 const EXACT_BELOW: usize = 4096;
-/// Exact-scan the allowed set when it is at most this share of the index (permille). Measured
-/// crossover vs native filtered HNSW on SIFT1M, GloVe-100, NYTimes-256 and Fashion-MNIST is
-/// about 4 to 5% (benchmarks/ann-spike/results/real_*.log).
 const EXACT_ALLOWED_PERMILLE: usize = 40;
 const MIN_CAPACITY: usize = 1024;
-// Chosen from the M/efc/ef sweep on GloVe-100 and NYTimes-256 (benchmarks/ann-spike/results):
-// M=32/efc=200 reaches recall@10 0.93-0.94 at ef=256 and 0.96 at ef=512 on the hard sets, at about
-// half the build time of M=48/efc=400.
 const EF_ADD: usize = 200;
-const EF_SEARCH: usize = 256;
+pub const EF_SEARCH_DEFAULT: usize = 512;
+pub const EF_SEARCH_LOW_LATENCY: usize = 256;
 const CONNECTIVITY: usize = 32;
 
 fn graph_err(what: &str, e: impl std::fmt::Display) -> AtlasError {
@@ -43,13 +25,12 @@ fn kind(m: Metric) -> MetricKind {
 
 pub struct UsearchIndex {
     flat: FlatIndex,
-    /// Created on first insert so construction cannot fail.
     graph: Option<Index>,
     metric: Metric,
+    ef_search: usize,
 }
 
 impl UsearchIndex {
-    /// Cosine graph (the common case); other metrics fall back to exact scans.
     pub fn new(dim: usize) -> Self {
         Self::with_metric(dim, Metric::Cosine)
     }
@@ -59,12 +40,28 @@ impl UsearchIndex {
             flat: FlatIndex::new(dim),
             graph: None,
             metric,
+            ef_search: EF_SEARCH_DEFAULT,
         }
     }
 
-    /// Factory for `Engine::open_with_index`.
+    pub fn with_ef_search(mut self, ef: usize) -> Self {
+        self.ef_search = ef;
+        self
+    }
+
     pub fn factory() -> impl Fn(usize) -> Box<dyn AnnIndex + Send + Sync> + Send + Sync + 'static {
         |dim| Box::new(UsearchIndex::new(dim))
+    }
+
+    pub fn set_ef_search(&mut self, ef: usize) {
+        self.ef_search = ef;
+        if let Some(g) = self.graph.as_ref() {
+            g.change_expansion_search(ef);
+        }
+    }
+
+    pub fn graph_serialized_len(&self) -> usize {
+        self.graph.as_ref().map_or(0, |g| g.serialized_length())
     }
 
     fn graph_mut(&mut self) -> Result<&mut Index, AtlasError> {
@@ -75,7 +72,7 @@ impl UsearchIndex {
                 quantization: ScalarKind::F32,
                 connectivity: CONNECTIVITY,
                 expansion_add: EF_ADD,
-                expansion_search: EF_SEARCH,
+                expansion_search: self.ef_search,
                 multi: false,
             };
             let g = Index::new(&o).map_err(|e| graph_err("new", e))?;
@@ -86,7 +83,6 @@ impl UsearchIndex {
             .ok_or_else(|| graph_err("new", "graph missing"))
     }
 
-    /// Rescore graph candidates exactly and order them like every other path.
     fn rescore(&self, q: &[f32], k: usize, metric: Metric, keys: &[u64]) -> Vec<Hit> {
         let mut hits: Vec<Hit> = keys
             .iter()
@@ -138,7 +134,6 @@ impl AnnIndex for UsearchIndex {
             g.remove(id.0).map_err(|e| graph_err("remove", e))?;
         }
         g.add(id.0, v).map_err(|e| graph_err("add", e))?;
-        // The exact store is updated last: a graph failure above leaves it untouched.
         self.flat.insert(id, v, metadata)
     }
 
@@ -146,13 +141,15 @@ impl AnnIndex for UsearchIndex {
         self.flat.entries()
     }
 
+    fn matching_ids(&self, filter: &Filter) -> Vec<VectorId> {
+        self.flat.matching_ids(filter)
+    }
+
     fn remove(&mut self, id: VectorId) -> bool {
         if !self.flat.remove(id) {
             return false;
         }
         if let Some(g) = self.graph.as_ref() {
-            // A failed graph removal cannot resurrect the id: results are rescored from `flat`,
-            // which no longer has it (rescore drops unknown keys).
             let _ = g.remove(id.0);
         }
         true
@@ -186,7 +183,6 @@ impl AnnIndex for UsearchIndex {
         let m = g
             .filtered_search(q, k, |key| allow(VectorId(key)))
             .map_err(|e| graph_err("filtered_search", e))?;
-        // Belt and braces for the zero-leak rule: never return an id the predicate rejects.
         let keys: Vec<u64> = m.keys.into_iter().filter(|&x| allow(VectorId(x))).collect();
         Ok(self.rescore(q, k, metric, &keys))
     }

@@ -1,4 +1,3 @@
-// Orchestrator: Lenis -> ScrollTrigger, hero stage timeline, dividers, reveals, counters, nav.
 import { createSpiral } from './spiral.js';
 import { createDivider, createGlobe } from './ascii.js';
 import { buildOdoLabels, createNumber, initHold, initMagnetic, initDrawer, typeLines } from './ui.js';
@@ -10,15 +9,14 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const wide = matchMedia('(min-width: 861px)');
-const sticky = wide.matches && !reduce;          // pinned stage sequence only on desktop, motion allowed
+const sticky = wide.matches && !reduce;
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 const seg = (p, a, b) => clamp01((p - a) / (b - a));
 const easeIO = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 if (!sticky) document.documentElement.classList.add('static');
 wide.addEventListener('change', () => location.reload());
-window.__ready = true; // tells the head safety timer the module ran
+window.__ready = true;
 
-/* ---------- smooth scroll: Lenis drives ScrollTrigger ---------- */
 let lenis = null;
 if (!reduce && Lenis) {
   lenis = new Lenis({ lerp: 0.1, smoothWheel: true });
@@ -42,7 +40,6 @@ $$('a[href^="#"]').forEach((a) => a.addEventListener('click', (e) => {
   else window.scrollTo({ top: y, behavior: reduce ? 'auto' : 'smooth' });
 }));
 
-/* ---------- small components ---------- */
 buildOdoLabels();
 initHold();
 initMagnetic();
@@ -50,7 +47,6 @@ initDrawer({ lenis, reduce });
 const setProgress = gsap.quickSetter($('#progress'), 'scaleX');
 ScrollTrigger.create({ start: 0, end: 'max', onUpdate: (s) => setProgress(s.progress) });
 
-/* ---------- hero stage: dive -> disc opens -> problem ledger rolls ---------- */
 const copy = $('#copy'), reveal = $('#reveal'), roll = $('#roll'), ledger = $('#ledger');
 const cue = $('.cue');
 const groups = $$('.grp', roll);
@@ -75,9 +71,9 @@ function measure() {
 const navProblem = $('.nav a[href="#problem"]');
 function applyStage(p) {
   lastP = p;
-  const d = easeIO(seg(p, 0, 0.3));      // dive: spiral zoom, copy slides out
-  const c = easeIO(seg(p, 0.24, 0.42));  // disc opens from the middle
-  const r = seg(p, 0.44, 0.96);          // ledger rolls
+  const d = easeIO(seg(p, 0, 0.3));
+  const c = easeIO(seg(p, 0.24, 0.42));
+  const r = seg(p, 0.44, 0.96);
   spiral?.dive(d);
   copy.style.transform = `translate3d(${(-d * 100).toFixed(2)}%,0,0)`;
   cue.style.opacity = String(1 - clamp01(d * 2.2));
@@ -100,7 +96,6 @@ if (sticky) {
   });
 }
 
-/* ---------- boot after fonts ---------- */
 const boot = async () => {
   const nav = $('#nav'), lines = $$('.hero-copy h1 .ln > span'), ins = $$('[data-in]');
   document.documentElement.classList.add('ready');
@@ -124,7 +119,6 @@ const boot = async () => {
 };
 Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1500))]).then(boot);
 
-/* ---------- dividers, globe ---------- */
 $$('.ascii-div').forEach((cv) => {
   cv.style.setProperty('--from', cv.dataset.from);
   const dv = createDivider(cv, cv.dataset.from, cv.dataset.to);
@@ -133,7 +127,6 @@ $$('.ascii-div').forEach((cv) => {
 });
 createGlobe($('#globe'), gsap.ticker, reduce);
 
-/* ---------- reveals (batched) ---------- */
 ScrollTrigger.batch('[data-rv]', {
   start: 'top 90%', once: true,
   onEnter: (els) => (reduce
@@ -148,7 +141,6 @@ if (!reduce) {
 }
 $$('.track li,.faq details,.prin article,.bench tbody tr').forEach((el, i) => el.style.setProperty('--i', i % 6));
 
-/* ---------- counters + terminal ---------- */
 $$('[data-count]').forEach((el) => {
   const to = Number(el.dataset.count);
   ScrollTrigger.create({
@@ -172,7 +164,6 @@ ScrollTrigger.create({
   ], { reduce }),
 });
 
-/* ---------- nav tracking (last active section wins) ---------- */
 const navLinks = $$('.nav a.nl').filter((a) => a.getAttribute('href') !== '#problem');
 const active = new Map();
 navLinks.forEach((a) => {
@@ -187,7 +178,6 @@ if (!sticky) ScrollTrigger.create({ trigger: '#reveal', start: 'top 55%', end: '
 
 addEventListener('load', () => ScrollTrigger.refresh());
 
-/* ---------- hold to dive: cursor chip over the hero ---------- */
 const chip = $('#chip');
 if (sticky && chip && lenis) {
   const yAt = (p) => stage.offsetTop + p * (stage.offsetHeight - innerHeight);
@@ -222,7 +212,6 @@ if (sticky && chip && lenis) {
   addEventListener('pointerup', end); addEventListener('pointercancel', end);
 }
 
-/* ---------- benchmarks: memory grid fills in once on view ---------- */
 const vm = $('#vizMem');
 if (vm) {
   const cells = Array.from({ length: 240 }, () => document.createElement('i'));
@@ -237,7 +226,6 @@ if (vm) {
   });
 }
 
-/* anatomy: draw the hairline rules on once the section is in view */
 for (const anat of document.querySelectorAll('#anatomy, #manifesto')) {
   new IntersectionObserver(([e], io) => { if (e.isIntersecting) { anat.classList.add('in'); io.disconnect(); } }, { threshold: 0.25 }).observe(anat);
 }

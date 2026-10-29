@@ -1,4 +1,3 @@
-//! Capacity policy: bounded op map and per-tenant partition, fail closed with CAPACITY_EXCEEDED.
 mod common;
 use atlas_core::{AtlasError, Config, VectorId};
 use atlas_engine::Engine;
@@ -57,7 +56,7 @@ fn op_map_limit_applies_after_reopen_but_replay_admits_existing() {
     }
     drop(e);
     let mut cfg = Config::reopen();
-    cfg.max_ops = 1; // lower than what is already durable: open must still succeed
+    cfg.max_ops = 1;
     let e = Engine::open(&dir, cfg).unwrap();
     assert!(op(&e, "a", 0).is_ok());
     assert!(is_cap(op(&e, "d", 9)));
@@ -76,9 +75,9 @@ fn tenant_partition_full_refuses_upserts_but_allows_delete_and_other_tenants() {
     assert!(e
         .insert_op(&a, "x", VectorId(3), &[1.0; 2], json!(null))
         .is_err());
-    e.insert(&b, VectorId(1), &[1.0; 2], json!(null)).unwrap(); // other tenant unaffected
+    e.insert(&b, VectorId(1), &[1.0; 2], json!(null)).unwrap();
     assert!(e.delete(&a, VectorId(1)).unwrap());
-    e.insert(&a, VectorId(3), &[1.0; 2], json!(null)).unwrap(); // room again
+    e.insert(&a, VectorId(3), &[1.0; 2], json!(null)).unwrap();
 }
 
 #[test]

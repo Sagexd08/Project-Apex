@@ -1,5 +1,3 @@
-//! Idempotency is decided by exact payload bytes; the 64-bit fingerprint is only an aid.
-//! A constant fingerprint (test-support hook) makes every pair of payloads "collide".
 mod common;
 use atlas_core::{AtlasError, Config, VectorId};
 use atlas_engine::Engine;
@@ -78,7 +76,6 @@ fn concurrent_same_op_id_different_payloads_have_one_winner_under_collision() {
             assert_eq!(r.as_ref().unwrap_err().code(), "OP_ID_CONFLICT");
         }
         assert_eq!(e.len(), 1);
-        // exactly one WAL record / seq consumed: the next plain insert follows the winner
         let next = e
             .insert(&full("a"), VectorId(9), &[1.0; 4], Value::Null)
             .unwrap();
@@ -91,12 +88,10 @@ fn same_op_id_in_two_tenants_is_independent_and_never_compares_foreign_bytes() {
     let dir = tmp("tenants");
     let e = Engine::open_with_fingerprint(&dir, Config::new(4), zero).unwrap();
     let a = op(&e, "a", "op", json!({"v": 1})).unwrap();
-    // Tenant b: same op id, different payload: not a conflict with a's bytes.
     let b = op(&e, "b", "op", json!({"v": 2})).unwrap();
     assert_ne!(a, b);
     assert_eq!(op(&e, "a", "op", json!({"v": 1})).unwrap(), a);
     assert_eq!(op(&e, "b", "op", json!({"v": 2})).unwrap(), b);
-    // b retrying a's payload is a conflict against b's own bytes, not a hit on a's entry.
     assert_eq!(
         op(&e, "b", "op", json!({"v": 1})).unwrap_err().code(),
         "OP_ID_CONFLICT"

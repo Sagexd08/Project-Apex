@@ -1,4 +1,3 @@
-//! Slice 2: fault injection through the engine and explicit recovery.
 mod common;
 use atlas_core::{Config, Metric, RecoverMode, VectorId};
 use atlas_engine::Engine;
@@ -59,7 +58,6 @@ fn unprovable_wal_requires_explicit_recovery() {
     let mut cfg = Config::reopen();
     let e = Engine::open(&dir, cfg.clone()).err().unwrap();
     assert_eq!(e.code(), "RECOVERY_REQUIRED");
-    // normal open does not clear the state
     assert_eq!(
         Engine::open(&dir, cfg.clone()).err().unwrap().code(),
         "RECOVERY_REQUIRED"
@@ -147,8 +145,6 @@ fn hook(flag: std::sync::Arc<std::sync::atomic::AtomicBool>) {
 
 #[test]
 fn marker_is_written_before_destructive_rollback_steps() {
-    // Process "dies" right after the marker is written, before truncate/zero: the batch
-    // bytes are still in the file, so reopen must refuse instead of replaying them.
     let dir = tmp("marker-first");
     let eng = Engine::open(&dir, Config::new(4)).unwrap();
     put(&eng, 1).unwrap();
@@ -163,7 +159,6 @@ fn marker_is_written_before_destructive_rollback_steps() {
     assert_eq!(ids(&Engine::open(&dir, cfg).unwrap()), vec![1]);
 }
 
-/// (truncate fails, zeroing fails, marker write fails) -> expected reopen outcome.
 #[test]
 fn rollback_failure_matrix_has_a_deterministic_reopen_outcome() {
     for t in [false, true] {
@@ -199,8 +194,6 @@ fn rollback_failure_matrix_has_a_deterministic_reopen_outcome() {
                             "{label}"
                         );
                     }
-                    // documented residual: nothing could be persisted, the complete valid
-                    // batch is replayed; the writer saw Err = outcome unknown.
                     (true, true, true) => {
                         assert_eq!(ids(&reopened.unwrap()), vec![1, 2], "{label}");
                     }

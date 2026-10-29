@@ -1,4 +1,3 @@
-"""Convert an ann-benchmarks .hdf5 to DIR/{train.f32,test.f32,meta.json}. Run: python convert_hdf5.py X.hdf5 OUTDIR"""
 import sys, json, os, h5py, numpy as np
 src, out = sys.argv[1], sys.argv[2]
 os.makedirs(out, exist_ok=True)

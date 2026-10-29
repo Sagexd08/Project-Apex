@@ -1,4 +1,3 @@
-//! `atlas serve` runs the HTTP API; `atlas demo` runs a scripted walk-through in-process.
 mod demo;
 
 use atlas_cli::{serve, Server, StaticKeys};

@@ -46,7 +46,6 @@ fn nested_prefix_equals_direct_quantisation() {
             assert_eq!(i4 >> (4 - b), quant::idx_direct(z, s, b), "z={z} b={b}");
         }
     }
-    // planes decode to the same prefix
     let z: Vec<f32> = (0..128).map(|_| rng.gauss() as f32 * s).collect();
     let mut planes: [Vec<u64>; 4] = Default::default();
     quant::push_encoded(&z, s, &mut planes);
@@ -115,7 +114,6 @@ fn compaction_does_not_change_results() {
     assert_eq!(after_snap.len(), 800);
     assert_eq!(after_snap.segments[0].lsn_range(), (1, 8));
     assert_eq!(run(&after_snap), before);
-    // old pinned snapshot is still intact
     assert_eq!(run(&before_snap), before);
 }
 
@@ -133,7 +131,7 @@ fn concurrent_writer_and_readers_hold_invariants() {
             while !stop.load(Ordering::Relaxed) {
                 let lsn = store.commit(batch(&mut rng, d, i * B as u64, B));
                 i += 1;
-                assert_eq!(lsn, i); // single writer, no compaction: lsn == commit count
+                assert_eq!(lsn, i);
                 std::thread::sleep(Duration::from_millis(1));
             }
         });
@@ -148,13 +146,11 @@ fn concurrent_writer_and_readers_hold_invariants() {
                         let snap = store.pin();
                         assert!(snap.lsn >= last, "I3 violated");
                         last = snap.lsn;
-                        // I2: exactly ids 0..lsn*B
                         let mut ids: Vec<u64> =
                             snap.segments.iter().flat_map(|s| s.ids().iter().copied()).collect();
                         ids.sort_unstable();
                         let want: Vec<u64> = (0..snap.lsn * B as u64).collect();
                         assert_eq!(ids, want, "I2 violated at lsn {}", snap.lsn);
-                        // I1: repeatable
                         let q = unit(&mut rng, d);
                         let a = search_cascade(store.epoch(), &snap, &q, 10, &[1, 2, 4], 2.0, &calib);
                         let b = search_cascade(store.epoch(), &snap, &q, 10, &[1, 2, 4], 2.0, &calib);
@@ -215,7 +211,7 @@ fn lut_scores_equal_reference_decode() {
 
 #[test]
 fn exact_fast_matches_exact() {
-    let d = 100; // not a multiple of 8 in the padded sense of chunks: exercises the tail path
+    let d = 100;
     let mut rng = SplitMix64::new(23);
     let store = Store::new(Epoch::new(24, d, vec![1, 2, 4]));
     store.commit(batch(&mut rng, d, 0, 400));
@@ -235,7 +231,7 @@ fn stored_residual_matches_recomputation() {
     let b0 = batch(&mut rng, d, 0, 50);
     store.commit(b0.clone());
     store.commit(batch(&mut rng, d, 50, 50));
-    store.compact(usize::MAX); // residuals must survive a merge
+    store.compact(usize::MAX);
     let (ep, snap) = (store.epoch(), store.pin());
     for b in 1..=4usize {
         let r = residuals(&snap, b);
@@ -291,7 +287,7 @@ fn exact_stream_matches_exact_fast_including_ties() {
     let mut b = batch(&mut rng, d, 0, 300);
     let dup = b[0].1.clone();
     for i in 0..20u64 {
-        b.push((1000 + i, dup.clone())); // exact score ties
+        b.push((1000 + i, dup.clone()));
     }
     store.commit(b);
     let snap = store.pin();

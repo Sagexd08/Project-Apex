@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Prints "files=N digest=MD5" (md5 of the sorted per-file md5 list). Optional: --manifest FILE
 set -euo pipefail
 cd "$(dirname "$0")/.."
 SRC=$(find crates ci .github .gitattributes Cargo.toml Cargo.lock deny.toml -type f -not -path '*/target/*' | sort | xargs md5sum | sed 's/ \*/  /')

@@ -1,7 +1,3 @@
-//! Depth contract across insert, replay and reopen. S3 accepts metadata depth <= 100 (scalar = 1,
-//! each array +1). Records an S2 build could have written (up to what serde_json decodes, ~127
-//! array levels) may already be in a WAL: they must still replay, while NEW inserts above 100
-//! stay INVALID_METADATA.
 mod common;
 use atlas_core::{Config, VectorId};
 use atlas_engine::Engine;
@@ -19,7 +15,6 @@ fn depth_100_live_and_reopen_and_s2_deep_records_replay_but_new_deep_inserts_fai
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     write_meta(&dir, 2).unwrap();
-    // Hand-written WAL as S2 could have produced: array levels 100..=126 (depth 101..=127).
     {
         let (wal, _) =
             Wal::open(&dir.join("wal.log"), &Config::new(2), Box::new(|_, _| {})).unwrap();
@@ -35,8 +30,6 @@ fn depth_100_live_and_reopen_and_s2_deep_records_replay_but_new_deep_inserts_fai
     let a = full("a");
     let e = Engine::open(&dir, Config::reopen()).expect("S2-era deep records replay");
     assert_eq!(e.count(&a).unwrap(), 27);
-    // Live insert at the maximum accepted depth (100 = 99 array levels + scalar), then new
-    // inserts at 101 are rejected.
     e.insert(&a, VectorId(1), &[1.0, 0.0], nested(99)).unwrap();
     for levels in [100usize, 101, 126] {
         let err = e

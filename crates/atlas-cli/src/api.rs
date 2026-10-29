@@ -1,4 +1,3 @@
-//! JSON routes. Every route authenticates; the tenant comes only from the key, never the body.
 use crate::http::Request;
 use crate::Server;
 use atlas_core::{AtlasError, EffectiveScope, Metric, VectorId};
@@ -21,7 +20,6 @@ fn status_of(e: &AtlasError) -> u16 {
     }
 }
 
-/// Only the stable error code leaves the process; messages stay in the engine.
 fn fail(e: AtlasError) -> Reply {
     (status_of(&e), json!({ "error": e.code() }))
 }
@@ -117,6 +115,9 @@ fn search(s: &Server, scope: &EffectiveScope, b: &Value) -> Result<Value, Reply>
         return Err(bad("k must be 1..=1000"));
     }
     let metric = metric_of(b)?;
+    if b.get("filter").is_some() && b.get("allow_ids").is_some() {
+        return Err(bad("use filter or allow_ids, not both"));
+    }
     let hits = match b.get("allow_ids").and_then(Value::as_array) {
         Some(ids) => {
             if ids.len() > MAX_ALLOW_IDS {
@@ -126,7 +127,13 @@ fn search(s: &Server, scope: &EffectiveScope, b: &Value) -> Result<Value, Reply>
             s.engine
                 .search_filtered(scope, &q, k, metric, &|id| allow.contains(&id.0))
         }
-        None => s.engine.search(scope, &q, k, metric),
+        None => match b.get("filter") {
+            Some(f) => {
+                let filter = atlas_engine::Filter::from_json(f).map_err(fail)?;
+                s.engine.search_where(scope, &q, k, metric, &filter)
+            }
+            None => s.engine.search(scope, &q, k, metric),
+        },
     }
     .map_err(fail)?;
     let hits: Vec<Value> = hits

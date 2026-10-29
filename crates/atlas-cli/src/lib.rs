@@ -1,10 +1,3 @@
-//! Atlas MVP server: a small, std-only HTTP/1.1 JSON API over `atlas-engine`.
-//!
-//! Auth is bearer-key via the engine's `Authenticator`. Keys come from the embedder (the
-//! binary reads `ATLAS_API_KEYS`); there is no default credential. One request per connection,
-//! hard caps on header size, body size, connections and `k`.
-// ponytail: thread-per-connection with a cap and Connection: close; an async/keep-alive server
-// only if connection churn is measured to matter.
 pub mod api;
 pub mod http;
 
@@ -18,12 +11,9 @@ use std::time::Duration;
 pub const MAX_CONNECTIONS: usize = 128;
 const IO_TIMEOUT: Duration = Duration::from_secs(5);
 
-/// Static `tenant -> secret` table. Demo-grade: secrets are held in memory and compared in
-/// constant time per entry; a real deployment supplies hashed storage behind `KeyVerifier`.
 pub struct StaticKeys(Vec<(TenantId, Vec<u8>)>);
 
 impl StaticKeys {
-    /// Parses `tenant=secret,tenant2=secret2`. Short secrets and bad tenant ids are errors.
     pub fn parse(spec: &str) -> Result<Self, String> {
         let mut out = Vec::new();
         for part in spec.split(',').filter(|p| !p.trim().is_empty()) {
@@ -38,6 +28,12 @@ impl StaticKeys {
                 ));
             }
             let tenant = TenantId::parse(t.trim()).map_err(|e| e.code().to_string())?;
+            if out
+                .iter()
+                .any(|(_, k): &(TenantId, Vec<u8>)| k == s.as_bytes())
+            {
+                return Err("duplicate secret across tenants".into());
+            }
             out.push((tenant, s.as_bytes().to_vec()));
         }
         if out.is_empty() {
@@ -83,7 +79,6 @@ pub struct Server {
     pub auth: Authenticator<StaticKeys>,
 }
 
-/// Accept loop. Returns when `stop` is set. The listener is switched to non-blocking.
 pub fn serve(server: Arc<Server>, listener: TcpListener, stop: Arc<AtomicBool>) {
     listener.set_nonblocking(true).ok();
     let active = Arc::new(AtomicUsize::new(0));

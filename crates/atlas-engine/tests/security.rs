@@ -1,5 +1,3 @@
-//! Security slice step 2: tenant isolation and scope enforcement tests.
-//! Assertions are the strict, final ones; they are expected to fail until enforcement exists.
 mod common;
 
 use atlas_core::{
@@ -59,7 +57,6 @@ const OPS: [(Op, PermSet); 9] = [
     (Op::Export, PermSet::EXPORT),
 ];
 
-/// Runs `op` under `s`; fetch/delete target id 1 (which exists for the seeded tenant).
 fn run_op(e: &Engine, s: &EffectiveScope, op: Op) -> Result<(), AtlasError> {
     let q = [1.0, 0.0];
     let mut sink = |_: Item| Ok(());
@@ -87,7 +84,6 @@ fn forbidden(r: Result<(), AtlasError>, what: &str) {
     }
 }
 
-/// Engine with tenant "a" holding ids 1,2,3.
 fn seeded(n: &str) -> Engine {
     let (e, _) = open(n);
     let a = full("a");
@@ -184,7 +180,7 @@ fn search_isolated() {
         put(&e, &a, i, [0.0, 1.0 + i as f32 * 0.1], json!(null));
     }
     for i in 11..=15 {
-        put(&e, &b, i, [1.0, 0.0], json!(null)); // B is much closer to the query
+        put(&e, &b, i, [1.0, 0.0], json!(null));
     }
     let q = [1.0, 0.0];
     for k in [1, 2, 3, 10, 100] {
@@ -214,7 +210,7 @@ fn count_isolated() {
     for i in 1..=5 {
         put(&e, &b, i, [1.0, 0.0], json!(null));
     }
-    put(&e, &a, 1, [0.5, 0.5], json!(null)); // overwrite: still 3
+    put(&e, &a, 1, [0.5, 0.5], json!(null));
     assert_eq!(e.count(&a).unwrap(), 3);
     assert_eq!(e.count(&b).unwrap(), 5);
 }
@@ -315,7 +311,6 @@ fn perm_denied_per_surface() {
             panic!("{op:?} with only its permission failed: {err:?}");
         }
     }
-    // The permitted Insert/InsertOp runs above are the only writes.
     let a = full("a");
     assert!(e.fetch(&a, VectorId(900)).is_ok() && e.fetch(&a, VectorId(901)).is_ok());
 }
@@ -358,7 +353,6 @@ fn snapshot_export_contain_only_tenant() {
     }
 }
 
-/// Seeds the cross-tenant scenario used before and after reopen.
 fn seed_scenario(e: &Engine) {
     let (a, b) = (full("a"), full("b"));
     for i in 1..=3 {
@@ -435,7 +429,6 @@ fn recovery_rejects_tenantless_record() {
             assert_eq!(err.code(), "WAL_CORRUPT", "{mode:?} {payload}");
         }
     }
-    // Control: the same hand-built record with a valid tenant loads, under that tenant only.
     let dir = tmp("tenantful-control");
     wal_with(&dir, rec(r#""tenant":"t1","#).as_bytes());
     let e = Engine::open(&dir, Config::reopen()).unwrap();
@@ -452,12 +445,10 @@ fn op_id_scoped_per_tenant() {
     let sa = sa.unwrap();
     let again = e.insert_op(&a, "op1", VectorId(1), &[1.0, 0.0], xa.clone());
     assert_eq!(sa, again.unwrap(), "same-tenant retry returns original seq");
-    // B reuses the op id with a different payload: independent namespace, no conflict.
     let sb = e
         .insert_op(&b, "op1", VectorId(1), &[0.0, 1.0], yb.clone())
         .expect("op ids are per tenant");
     assert_ne!(sa, sb);
-    // B retries its own op: dedupes to B's seq, never A's.
     let sb2 = e.insert_op(&b, "op1", VectorId(1), &[0.0, 1.0], yb.clone());
     assert_eq!(sb, sb2.unwrap());
     assert_eq!(e.fetch(&a, VectorId(1)).unwrap().metadata, xa);
@@ -475,8 +466,6 @@ fn concurrent_keys_isolated() {
     const THREADS: u64 = 8;
     const PER: u64 = 25;
     let (e, _) = open("concurrent");
-    // Even threads use tenant a, odd threads tenant b; ids are 1000*t + i, so the parity of
-    // id/1000 identifies the owner.
     std::thread::scope(|sc| {
         for t in 0..THREADS {
             let e = &e;
@@ -535,7 +524,6 @@ fn export_mid_stream_failure_is_not_a_complete_export() {
         }
         assert_eq!(seen, 3, "{name}: stream must stop at the failing item");
     }
-    // Control: a healthy sink gets all 5 and Ok(5).
     let (items, n) = collect(|s| e.export(&a, s));
     assert_eq!((items.len(), n), (5, 5));
 }

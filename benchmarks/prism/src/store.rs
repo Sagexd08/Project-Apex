@@ -1,30 +1,20 @@
-//! MVCC store: immutable segments, immutable snapshots, single serialised writer.
-//!
-//! Future work: deletes / tombstones (v0 is append-only). Ids must be unique across commits.
 
 use crate::quant::{self, PLANES};
 use crate::rot::Rotation;
 use std::sync::{Arc, Mutex, RwLock};
 
-/// Fixed per-store parameters: rotation seed, dimension, bit schedule.
 pub struct Epoch {
-    /// Rotation seed.
     pub seed: u64,
-    /// Input dimension.
     pub dim: usize,
-    /// Padded dimension (power of two).
     pub p: usize,
-    /// Default cascade bit schedule, e.g. `[1, 2, 4]`.
     pub schedule: Vec<usize>,
     pub(crate) rot: Rotation,
     pub(crate) s: f32,
     pub(crate) words: usize,
-    /// Reconstruction tables indexed by bits (index 0 unused).
     pub(crate) tabs: Vec<Vec<f32>>,
 }
 
 impl Epoch {
-    /// Build an epoch.
     pub fn new(seed: u64, dim: usize, schedule: Vec<usize>) -> Self {
         let rot = Rotation::new(dim, seed);
         let p = rot.padded_dim();
@@ -33,23 +23,19 @@ impl Epoch {
         Self { seed, dim, p, schedule, rot, s, words: p.div_ceil(64), tabs }
     }
 
-    /// Rotate a query (or vector) into the quantisation domain.
     pub fn rotate(&self, v: &[f32]) -> Vec<f32> {
         self.rot.apply(v)
     }
 
-    /// Quantiser half-range `s`.
     pub fn half_range(&self) -> f32 {
         self.s
     }
 }
 
-/// Immutable sealed segment: ids, full-precision vectors (rerank only), 4 bit planes.
 pub struct Segment {
     pub(crate) ids: Vec<u64>,
     pub(crate) vecs: Vec<f32>,
     pub(crate) planes: [Vec<u64>; PLANES],
-    /// Residual norms, `PLANES` per vector: `resid[i * PLANES + b - 1] = ||x - x_hat_b||`.
     pub(crate) resid: Vec<f32>,
     pub(crate) dim: usize,
     pub(crate) words: usize,
@@ -104,22 +90,18 @@ impl Segment {
         seg
     }
 
-    /// Number of vectors.
     pub fn len(&self) -> usize {
         self.ids.len()
     }
 
-    /// True if the segment holds no vectors.
     pub fn is_empty(&self) -> bool {
         self.ids.is_empty()
     }
 
-    /// Ids in storage order.
     pub fn ids(&self) -> &[u64] {
         &self.ids
     }
 
-    /// `(min, max)` commit lsn of the vectors in this segment.
     pub fn lsn_range(&self) -> (u64, u64) {
         (self.lsn_min, self.lsn_max)
     }
@@ -129,27 +111,21 @@ impl Segment {
     }
 }
 
-/// Immutable view of the store at one lsn.
 pub struct Snapshot {
-    /// Log sequence number of this snapshot.
     pub lsn: u64,
-    /// Sealed segments visible at this lsn.
     pub segments: Vec<Arc<Segment>>,
 }
 
 impl Snapshot {
-    /// Total vectors visible.
     pub fn len(&self) -> usize {
         self.segments.iter().map(|s| s.len()).sum()
     }
 
-    /// True if no vectors are visible.
     pub fn is_empty(&self) -> bool {
         self.segments.iter().all(|s| s.is_empty())
     }
 }
 
-/// Multi-version store: readers pin snapshots, one writer at a time publishes new ones.
 pub struct Store {
     epoch: Epoch,
     current: RwLock<Arc<Snapshot>>,
@@ -157,18 +133,15 @@ pub struct Store {
 }
 
 impl Store {
-    /// Empty store at lsn 0.
     pub fn new(epoch: Epoch) -> Self {
         let snap = Arc::new(Snapshot { lsn: 0, segments: Vec::new() });
         Self { epoch, current: RwLock::new(snap), writer: Mutex::new(()) }
     }
 
-    /// The store's fixed epoch.
     pub fn epoch(&self) -> &Epoch {
         &self.epoch
     }
 
-    /// Pin the current snapshot (brief read lock; the result needs no further locking).
     pub fn pin(&self) -> Arc<Snapshot> {
         Arc::clone(&self.current.read().unwrap_or_else(|e| e.into_inner()))
     }
@@ -177,8 +150,6 @@ impl Store {
         *self.current.write().unwrap_or_else(|e| e.into_inner()) = Arc::new(snap);
     }
 
-    /// Commit a batch as one sealed segment; returns the new lsn. An empty batch is a no-op
-    /// returning the current lsn. Panics if a vector has the wrong length.
     pub fn commit(&self, batch: Vec<(u64, Vec<f32>)>) -> u64 {
         let _w = self.writer.lock().unwrap_or_else(|e| e.into_inner());
         let old = self.pin();
@@ -193,8 +164,6 @@ impl Store {
         lsn
     }
 
-    /// Merge all segments with `len <= small` into one. Bumps the lsn by one but the visible
-    /// set of ids/vectors is unchanged. No-op (lsn unchanged) if fewer than two qualify.
     pub fn compact(&self, small: usize) -> u64 {
         let _w = self.writer.lock().unwrap_or_else(|e| e.into_inner());
         let old = self.pin();

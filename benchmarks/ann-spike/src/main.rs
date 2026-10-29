@@ -1,9 +1,3 @@
-//! ANN spike: USearch (HNSW) on deterministic synthetic clustered-gaussian data, cosine metric.
-//! Isolated from the core workspace. See docs/ANN_SPIKE.md for method, commands and results.
-//!
-//! Modes:  full  --n 1000000 --queries 1000 --seed 42 --out results/results_1m.json
-//!         sweep --n 100000  --queries 1000 --seed 42 --out results/results_sweep_100k.json
-//!         loadprobe --file PATH   (internal: load a possibly-damaged index file)
 use rayon::prelude::*;
 use serde_json::{json, Value};
 use std::time::Instant;
@@ -15,10 +9,14 @@ const CENTERS: usize = 1024;
 const SIGMA: f32 = 0.35;
 const QUERY_ID_BASE: u64 = 10_000_000_000;
 const CHUNK: usize = 16_384;
-/// (label, permille of ids that pass the filter)
-const SELS: [(&str, u64); 5] = [("100%", 1000), ("50%", 500), ("10%", 100), ("1%", 10), ("0.1%", 1)];
+const SELS: [(&str, u64); 5] = [
+    ("100%", 1000),
+    ("50%", 500),
+    ("10%", 100),
+    ("1%", 10),
+    ("0.1%", 1),
+];
 
-// ---------- deterministic data ----------
 fn mix(mut z: u64) -> u64 {
     z = z.wrapping_add(0x9E3779B97F4A7C15);
     z = (z ^ (z >> 30)).wrapping_mul(0xBF58476D1CE4E5B9);
@@ -33,7 +31,7 @@ impl Rng {
         mix(self.0.wrapping_sub(0x9E3779B97F4A7C15))
     }
     fn unit(&mut self) -> f32 {
-        ((self.next() >> 40) as f32 + 1.0) / 16_777_217.0 // (0,1)
+        ((self.next() >> 40) as f32 + 1.0) / 16_777_217.0
     }
     fn gauss_pair(&mut self) -> (f32, f32) {
         let r = (-2.0 * self.unit().ln()).sqrt();
@@ -46,7 +44,12 @@ fn make_centers(seed: u64) -> Vec<Vec<f32>> {
     (0..CENTERS)
         .map(|c| {
             let mut r = Rng(mix(seed ^ 0xC3C3 ^ c as u64));
-            (0..DIM / 2).flat_map(|_| { let (a, b) = r.gauss_pair(); [a, b] }).collect()
+            (0..DIM / 2)
+                .flat_map(|_| {
+                    let (a, b) = r.gauss_pair();
+                    [a, b]
+                })
+                .collect()
         })
         .collect()
 }
@@ -75,7 +78,6 @@ fn passes(id: u64, permille: u64) -> bool {
     mix(id ^ 0xF117E5) % 1000 < permille
 }
 
-// ---------- exact ground truth (streamed, parallel over query tiles) ----------
 fn dot(a: &[f32], b: &[f32]) -> f32 {
     let mut acc = [0f32; 16];
     for (ca, cb) in a.chunks_exact(16).zip(b.chunks_exact(16)) {
@@ -94,7 +96,11 @@ struct Top {
 }
 impl Top {
     fn new() -> Self {
-        Top { n: 0, s: [f32::MIN; K], id: [0; K] }
+        Top {
+            n: 0,
+            s: [f32::MIN; K],
+            id: [0; K],
+        }
     }
     fn offer(&mut self, s: f32, id: u64) {
         if self.n == K && s <= self.s[K - 1] {
@@ -120,7 +126,11 @@ fn ground_truth(seed: u64, centers: &[Vec<f32>], queries: &[Vec<f32>], n: u64) -
     const TILE: usize = 16;
     let mut state: Vec<Vec<[Top; 5]>> = queries
         .chunks(TILE)
-        .map(|t| t.iter().map(|_| std::array::from_fn(|_| Top::new())).collect())
+        .map(|t| {
+            t.iter()
+                .map(|_| std::array::from_fn(|_| Top::new()))
+                .collect()
+        })
         .collect();
     let mut start = 0u64;
     while start < n {
@@ -129,7 +139,11 @@ fn ground_truth(seed: u64, centers: &[Vec<f32>], queries: &[Vec<f32>], n: u64) -
         let masks: Vec<u8> = (0..count)
             .map(|i| {
                 SELS.iter().enumerate().fold(0u8, |m, (b, (_, pm))| {
-                    if passes(start + i as u64, *pm) { m | (1 << b) } else { m }
+                    if passes(start + i as u64, *pm) {
+                        m | (1 << b)
+                    } else {
+                        m
+                    }
                 })
             })
             .collect();
@@ -158,7 +172,6 @@ fn ground_truth(seed: u64, centers: &[Vec<f32>], queries: &[Vec<f32>], n: u64) -
         .collect()
 }
 
-// ---------- helpers ----------
 fn percentiles(mut ms: Vec<f64>) -> Value {
     ms.sort_by(|a, b| a.total_cmp(b));
     let p = |q: f64| ms[((ms.len() - 1) as f64 * q).round() as usize];
@@ -179,9 +192,15 @@ fn rss_mb() -> (f64, f64) {
             "$p=Get-Process -Id {}; \"$($p.WorkingSet64) $($p.PeakWorkingSet64)\"",
             std::process::id()
         );
-        if let Ok(o) = std::process::Command::new("powershell").args(["-NoProfile", "-Command", &cmd]).output() {
+        if let Ok(o) = std::process::Command::new("powershell")
+            .args(["-NoProfile", "-Command", &cmd])
+            .output()
+        {
             let t = String::from_utf8_lossy(&o.stdout).to_string();
-            let v: Vec<f64> = t.split_whitespace().filter_map(|x| x.parse().ok()).collect();
+            let v: Vec<f64> = t
+                .split_whitespace()
+                .filter_map(|x| x.parse().ok())
+                .collect();
             if v.len() == 2 {
                 return (v[0] / 1048576.0, v[1] / 1048576.0);
             }
@@ -191,7 +210,13 @@ fn rss_mb() -> (f64, f64) {
     #[cfg(target_os = "linux")]
     {
         let s = std::fs::read_to_string("/proc/self/status").unwrap_or_default();
-        let kb = |k: &str| s.lines().find(|l| l.starts_with(k)).and_then(|l| l.split_whitespace().nth(1)?.parse::<f64>().ok()).unwrap_or(0.0) / 1024.0;
+        let kb = |k: &str| {
+            s.lines()
+                .find(|l| l.starts_with(k))
+                .and_then(|l| l.split_whitespace().nth(1)?.parse::<f64>().ok())
+                .unwrap_or(0.0)
+                / 1024.0
+        };
         (kb("VmRSS:"), kb("VmHWM:"))
     }
     #[cfg(not(any(windows, target_os = "linux")))]
@@ -217,7 +242,6 @@ fn opts(conn: usize, ea: usize, es: usize) -> IndexOptions {
     }
 }
 
-/// Returns (index, wall seconds spent inside parallel add calls, vectors/sec).
 fn build(o: &IndexOptions, seed: u64, centers: &[Vec<f32>], n: usize) -> (Index, f64) {
     let index = Index::new(o).expect("index new");
     index.reserve(n).expect("reserve");
@@ -240,7 +264,6 @@ fn build(o: &IndexOptions, seed: u64, centers: &[Vec<f32>], n: usize) -> (Index,
     (index, add_secs)
 }
 
-/// Single-threaded pass: returns (mean recall, latency percentiles, raw results).
 fn search_pass(
     index: &Index,
     queries: &[Vec<f32>],
@@ -250,10 +273,12 @@ fn search_pass(
 ) -> (f64, Value, Vec<(Vec<u64>, Vec<f32>)>) {
     let run = |q: &Vec<f32>| match filter_permille {
         None => index.search(q, K).expect("search"),
-        Some(pm) => index.filtered_search(q, K, move |k| passes(k, pm)).expect("fsearch"),
+        Some(pm) => index
+            .filtered_search(q, K, move |k| passes(k, pm))
+            .expect("fsearch"),
     };
     for q in queries.iter().take(50) {
-        let _ = run(q); // warm-up
+        let _ = run(q);
     }
     let mut lat = Vec::with_capacity(queries.len());
     let mut rec = 0.0;
@@ -269,14 +294,19 @@ fn search_pass(
 }
 
 fn concurrent_pass(index: &Index, queries: &[Vec<f32>], threads: usize, reps: usize) -> Value {
-    let pool = rayon::ThreadPoolBuilder::new().num_threads(threads).build().unwrap();
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(threads)
+        .build()
+        .unwrap();
     let t = Instant::now();
     let lat: Vec<f64> = pool.install(|| {
         (0..queries.len() * reps)
             .into_par_iter()
             .map(|i| {
                 let t = Instant::now();
-                let _ = index.search(&queries[i % queries.len()], K).expect("search");
+                let _ = index
+                    .search(&queries[i % queries.len()], K)
+                    .expect("search");
                 t.elapsed().as_secs_f64() * 1e3
             })
             .collect()
@@ -289,7 +319,11 @@ fn concurrent_pass(index: &Index, queries: &[Vec<f32>], threads: usize, reps: us
 }
 
 fn arg(args: &[String], k: &str, d: &str) -> String {
-    args.iter().position(|a| a == k).and_then(|i| args.get(i + 1)).cloned().unwrap_or(d.into())
+    args.iter()
+        .position(|a| a == k)
+        .and_then(|i| args.get(i + 1))
+        .cloned()
+        .unwrap_or(d.into())
 }
 
 fn write_json(path: &str, v: &Value) {
@@ -334,7 +368,10 @@ fn main() {
     let t = Instant::now();
     let gt = ground_truth(seed, &centers, &queries, n as u64);
     res["ground_truth_secs"] = json!(t.elapsed().as_secs_f64());
-    res["rss"].as_array_mut().unwrap().push(rss_json("after_ground_truth"));
+    res["rss"]
+        .as_array_mut()
+        .unwrap()
+        .push(rss_json("after_ground_truth"));
     eprintln!("  done in {:.1}s", t.elapsed().as_secs_f64());
 
     if mode == "sweep" {
@@ -346,9 +383,11 @@ fn main() {
                     index.change_expansion_search(es);
                     let (r, lat, _) = search_pass(&index, &queries, &gt, 0, None);
                     eprintln!("conn={conn} ea={ea} es={es}: recall@10={r:.4}");
-                    rows.push(json!({"connectivity": conn, "expansion_add": ea, "expansion_search": es,
+                    rows.push(
+                        json!({"connectivity": conn, "expansion_add": ea, "expansion_search": es,
                         "build_secs": secs, "recall_at_10": r, "latency_single_thread": lat,
-                        "index_memory_mb": index.memory_usage() as f64 / 1048576.0}));
+                        "index_memory_mb": index.memory_usage() as f64 / 1048576.0}),
+                    );
                 }
             }
         }
@@ -358,16 +397,20 @@ fn main() {
         return;
     }
 
-    // ---- full mode ----
-    let (conn, ea) = (arg(&args, "--connectivity", "16").parse().unwrap(), arg(&args, "--expansion-add", "128").parse().unwrap());
+    let (conn, ea) = (
+        arg(&args, "--connectivity", "16").parse().unwrap(),
+        arg(&args, "--expansion-add", "128").parse().unwrap(),
+    );
     let (index, add_secs) = build(&opts(conn, ea, 64), seed, &centers, n);
     res["index"] = json!({"connectivity": conn, "expansion_add": ea, "quantization": "f32",
         "build_add_secs_parallel": add_secs, "insert_throughput_vps_parallel": n as f64 / add_secs,
         "size": index.size(), "memory_usage_mb": index.memory_usage() as f64 / 1048576.0});
-    res["rss"].as_array_mut().unwrap().push(rss_json("after_build"));
+    res["rss"]
+        .as_array_mut()
+        .unwrap()
+        .push(rss_json("after_build"));
     write_json(&out, &res);
 
-    // single-thread insert throughput on a small separate index
     {
         let m = 20_000usize;
         let small = Index::new(&opts(conn, ea, 64)).unwrap();
@@ -377,7 +420,8 @@ fn main() {
         for (i, v) in chunk.chunks_exact(DIM).enumerate() {
             small.add(i as u64, v).unwrap();
         }
-        res["insert_throughput_vps_single_thread_20k"] = json!(m as f64 / t.elapsed().as_secs_f64());
+        res["insert_throughput_vps_single_thread_20k"] =
+            json!(m as f64 / t.elapsed().as_secs_f64());
     }
 
     let mut sweep = vec![];
@@ -389,18 +433,24 @@ fn main() {
         if chosen.is_none() && r >= 0.95 {
             chosen = Some(es);
         }
-        sweep.push(json!({"expansion_search": es, "recall_at_10": r, "latency_single_thread": lat}));
+        sweep
+            .push(json!({"expansion_search": es, "recall_at_10": r, "latency_single_thread": lat}));
     }
     res["expansion_search_sweep"] = json!(sweep);
     let ef = chosen.unwrap_or(512);
     res["chosen_expansion_search"] = json!(ef);
     res["chosen_reaches_recall_0_95"] = json!(chosen.is_some());
     index.change_expansion_search(ef);
-    res["concurrent"] = json!([concurrent_pass(&index, &queries, 4, 3), concurrent_pass(&index, &queries, 12, 3)]);
-    res["rss"].as_array_mut().unwrap().push(rss_json("after_search"));
+    res["concurrent"] = json!([
+        concurrent_pass(&index, &queries, 4, 3),
+        concurrent_pass(&index, &queries, 12, 3)
+    ]);
+    res["rss"]
+        .as_array_mut()
+        .unwrap()
+        .push(rss_json("after_search"));
     write_json(&out, &res);
 
-    // filtered search vs exact filtered ground truth
     let mut filtered = vec![];
     for fes in [ef, 512usize] {
         index.change_expansion_search(fes);
@@ -414,13 +464,14 @@ fn main() {
     index.change_expansion_search(ef);
     write_json(&out, &res);
 
-    // save / load / view: results must be identical
     let (_, _, before) = search_pass(&index, &queries, &gt, 0, None);
     let path = format!("{}.usearch", out.trim_end_matches(".json"));
     let t = Instant::now();
     index.save(&path).expect("save");
     let save_secs = t.elapsed().as_secs_f64();
-    let file_mb = std::fs::metadata(&path).map(|m| m.len() as f64 / 1048576.0).unwrap_or(0.0);
+    let file_mb = std::fs::metadata(&path)
+        .map(|m| m.len() as f64 / 1048576.0)
+        .unwrap_or(0.0);
     drop(index);
     let loaded = Index::new(&opts(conn, ea, ef)).unwrap();
     let t = Instant::now();
@@ -428,7 +479,10 @@ fn main() {
     let load_secs = t.elapsed().as_secs_f64();
     loaded.change_expansion_search(ef);
     let (_, _, after_load) = search_pass(&loaded, &queries, &gt, 0, None);
-    res["rss"].as_array_mut().unwrap().push(rss_json("after_load"));
+    res["rss"]
+        .as_array_mut()
+        .unwrap()
+        .push(rss_json("after_load"));
     drop(loaded);
     let viewed = Index::new(&opts(conn, ea, ef)).unwrap();
     let t = Instant::now();
@@ -440,7 +494,6 @@ fn main() {
         "identical_after_load": before == after_load, "identical_after_view": before == after_view});
     drop(viewed);
 
-    // recovery behaviour on damaged files (separate process: a native crash must not kill the run)
     let probe_src = format!("{}.probe", path);
     {
         let small = Index::new(&opts(conn, ea, ef)).unwrap();
@@ -459,11 +512,21 @@ fn main() {
         ("truncated_half", good[..good.len() / 2].to_vec()),
         ("truncated_to_header_64B", good[..64].to_vec()),
         ("empty_file", vec![]),
-        ("middle_bytes_flipped", { let mut b = good.clone(); let m = b.len() / 2; for x in &mut b[m..m + 4096] { *x ^= 0xFF; } b }),
+        ("middle_bytes_flipped", {
+            let mut b = good.clone();
+            let m = b.len() / 2;
+            for x in &mut b[m..m + 4096] {
+                *x ^= 0xFF;
+            }
+            b
+        }),
     ] {
         let f = format!("{probe_src}.{name}");
         std::fs::write(&f, bytes).unwrap();
-        let o = std::process::Command::new(&exe).args(["loadprobe", "--file", &f]).output().unwrap();
+        let o = std::process::Command::new(&exe)
+            .args(["loadprobe", "--file", &f])
+            .output()
+            .unwrap();
         probes.push(json!({"case": name, "exit_ok": o.status.success(),
             "stdout": String::from_utf8_lossy(&o.stdout).trim().to_string(),
             "crashed": !o.status.success()}));

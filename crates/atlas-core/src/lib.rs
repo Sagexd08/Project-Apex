@@ -1,4 +1,3 @@
-//! Shared ids, errors and config for Atlas.
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
@@ -18,53 +17,32 @@ pub enum Metric {
     Euclidean,
 }
 
-/// When an insert may be acknowledged.
-///
-/// Both modes ack only after `File::sync_all` returned for the record.
-/// Covered: process crash and OS-level flush via sync_all.
-/// KNOWN RISK (not yet proven): power-loss behaviour for directory metadata
-/// (the WAL file's directory entry is not fsynced; no power-cut test exists).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Durability {
-    /// Concurrent writers share one fsync; every ack waits for that flush. DEFAULT.
     GroupCommit,
-    /// One fsync per commit (batch size forced to 1).
     SyncPerCommit,
 }
 
-/// How `open` treats a WAL that was left in a not-provably-valid state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum RecoverMode {
-    /// Refuse to open (RECOVERY_REQUIRED) if a recovery marker exists.
     #[default]
     Normal,
-    /// Opt-in repair: discard the failed (never acknowledged) batch recorded in the
-    /// recovery marker, then open normally. Does not repair mid-log corruption.
     Repair,
 }
 
 #[derive(Debug, Clone)]
 pub struct Config {
     pub recover_mode: RecoverMode,
-    /// Required when creating a database; optional (recovered from metadata) on reopen.
     pub dim: Option<usize>,
     pub durability: Durability,
-    /// GroupCommit: how long the committer waits for more writers after the first.
     pub batch_window: Duration,
-    /// GroupCommit: flush early once this many records are queued.
     pub max_batch: usize,
-    /// Upper bound on one WAL record payload.
     pub max_record_len: u32,
-    /// Upper bound on retained idempotency entries (op ids) across all tenants. A NEW op id past
-    /// it is refused with CAPACITY_EXCEEDED; retries of known op ids still succeed.
     pub max_ops: usize,
-    /// Upper bound on vectors in one tenant partition. Upserts past it are refused with
-    /// CAPACITY_EXCEEDED; deletes still work. Concurrent writers may overshoot by in-flight writes.
     pub max_tenant_vectors: usize,
 }
 
 impl Config {
-    /// Config for reopening an existing database; the dimension is read from metadata.
     pub fn reopen() -> Self {
         Self {
             dim: None,
@@ -72,7 +50,6 @@ impl Config {
         }
     }
 
-    /// Config for creating (or reopening and asserting) a database of dimension `dim`.
     pub fn new(dim: usize) -> Self {
         Self {
             recover_mode: RecoverMode::Normal,
@@ -131,6 +108,8 @@ pub enum AtlasError {
     NotFound,
     #[error("INCOMPLETE: stream ended early after {emitted} records, output is not a complete result: {reason}")]
     Incomplete { emitted: u64, reason: String },
+    #[error("INVALID_FILTER: {0}")]
+    InvalidFilter(String),
     #[error("INVALID_METADATA: {0}")]
     InvalidMetadata(String),
     #[error("IO: {0}")]
@@ -161,6 +140,7 @@ impl AtlasError {
             Self::Forbidden => "FORBIDDEN",
             Self::NotFound => "NOT_FOUND",
             Self::Incomplete { .. } => "INCOMPLETE",
+            Self::InvalidFilter(_) => "INVALID_FILTER",
             Self::InvalidMetadata(_) => "INVALID_METADATA",
             Self::Io(_) => "IO",
         }

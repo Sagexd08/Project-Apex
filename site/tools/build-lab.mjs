@@ -1,6 +1,3 @@
-// Builds the Prism lab pages: node site/tools/build-lab.mjs
-// Reads site/src/<slug>.html (article sections only) and writes site/<slug>.html with the shared
-// header, hero, contents list, previous/next links and footer. Static output, no dependencies.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
