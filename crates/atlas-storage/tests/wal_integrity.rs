@@ -57,7 +57,7 @@ fn open_err_cfg(p: &Path, cfg: &Config) -> atlas_core::AtlasError {
 
 #[test]
 fn unsupported_versions_have_explicit_error_including_the_old_v1_format() {
-    for v in [0u32, 1, 3, 99] {
+    for v in [0u32, 1, 4, 99] {
         let p = tmp(&format!("ver{v}"));
         std::fs::write(&p, header(v)).unwrap();
         let e = open_err(&p);

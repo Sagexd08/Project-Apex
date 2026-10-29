@@ -3,12 +3,12 @@ use atlas_core::{
     TenantId, VectorId,
 };
 use atlas_index::{AnnIndex, FlatIndex};
-use atlas_storage::{read_meta, write_meta, Applier, Wal};
+use atlas_storage::{read_meta, segment, truncate_prefix, write_meta, Applier, Wal};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::panic::{catch_unwind, AssertUnwindSafe};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 #[cfg(any(test, feature = "test-support"))]
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -17,6 +17,8 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError, RwLock, RwLockReadGuard};
 pub use atlas_index::Hit;
 
 pub use atlas_index::Filter;
+
+mod checkpoint;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Item {
@@ -294,6 +296,8 @@ pub struct Engine {
     max_record_len: u32,
     max_ops: usize,
     max_tenant_vectors: usize,
+    dir: PathBuf,
+    applied: Arc<AtomicU64>,
     wal: Wal,
     parts: Arc<RwLock<Parts>>,
     ops: Arc<Mutex<OpMap>>,
@@ -382,6 +386,8 @@ impl Engine {
         let (ap, ao, apo) = (parts.clone(), ops.clone(), poison.clone());
         let (aps, awf) = (poison_seq.clone(), wal_failed.clone());
         let (apanic, asink) = (panicked.clone(), sink.clone());
+        let applied = Arc::new(AtomicU64::new(0));
+        let aapplied = applied.clone();
         let applier: Applier = Box::new(move |seq, payload| {
             if apanic.load(Ordering::SeqCst) {
                 return;
@@ -393,6 +399,7 @@ impl Engine {
                 Err(p) => (Err(panic_error(seq, p)), true),
             };
             if res.is_ok() {
+                aapplied.store(seq, Ordering::SeqCst);
                 return;
             }
             if did_panic {
@@ -405,16 +412,46 @@ impl Engine {
                 call_sink(&asink, &detail);
             }
         });
-        let (wal, records) =
-            Wal::open_with_failed_flag(&dir.join("wal.log"), &cfg, applier, wal_failed)?;
-        for (seq, payload) in records {
-            replay_one(&parts, &ops, seq, &payload, fp)?;
+        let wal_path = dir.join("wal.log");
+        segment::remove_stale_temp(dir)?;
+        let seg_seq = match segment::latest_segment(dir)? {
+            Some(seg) => {
+                checkpoint::load(&parts, &ops, &seg.payloads)?;
+                seg.wal_seq
+            }
+            None => 0,
+        };
+        if seg_seq > 0 && !wal_path.exists() {
+            return Err(AtlasError::WalCorrupt(format!(
+                "segment ends at sequence {seg_seq} but wal.log is missing"
+            )));
         }
+        if seg_seq > 0 && wal_path.exists() {
+            let report = truncate_prefix(&wal_path, seg_seq, cfg.max_record_len)?;
+            if report.base_seq > seg_seq {
+                return Err(AtlasError::WalCorrupt(format!(
+                    "log starts after sequence {} but the newest segment ends at {seg_seq}",
+                    report.base_seq
+                )));
+            }
+        }
+        let (wal, records) = Wal::open_with_failed_flag(&wal_path, &cfg, applier, wal_failed)?;
+        let mut last_applied = seg_seq;
+        for (seq, payload) in records {
+            if seq <= seg_seq {
+                continue;
+            }
+            replay_one(&parts, &ops, seq, &payload, fp)?;
+            last_applied = seq;
+        }
+        applied.store(last_applied, Ordering::SeqCst);
         Ok(Engine {
             dim,
             max_record_len: cfg.max_record_len,
             max_ops: cfg.max_ops,
             max_tenant_vectors: cfg.max_tenant_vectors,
+            dir: dir.to_path_buf(),
+            applied,
             wal,
             parts,
             ops,
@@ -713,6 +750,27 @@ impl Engine {
             filtered: filter.is_some(),
             timed_out: false,
         })
+    }
+
+    pub fn checkpoint(&self) -> Result<u64, AtlasError> {
+        self.check_poison()?;
+        let (seq, mut payloads) = {
+            let parts = self.read_parts()?;
+            (
+                self.applied.load(Ordering::SeqCst),
+                checkpoint::items(&parts)?,
+            )
+        };
+        if seq == 0 {
+            return Ok(0);
+        }
+        {
+            let ops = self.ops.lock().map_err(|_| generic_poison())?;
+            payloads.extend(checkpoint::ops(&ops, seq)?);
+        }
+        segment::write_segment(&self.dir, seq, &payloads)?;
+        segment::remove_older_than(&self.dir, seq)?;
+        Ok(seq)
     }
 
     pub fn fetch(&self, scope: &EffectiveScope, id: VectorId) -> Result<Item, AtlasError> {

@@ -1,0 +1,197 @@
+{
+  "build_seconds": 854.103409796,
+  "dim": 256,
+  "disk_note": "graph is derived data and never persisted by Atlas; graph_serialized_bytes is the size if saved",
+  "engine": "atlas-usearch-adapter",
+  "filtered": [
+    {
+      "algorithm": "exact pre-filter scan over allowed ids",
+      "allowed": 29091,
+      "avg_returned": 10.0,
+      "ef": 512,
+      "leaks_in_200q": 0,
+      "mean_ms": 20.303513975000005,
+      "p50_ms": 19.766887,
+      "p95_ms": 24.205704,
+      "p99_ms": 28.887324,
+      "qps_seq": 49.241690489849255,
+      "recall_at_10": 0.9972000000000005,
+      "selectivity_permille": 100
+    },
+    {
+      "algorithm": "exact pre-filter scan over allowed ids",
+      "allowed": 14501,
+      "avg_returned": 10.0,
+      "ef": 512,
+      "leaks_in_200q": 0,
+      "mean_ms": 11.068887988999988,
+      "p50_ms": 10.668563,
+      "p95_ms": 13.44825,
+      "p99_ms": 16.156013,
+      "qps_seq": 90.2931016548844,
+      "recall_at_10": 0.9980500000000004,
+      "selectivity_permille": 50
+    },
+    {
+      "algorithm": "exact pre-filter scan over allowed ids",
+      "allowed": 2909,
+      "avg_returned": 10.0,
+      "ef": 512,
+      "leaks_in_200q": 0,
+      "mean_ms": 3.569934748000003,
+      "p50_ms": 3.3797449999999998,
+      "p95_ms": 4.746277999999999,
+      "p99_ms": 6.011337999999999,
+      "qps_seq": 279.9190133328067,
+      "recall_at_10": 0.9988,
+      "selectivity_permille": 10
+    },
+    {
+      "algorithm": "exact pre-filter scan over allowed ids",
+      "allowed": 306,
+      "avg_returned": 10.0,
+      "ef": 512,
+      "leaks_in_200q": 0,
+      "mean_ms": 1.4832992470000013,
+      "p50_ms": 1.359562,
+      "p95_ms": 2.072597,
+      "p99_ms": 2.629393,
+      "qps_seq": 673.4144382638782,
+      "recall_at_10": 0.999,
+      "selectivity_permille": 1
+    }
+  ],
+  "filtered_queries": 2000,
+  "graph_serialized_bytes": 377092924,
+  "ingest_vps": 339.5373401790605,
+  "mode": "embedded library via AnnIndex trait, no WAL, no API",
+  "n": 290000,
+  "params": {
+    "M": 32,
+    "build_threads": 1,
+    "ef_construction": 200,
+    "metric": "Cosine"
+  },
+  "queries": 10000,
+  "reps": 1,
+  "sweep": [
+    {
+      "ef": 64,
+      "median": {
+        "mean_ms": 1.0105443043999962,
+        "p50_ms": 0.9716119999999999,
+        "p95_ms": 1.616534,
+        "p99_ms": 2.184125,
+        "qps_seq": 988.0408143523726,
+        "recall_at_10": 0.8861899999999827
+      },
+      "qps_conc8": 4365.569909791466,
+      "reps": [
+        {
+          "avg_returned": 10.0,
+          "mean_ms": 1.0105443043999962,
+          "p50_ms": 0.9716119999999999,
+          "p95_ms": 1.616534,
+          "p99_ms": 2.184125,
+          "qps_seq": 988.0408143523726,
+          "recall_at_10": 0.8861899999999827
+        }
+      ]
+    },
+    {
+      "ef": 128,
+      "median": {
+        "mean_ms": 1.8511704316999988,
+        "p50_ms": 1.755876,
+        "p95_ms": 3.096604,
+        "p99_ms": 4.951696999999999,
+        "qps_seq": 539.750509470371,
+        "recall_at_10": 0.9137699999999817
+      },
+      "qps_conc8": 2367.291161878618,
+      "reps": [
+        {
+          "avg_returned": 10.0,
+          "mean_ms": 1.8511704316999988,
+          "p50_ms": 1.755876,
+          "p95_ms": 3.096604,
+          "p99_ms": 4.951696999999999,
+          "qps_seq": 539.750509470371,
+          "recall_at_10": 0.9137699999999817
+        }
+      ]
+    },
+    {
+      "ef": 256,
+      "median": {
+        "mean_ms": 3.492282794899999,
+        "p50_ms": 3.408036,
+        "p95_ms": 5.619904999999999,
+        "p99_ms": 8.809108,
+        "qps_seq": 286.21388991069404,
+        "recall_at_10": 0.9366399999999799
+      },
+      "qps_conc8": 1630.1797790788514,
+      "reps": [
+        {
+          "avg_returned": 10.0,
+          "mean_ms": 3.492282794899999,
+          "p50_ms": 3.408036,
+          "p95_ms": 5.619904999999999,
+          "p99_ms": 8.809108,
+          "qps_seq": 286.21388991069404,
+          "recall_at_10": 0.9366399999999799
+        }
+      ]
+    },
+    {
+      "ef": 512,
+      "median": {
+        "mean_ms": 6.695866031599984,
+        "p50_ms": 6.6964049999999995,
+        "p95_ms": 10.284696,
+        "p99_ms": 14.656491,
+        "qps_seq": 149.30165480124697,
+        "recall_at_10": 0.9565299999999759
+      },
+      "qps_conc8": 653.9404382164438,
+      "reps": [
+        {
+          "avg_returned": 10.0,
+          "mean_ms": 6.695866031599984,
+          "p50_ms": 6.6964049999999995,
+          "p95_ms": 10.284696,
+          "p99_ms": 14.656491,
+          "qps_seq": 149.30165480124697,
+          "recall_at_10": 0.9565299999999759
+        }
+      ]
+    },
+    {
+      "ef": 1024,
+      "median": {
+        "mean_ms": 13.465927710500027,
+        "p50_ms": 13.113461,
+        "p95_ms": 20.453202,
+        "p99_ms": 43.58886,
+        "qps_seq": 74.24449531097959,
+        "recall_at_10": 0.9708299999999759
+      },
+      "qps_conc8": 376.59991103555444,
+      "reps": [
+        {
+          "avg_returned": 10.0,
+          "mean_ms": 13.465927710500027,
+          "p50_ms": 13.113461,
+          "p95_ms": 20.453202,
+          "p99_ms": 43.58886,
+          "qps_seq": 74.24449531097959,
+          "recall_at_10": 0.9708299999999759
+        }
+      ]
+    }
+  ],
+  "vmhwm_kb_after_build": 1056596,
+  "vmhwm_kb_end": 1061940,
+  "warmup": 200
+}

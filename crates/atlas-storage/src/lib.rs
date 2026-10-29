@@ -1,3 +1,5 @@
+pub mod segment;
+
 use atlas_core::{AtlasError, Config, Durability};
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
@@ -14,6 +16,8 @@ use std::time::{Duration, Instant};
 
 const MAGIC: &[u8; 8] = b"ATLASWAL";
 const VERSION: u32 = 2;
+const VERSION_BASED: u32 = 3;
+const HEADER_LEN_BASED: usize = 20;
 const META_VERSION: u32 = 1;
 const MARKER_VERSION: u32 = 1;
 const HEADER_LEN: usize = 12;
@@ -253,15 +257,22 @@ fn valid_record_follows(bytes: &[u8], from: usize, last_seq: u64, max_len: u32) 
 }
 
 struct Scan {
+    base_seq: u64,
     records: Replayed,
     good_len: usize,
     invalid_seq: Option<u64>,
 }
 
-fn scan(bytes: &[u8], max_len: u32, repair: bool) -> Result<Scan, AtlasError> {
-    let mut off = HEADER_LEN;
+fn scan(
+    bytes: &[u8],
+    hdr_len: usize,
+    base_seq: u64,
+    max_len: u32,
+    repair: bool,
+) -> Result<Scan, AtlasError> {
+    let mut off = hdr_len;
     let mut records = Vec::new();
-    let mut expect = 1u64;
+    let mut expect = base_seq + 1;
     let mut invalid_seq = None;
     while off < bytes.len() {
         let kind = parse(&bytes[off..], max_len);
@@ -304,6 +315,7 @@ fn scan(bytes: &[u8], max_len: u32, repair: bool) -> Result<Scan, AtlasError> {
         }
     }
     Ok(Scan {
+        base_seq,
         records,
         good_len: off,
         invalid_seq,
@@ -345,6 +357,7 @@ impl Wal {
             file.seek(SeekFrom::Start(0))?;
             file.write_all(&h)?;
             Scan {
+                base_seq: 0,
                 records: Vec::new(),
                 good_len: HEADER_LEN,
                 invalid_seq: None,
@@ -354,19 +367,32 @@ impl Wal {
                 return Err(AtlasError::WalCorrupt("bad magic".into()));
             }
             let found = u32::from_le_bytes(bytes[8..HEADER_LEN].try_into().expect("4 bytes"));
-            if found != VERSION {
-                return Err(AtlasError::UnsupportedWalVersion {
-                    found,
-                    supported: VERSION,
-                });
-            }
+            let (hdr_len, base_seq) = match found {
+                VERSION => (HEADER_LEN, 0),
+                VERSION_BASED => {
+                    if bytes.len() < HEADER_LEN_BASED {
+                        return Err(AtlasError::WalCorrupt("truncated v3 header".into()));
+                    }
+                    let base = u64::from_le_bytes(bytes[12..20].try_into().expect("8 bytes"));
+                    (HEADER_LEN_BASED, base)
+                }
+                _ => {
+                    return Err(AtlasError::UnsupportedWalVersion {
+                        found,
+                        supported: VERSION_BASED,
+                    })
+                }
+            };
             scan(
                 &bytes,
+                hdr_len,
+                base_seq,
                 cfg.max_record_len,
                 cfg.recover_mode == atlas_core::RecoverMode::Repair,
             )?
         };
         let Scan {
+            base_seq,
             records,
             good_len,
             invalid_seq,
@@ -383,7 +409,7 @@ impl Wal {
         }
         file.seek(SeekFrom::Start(good_len as u64))?;
 
-        let next_seq = records.last().map_or(1, |(s, _)| s + 1);
+        let next_seq = records.last().map_or(base_seq + 1, |(s, _)| s + 1);
         let max_batch = match cfg.durability {
             Durability::SyncPerCommit => 1,
             Durability::GroupCommit => cfg.max_batch.max(1),
@@ -763,4 +789,85 @@ fn keep_evidence(dir: &Path, seq: u64, removed: &[u8]) -> Result<(), AtlasError>
     f.sync_all()?;
     sync_dir(dir)?;
     Ok(())
+}
+
+pub struct PrefixReport {
+    pub base_seq: u64,
+    pub dropped: usize,
+    pub kept: usize,
+}
+
+pub fn truncate_prefix(
+    path: &Path,
+    through_seq: u64,
+    max_record_len: u32,
+) -> Result<PrefixReport, AtlasError> {
+    let bytes = std::fs::read(path)?;
+    if bytes.len() < HEADER_LEN || bytes[..8] != MAGIC[..] {
+        return Err(AtlasError::WalCorrupt("bad header".into()));
+    }
+    let found = u32::from_le_bytes(bytes[8..HEADER_LEN].try_into().expect("4 bytes"));
+    let (hdr_len, base_seq) = match found {
+        VERSION => (HEADER_LEN, 0),
+        VERSION_BASED if bytes.len() >= HEADER_LEN_BASED => (
+            HEADER_LEN_BASED,
+            u64::from_le_bytes(bytes[12..20].try_into().expect("8 bytes")),
+        ),
+        VERSION_BASED => return Err(AtlasError::WalCorrupt("truncated v3 header".into())),
+        _ => {
+            return Err(AtlasError::UnsupportedWalVersion {
+                found,
+                supported: VERSION_BASED,
+            })
+        }
+    };
+    if through_seq <= base_seq {
+        let kept = scan(&bytes, hdr_len, base_seq, max_record_len, false)?
+            .records
+            .len();
+        return Ok(PrefixReport {
+            base_seq,
+            dropped: 0,
+            kept,
+        });
+    }
+    let scanned = scan(&bytes, hdr_len, base_seq, max_record_len, false)?;
+    if scanned.good_len != bytes.len() {
+        return Err(AtlasError::WalCorrupt(
+            "log has an unreadable tail; recover it before truncating".into(),
+        ));
+    }
+    let mut out = Vec::with_capacity(bytes.len());
+    out.extend_from_slice(MAGIC);
+    out.extend_from_slice(&VERSION_BASED.to_le_bytes());
+    out.extend_from_slice(&through_seq.to_le_bytes());
+    let (mut dropped, mut kept) = (0, 0);
+    let mut off = hdr_len;
+    for (seq, payload) in &scanned.records {
+        let end = off + REC_HDR + payload.len();
+        if *seq > through_seq {
+            out.extend_from_slice(&bytes[off..end]);
+            kept += 1;
+        } else {
+            dropped += 1;
+        }
+        off = end;
+    }
+    let dir = path.parent().unwrap_or_else(|| Path::new("."));
+    let tmp = path.with_extension("log.truncating");
+    let mut f = OpenOptions::new()
+        .create(true)
+        .truncate(true)
+        .write(true)
+        .open(&tmp)?;
+    f.write_all(&out)?;
+    f.sync_all()?;
+    drop(f);
+    std::fs::rename(&tmp, path)?;
+    sync_dir(dir)?;
+    Ok(PrefixReport {
+        base_seq: through_seq,
+        dropped,
+        kept,
+    })
 }

@@ -1,18 +1,18 @@
 {
   "dataset": "nytimes",
-  "date_utc": "2026-10-29T07:49:37Z",
-  "core_digest": "files=55 digest=9fb7dd804544a35bdab23fc5b5282c3a",
-  "adapter_and_harness_digest": "59cac562c1b2a309403d636f594e4edc",
+  "date_utc": "2026-10-28T23:06:24Z",
+  "core_digest": "files=51 digest=f7f3f6a8f1627b6fac242ebd1c748f53",
+  "adapter_and_harness_digest": "70c44f97fcd1991d0711e05ba06211e4",
   "docker_cpus": 12,
   "docker_mem_bytes": 12179386368,
   "docker_kernel": "5.15.167.4-microsoft-standard-WSL2",
   "engine_cpu_limit": 8, "engine_mem_limit": "9g",
   "host_cpu": "AMD Ryzen 5 7640HS w/ Radeon 760M Graphics     ",
   "docker_other_running": "supabase_rest_Lumeo supabase_realtime_Lumeo supabase_inbucket_Lumeo supabase_auth_Lumeo supabase_kong_Lumeo supabase_vector_Lumeo supabase_analytics_Lumeo supabase_db_Lumeo n8n self-hosted-ai-starter-kit-postgres-1 qdrant ollama ",
-  "docker_stats_snapshot": "supabase_rest_Lumeo cpu=0.14% mem=87.75MiB / 11.34GiB;supabase_realtime_Lumeo cpu=0.44% mem=314MiB / 11.34GiB;supabase_inbucket_Lumeo cpu=0.00% mem=29.88MiB / 11.34GiB;supabase_auth_Lumeo cpu=8.64% mem=15.49MiB / 11.34GiB;supabase_kong_Lumeo cpu=0.01% mem=116.2MiB / 11.34GiB;supabase_vector_Lumeo cpu=0.00% mem=0B / 0B;supabase_analytics_Lumeo cpu=2.27% mem=691.7MiB / 11.34GiB;supabase_db_Lumeo cpu=0.64% mem=174.9MiB / 11.34GiB;n8n cpu=0.13% mem=370.8MiB / 11.34GiB;self-hosted-ai-starter-kit-postgres-1 cpu=0.00% mem=45.34MiB / 11.34GiB;qdrant cpu=0.35% mem=305.5MiB / 11.34GiB;ollama cpu=0.00% mem=192.5MiB / 11.34GiB;",
+  "docker_stats_snapshot": "supabase_rest_Lumeo cpu=0.09% mem=87.43MiB / 11.34GiB;supabase_realtime_Lumeo cpu=0.18% mem=310.7MiB / 11.34GiB;supabase_inbucket_Lumeo cpu=0.00% mem=29.66MiB / 11.34GiB;supabase_auth_Lumeo cpu=0.03% mem=14.62MiB / 11.34GiB;supabase_kong_Lumeo cpu=0.01% mem=112.5MiB / 11.34GiB;supabase_analytics_Lumeo cpu=3.61% mem=678.8MiB / 11.34GiB;supabase_db_Lumeo cpu=0.69% mem=167.4MiB / 11.34GiB;n8n cpu=0.18% mem=351.3MiB / 11.34GiB;self-hosted-ai-starter-kit-postgres-1 cpu=0.02% mem=44.03MiB / 11.34GiB;qdrant cpu=0.16% mem=300.4MiB / 11.34GiB;ollama cpu=0.00% mem=184.2MiB / 11.34GiB;",
   "qdrant_image_id": "sha256:94728574965d17c6485dd361aa3c0818b325b9016dac5ea6afec7b4b2700865f",
   "bench_image_id": "sha256:5eedccbcf839c38b6b1daa720751f7a338b714b5a97405db6a29f0c2434d08d2",
   "pip_freeze": "annotated-types==0.8.0 anyio==4.15.1 certifi==2026.10.23 grpcio==1.85.0 h11==0.16.0 h2==4.4.1 hnswlib==0.8.0 hpack==4.2.0 httpcore==1.0.9 httpx==0.28.1 hyperframe==6.1.0 idna==3.20 numpy==2.5.4 portalocker==3.2.0 protobuf==7.36.2 pydantic==2.14.1 pydantic_core==2.50.1 qdrant-client==1.17.1 typing-inspection==0.4.4 typing_extensions==4.16.0 urllib3==2.8.0 ",
   "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
-  "extra_args": "--reps 1 --fq 2000"
+  "extra_args": "--reps 3 --fq 2000 --threads 1"
 }
