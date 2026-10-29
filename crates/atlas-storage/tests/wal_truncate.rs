@@ -143,3 +143,124 @@ fn short_v3_header_and_unknown_versions_are_rejected() {
         .expect("must fail");
     assert_eq!(e.code(), "UNSUPPORTED_WAL_VERSION");
 }
+
+// ---- review dd680f64 fixes: the cut happens inside open, after recovery ----
+
+use atlas_core::RecoverMode;
+use std::sync::{atomic::AtomicBool, Arc};
+
+type Opened = Result<(Wal, Vec<(u64, Vec<u8>)>), atlas_core::AtlasError>;
+
+fn open_seg(p: &Path, cfg: &Config, seg: u64) -> Opened {
+    Wal::open_checked(p, cfg, noop(), Arc::new(AtomicBool::new(false)), Some(seg))
+}
+
+fn repair() -> Config {
+    let mut c = Config::new(1);
+    c.recover_mode = RecoverMode::Repair;
+    c
+}
+
+fn marker_bytes(safe_len: u64) -> Vec<u8> {
+    let mut b = b"ATLASREC".to_vec();
+    b.extend_from_slice(&1u32.to_le_bytes());
+    b.extend_from_slice(&safe_len.to_le_bytes());
+    let crc = crc32fast::hash(&b);
+    b.extend_from_slice(&crc.to_le_bytes());
+    b
+}
+
+#[test]
+fn open_cuts_the_prefix_and_keeps_the_suffix() {
+    let p = tmp("oc");
+    write_n(&p, 10);
+    let (_w, recs) = open_seg(&p, &Config::new(1), 6).unwrap();
+    assert_eq!(
+        recs.iter().map(|x| x.0).collect::<Vec<_>>(),
+        vec![7, 8, 9, 10]
+    );
+}
+
+#[test]
+fn missing_segment_with_a_cut_log_is_refused() {
+    let p = tmp("miss");
+    write_n(&p, 10);
+    truncate_prefix(&p, 6, 1 << 20).unwrap();
+    // segment gone: engine passes Some(0)
+    assert!(matches!(
+        open_seg(&p, &Config::new(1), 0),
+        Err(atlas_core::AtlasError::WalCorrupt(_))
+    ));
+}
+
+#[test]
+fn segment_ahead_of_the_log_end_is_refused_and_log_untouched() {
+    let p = tmp("ahead2");
+    write_n(&p, 3);
+    let before = std::fs::read(&p).unwrap();
+    assert!(matches!(
+        open_seg(&p, &Config::new(1), 20),
+        Err(atlas_core::AtlasError::WalCorrupt(_))
+    ));
+    assert_eq!(std::fs::read(&p).unwrap(), before);
+}
+
+#[test]
+fn torn_tail_plus_segment_opens_and_cuts() {
+    let p = tmp("torn");
+    write_n(&p, 10);
+    let mut f = std::fs::OpenOptions::new().append(true).open(&p).unwrap();
+    std::io::Write::write_all(&mut f, &[1, 2, 3, 4, 5]).unwrap();
+    drop(f);
+    let (_w, recs) = open_seg(&p, &Config::new(1), 5).unwrap();
+    assert_eq!(
+        recs.iter().map(|x| x.0).collect::<Vec<_>>(),
+        vec![6, 7, 8, 9, 10]
+    );
+}
+
+#[test]
+fn bad_checksum_tail_plus_segment_is_repairable() {
+    let p = tmp("badcrc");
+    write_n(&p, 10);
+    let mut b = std::fs::read(&p).unwrap();
+    let n = b.len();
+    b[n - 1] ^= 0xff;
+    std::fs::write(&p, &b).unwrap();
+    assert!(
+        open_seg(&p, &Config::new(1), 5).is_err(),
+        "strict mode stays fail-closed"
+    );
+    let (_w, recs) = open_seg(&p, &repair(), 5).unwrap();
+    assert_eq!(
+        recs.iter().map(|x| x.0).collect::<Vec<_>>(),
+        vec![6, 7, 8, 9]
+    );
+}
+
+#[test]
+fn recovery_marker_is_applied_to_the_original_layout_before_the_cut() {
+    let p = tmp("marker");
+    write_n(&p, 10);
+    // safe_len = byte length of the log after record 7 (v2 layout)
+    let len7 = {
+        let bytes = std::fs::read(&p).unwrap();
+        let rec = (bytes.len() - 12) / 10;
+        12 + 7 * rec
+    };
+    std::fs::write(
+        p.parent().unwrap().join("recovery.required"),
+        marker_bytes(len7 as u64),
+    )
+    .unwrap();
+    assert!(
+        open_seg(&p, &Config::new(1), 5).is_err(),
+        "strict mode refuses"
+    );
+    let (_w, recs) = open_seg(&p, &repair(), 5).unwrap();
+    assert_eq!(
+        recs.iter().map(|x| x.0).collect::<Vec<_>>(),
+        vec![6, 7],
+        "records 8..10 belonged to the failed batch and must stay discarded"
+    );
+}

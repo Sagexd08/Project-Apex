@@ -337,78 +337,48 @@ impl Wal {
         applier: Applier,
         failed: Arc<AtomicBool>,
     ) -> Result<(Wal, Replayed), AtlasError> {
+        Self::open_checked(path, cfg, applier, failed, None)
+    }
+
+    /// Opens the log. With `segment_seq = Some(s)` the log must pair with a
+    /// segment ending at `s`: its base may not exceed `s`, its last record may
+    /// not precede `s`, and any prefix up to `s` is cut AFTER marker handling
+    /// and tail repair, so those always see the original byte layout.
+    pub fn open_checked(
+        path: &Path,
+        cfg: &Config,
+        applier: Applier,
+        failed: Arc<AtomicBool>,
+        segment_seq: Option<u64>,
+    ) -> Result<(Wal, Replayed), AtlasError> {
         let dir = path.parent().unwrap_or_else(|| Path::new("."));
         handle_recovery_marker(path, dir, cfg.recover_mode)?;
-        let existed = path.exists();
-        let mut file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true)
-            .truncate(false)
-            .open(path)?;
-        let mut bytes = Vec::new();
-        file.read_to_end(&mut bytes)?;
-        let h = header();
-        let scanned = if bytes.len() < HEADER_LEN {
-            if !h.starts_with(&bytes) {
-                return Err(AtlasError::WalCorrupt("bad header".into()));
+        let (mut file, mut scanned) = recover_file(path, dir, cfg)?;
+        if let Some(seg) = segment_seq {
+            if scanned.base_seq > seg {
+                return Err(AtlasError::WalCorrupt(format!(
+                    "log starts after sequence {} but the newest segment ends at {seg}                      (segment missing?)",
+                    scanned.base_seq
+                )));
             }
-            file.set_len(0)?;
-            file.seek(SeekFrom::Start(0))?;
-            file.write_all(&h)?;
-            Scan {
-                base_seq: 0,
-                records: Vec::new(),
-                good_len: HEADER_LEN,
-                invalid_seq: None,
-            }
-        } else {
-            if bytes[..8] != MAGIC[..] {
-                return Err(AtlasError::WalCorrupt("bad magic".into()));
-            }
-            let found = u32::from_le_bytes(bytes[8..HEADER_LEN].try_into().expect("4 bytes"));
-            let (hdr_len, base_seq) = match found {
-                VERSION => (HEADER_LEN, 0),
-                VERSION_BASED => {
-                    if bytes.len() < HEADER_LEN_BASED {
-                        return Err(AtlasError::WalCorrupt("truncated v3 header".into()));
-                    }
-                    let base = u64::from_le_bytes(bytes[12..20].try_into().expect("8 bytes"));
-                    (HEADER_LEN_BASED, base)
+            if seg > scanned.base_seq {
+                let last = scanned.records.last().map_or(scanned.base_seq, |(s, _)| *s);
+                if last < seg {
+                    return Err(AtlasError::WalCorrupt(format!(
+                        "log ends at sequence {last} but the segment ends at {seg}"
+                    )));
                 }
-                _ => {
-                    return Err(AtlasError::UnsupportedWalVersion {
-                        found,
-                        supported: VERSION_BASED,
-                    })
-                }
-            };
-            scan(
-                &bytes,
-                hdr_len,
-                base_seq,
-                cfg.max_record_len,
-                cfg.recover_mode == atlas_core::RecoverMode::Repair,
-            )?
-        };
+                drop(file);
+                truncate_prefix(path, seg, cfg.max_record_len)?;
+                (file, scanned) = recover_file(path, dir, cfg)?;
+            }
+        }
         let Scan {
             base_seq,
             records,
             good_len,
-            invalid_seq,
+            ..
         } = scanned;
-        if let Some(seq) = invalid_seq {
-            keep_evidence(dir, seq, &bytes[good_len..])?;
-        }
-        if good_len < bytes.len() {
-            file.set_len(good_len as u64)?;
-        }
-        file.sync_all()?;
-        if !existed {
-            sync_dir(dir)?;
-        }
-        file.seek(SeekFrom::Start(good_len as u64))?;
-
         let next_seq = records.last().map_or(base_seq + 1, |(s, _)| s + 1);
         let max_batch = match cfg.durability {
             Durability::SyncPerCommit => 1,
@@ -740,6 +710,74 @@ fn read_marker(path: &Path) -> Result<u64, AtlasError> {
         ));
     }
     Ok(u64::from_le_bytes(b[12..20].try_into().expect("8 bytes")))
+}
+
+/// Reads the log, repairs/validates it per `cfg`, syncs, and positions at the end.
+fn recover_file(path: &Path, dir: &Path, cfg: &Config) -> Result<(File, Scan), AtlasError> {
+    let existed = path.exists();
+    let mut file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(path)?;
+    let mut bytes = Vec::new();
+    file.read_to_end(&mut bytes)?;
+    let h = header();
+    let scanned = if bytes.len() < HEADER_LEN {
+        if !h.starts_with(&bytes) {
+            return Err(AtlasError::WalCorrupt("bad header".into()));
+        }
+        file.set_len(0)?;
+        file.seek(SeekFrom::Start(0))?;
+        file.write_all(&h)?;
+        Scan {
+            base_seq: 0,
+            records: Vec::new(),
+            good_len: HEADER_LEN,
+            invalid_seq: None,
+        }
+    } else {
+        if bytes[..8] != MAGIC[..] {
+            return Err(AtlasError::WalCorrupt("bad magic".into()));
+        }
+        let found = u32::from_le_bytes(bytes[8..HEADER_LEN].try_into().expect("4 bytes"));
+        let (hdr_len, base_seq) = match found {
+            VERSION => (HEADER_LEN, 0),
+            VERSION_BASED => {
+                if bytes.len() < HEADER_LEN_BASED {
+                    return Err(AtlasError::WalCorrupt("truncated v3 header".into()));
+                }
+                let base = u64::from_le_bytes(bytes[12..20].try_into().expect("8 bytes"));
+                (HEADER_LEN_BASED, base)
+            }
+            _ => {
+                return Err(AtlasError::UnsupportedWalVersion {
+                    found,
+                    supported: VERSION_BASED,
+                })
+            }
+        };
+        scan(
+            &bytes,
+            hdr_len,
+            base_seq,
+            cfg.max_record_len,
+            cfg.recover_mode == atlas_core::RecoverMode::Repair,
+        )?
+    };
+    if let Some(seq) = scanned.invalid_seq {
+        keep_evidence(dir, seq, &bytes[scanned.good_len..])?;
+    }
+    if scanned.good_len < bytes.len() {
+        file.set_len(scanned.good_len as u64)?;
+    }
+    file.sync_all()?;
+    if !existed {
+        sync_dir(dir)?;
+    }
+    file.seek(SeekFrom::Start(scanned.good_len as u64))?;
+    Ok((file, scanned))
 }
 
 fn handle_recovery_marker(

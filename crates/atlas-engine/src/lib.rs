@@ -3,7 +3,7 @@ use atlas_core::{
     TenantId, VectorId,
 };
 use atlas_index::{AnnIndex, FlatIndex};
-use atlas_storage::{read_meta, segment, truncate_prefix, write_meta, Applier, Wal};
+use atlas_storage::{read_meta, segment, write_meta, Applier, Wal};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -194,6 +194,7 @@ fn replay_inner(
     seq: u64,
     payload: &[u8],
     fp: FpFn,
+    applied: Option<&AtomicU64>,
 ) -> Result<(), AtlasError> {
     let (t, r) = decode(seq, payload)?;
     if let Some(op) = &r.op_id {
@@ -206,11 +207,16 @@ fn replay_inner(
                 payload: Arc::from(payload),
             });
     }
-    parts
-        .write()
-        .map_err(|_| lock_error("index"))?
+    // `applied` is published while the index write lock is held, so a
+    // checkpoint (read lock) sees state and sequence at the same boundary.
+    let mut guard = parts.write().map_err(|_| lock_error("index"))?;
+    guard
         .apply(t, r)
-        .map_err(|e| AtlasError::WalCorrupt(format!("seq {seq}: {e}")))
+        .map_err(|e| AtlasError::WalCorrupt(format!("seq {seq}: {e}")))?;
+    if let Some(a) = applied {
+        a.store(seq, Ordering::SeqCst);
+    }
+    Ok(())
 }
 
 fn replay_one(
@@ -221,7 +227,7 @@ fn replay_one(
     fp: FpFn,
 ) -> Result<(), AtlasError> {
     match catch_unwind(AssertUnwindSafe(|| {
-        replay_inner(parts, ops, seq, payload, fp)
+        replay_inner(parts, ops, seq, payload, fp, None)
     })) {
         Ok(r) => r,
         Err(p) => Err(panic_error(seq, p)),
@@ -393,13 +399,12 @@ impl Engine {
                 return;
             }
             let (res, did_panic) = match catch_unwind(AssertUnwindSafe(|| {
-                replay_inner(&ap, &ao, seq, payload, fp)
+                replay_inner(&ap, &ao, seq, payload, fp, Some(&aapplied))
             })) {
                 Ok(r) => (r, false),
                 Err(p) => (Err(panic_error(seq, p)), true),
             };
             if res.is_ok() {
-                aapplied.store(seq, Ordering::SeqCst);
                 return;
             }
             if did_panic {
@@ -426,16 +431,8 @@ impl Engine {
                 "segment ends at sequence {seg_seq} but wal.log is missing"
             )));
         }
-        if seg_seq > 0 && wal_path.exists() {
-            let report = truncate_prefix(&wal_path, seg_seq, cfg.max_record_len)?;
-            if report.base_seq > seg_seq {
-                return Err(AtlasError::WalCorrupt(format!(
-                    "log starts after sequence {} but the newest segment ends at {seg_seq}",
-                    report.base_seq
-                )));
-            }
-        }
-        let (wal, records) = Wal::open_with_failed_flag(&wal_path, &cfg, applier, wal_failed)?;
+        let (wal, records) =
+            Wal::open_checked(&wal_path, &cfg, applier, wal_failed, Some(seg_seq))?;
         let mut last_applied = seg_seq;
         for (seq, payload) in records {
             if seq <= seg_seq {
