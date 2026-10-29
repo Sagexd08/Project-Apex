@@ -181,3 +181,80 @@ fn zeroed_header_marker_ends_the_log_even_if_old_records_follow() {
         HEADER + 2 * REC
     );
 }
+
+struct Lcg(u64);
+
+impl Lcg {
+    fn next(&mut self) -> u64 {
+        self.0 = self
+            .0
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
+        self.0 >> 33
+    }
+}
+
+fn mutate(base: &[u8], r: &mut Lcg) -> Vec<u8> {
+    let mut b = base.to_vec();
+    for _ in 0..=(r.next() % 3) {
+        let at = (r.next() as usize) % b.len().max(1);
+        match r.next() % 5 {
+            0 => b[at] ^= 1 << (r.next() % 8),
+            1 => b[at] = r.next() as u8,
+            2 => b.truncate(at),
+            3 => b.extend((0..=(r.next() % 40)).map(|_| r.next() as u8)),
+            _ => {
+                let end = (at + (r.next() as usize % 64)).min(b.len());
+                b.drain(at..end);
+            }
+        }
+        if b.is_empty() {
+            break;
+        }
+    }
+    b
+}
+
+#[test]
+fn seeded_random_corruption_never_panics_and_never_yields_a_bad_log() {
+    let base = {
+        let p = tmp("fuzz-base");
+        file_with(&p, &[1, 2, 3, 4, 5, 6])
+    };
+    let mut r = Lcg(0xA71A5);
+    let (mut ok, mut err) = (0u32, 0u32);
+    for i in 0..1500u32 {
+        let p = tmp(&format!("fuzz{}", i % 8));
+        let bytes = if i % 10 == 0 {
+            let mut v = header(2);
+            v.extend((0..(r.next() % 300)).map(|_| r.next() as u8));
+            v
+        } else {
+            mutate(&base, &mut r)
+        };
+        std::fs::write(&p, &bytes).unwrap();
+        match Wal::open(&p, &Config::new(1), noop()) {
+            Ok((_w, recs)) => {
+                ok += 1;
+                for (n, rec) in recs.iter().enumerate() {
+                    assert_eq!(rec.0, n as u64 + 1, "iteration {i}: non-contiguous seq");
+                }
+            }
+            Err(e) => {
+                err += 1;
+                assert!(
+                    matches!(
+                        e.code(),
+                        "WAL_CORRUPT" | "UNSUPPORTED_WAL_VERSION" | "RECOVERY_REQUIRED"
+                    ),
+                    "iteration {i}: unexpected code {}",
+                    e.code()
+                );
+            }
+        }
+    }
+    assert!(
+        ok > 50 && err > 50,
+        "mutation mix too narrow: ok={ok} err={err}"
+    );
+}

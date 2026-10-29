@@ -4,7 +4,15 @@ use serde_json::Value;
 use usearch::{Index, IndexOptions, MetricKind, ScalarKind};
 
 const EXACT_BELOW: usize = 4096;
-const EXACT_ALLOWED_PERMILLE: usize = 40;
+const EXACT_SMALL_SET: usize = 2500;
+const WALK_COST_FACTOR: usize = 6;
+
+pub fn use_exact_scan(total: usize, allowed: usize, ef_search: usize) -> bool {
+    if allowed <= EXACT_SMALL_SET {
+        return true;
+    }
+    allowed.saturating_mul(allowed) <= total.saturating_mul(WALK_COST_FACTOR * ef_search)
+}
 const MIN_CAPACITY: usize = 1024;
 const EF_ADD: usize = 200;
 pub const EF_SEARCH_DEFAULT: usize = 512;
@@ -177,7 +185,7 @@ impl AnnIndex for UsearchIndex {
         };
         let n = self.flat.len();
         let allowed = self.flat.ids().iter().filter(|&&id| allow(id)).count();
-        if allowed * 1000 <= n * EXACT_ALLOWED_PERMILLE {
+        if use_exact_scan(n, allowed, self.ef_search) {
             return self.flat.search_filtered(q, k, metric, allow);
         }
         let m = g

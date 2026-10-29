@@ -32,6 +32,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "atlas-eval"
+version = "0.1.0"
+dependencies = [
+ "atlas-core",
+ "atlas-index",
+ "serde_json",
+]
+
+[[package]]
 name = "atlas-index"
 version = "0.1.0"
 dependencies = [

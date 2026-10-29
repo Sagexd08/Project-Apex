@@ -256,6 +256,31 @@ enum Layer {
     WalFailedFlag = 2,
 }
 
+#[derive(Debug, Clone)]
+pub struct SearchReport {
+    pub hits: Vec<Hit>,
+    pub total: usize,
+    pub eligible: usize,
+    pub selectivity: f64,
+    pub filtered: bool,
+    pub underfilled: bool,
+    pub timed_out: bool,
+}
+
+impl SearchReport {
+    fn empty(timed_out: bool) -> Self {
+        SearchReport {
+            hits: vec![],
+            total: 0,
+            eligible: 0,
+            selectivity: 0.0,
+            filtered: false,
+            underfilled: false,
+            timed_out,
+        }
+    }
+}
+
 #[cfg(any(test, feature = "test-support"))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PoisonLayers {
@@ -630,6 +655,64 @@ impl Engine {
             }
             None => Ok(vec![]),
         }
+    }
+
+    pub fn search_explain(
+        &self,
+        scope: &EffectiveScope,
+        q: &[f32],
+        k: usize,
+        metric: Metric,
+        filter: Option<&Filter>,
+        deadline: Option<std::time::Instant>,
+    ) -> Result<SearchReport, AtlasError> {
+        let t = authz(scope, PermSet::SEARCH)?;
+        validate_vector(self.dim, q)?;
+        let expired = || deadline.is_some_and(|d| std::time::Instant::now() >= d);
+        let parts = self.read_parts()?;
+        let Some(ix) = parts.map.get(t) else {
+            return Ok(SearchReport::empty(false));
+        };
+        let total = ix.len();
+        if expired() {
+            return Ok(SearchReport {
+                total,
+                ..SearchReport::empty(true)
+            });
+        }
+        let (eligible, hits) = match filter {
+            None => (total, ix.search(q, k, metric)?),
+            Some(f) => {
+                let allowed: std::collections::HashSet<VectorId> =
+                    ix.matching_ids(f).into_iter().collect();
+                if expired() {
+                    return Ok(SearchReport {
+                        total,
+                        eligible: allowed.len(),
+                        ..SearchReport::empty(true)
+                    });
+                }
+                let n = allowed.len();
+                (
+                    n,
+                    ix.search_filtered(q, k, metric, &|id| allowed.contains(&id))?,
+                )
+            }
+        };
+        let selectivity = if total == 0 {
+            0.0
+        } else {
+            eligible as f64 / total as f64
+        };
+        Ok(SearchReport {
+            underfilled: hits.len() < k,
+            hits,
+            total,
+            eligible,
+            selectivity,
+            filtered: filter.is_some(),
+            timed_out: false,
+        })
     }
 
     pub fn fetch(&self, scope: &EffectiveScope, id: VectorId) -> Result<Item, AtlasError> {

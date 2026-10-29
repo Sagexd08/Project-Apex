@@ -8,7 +8,6 @@ use std::time::Instant;
 const K: usize = 10;
 const FILTER_EF: usize = 512;
 const WARM: usize = 200;
-const EXACT_PERMILLE: u64 = 40;
 
 fn mix(mut z: u64) -> u64 {
     z = z.wrapping_add(0x9E3779B97F4A7C15);
@@ -231,7 +230,7 @@ fn main() {
     for (si, &pm) in gt.sels.iter().enumerate() {
         let pm64 = pm as u64;
         let allowed = (0..n as u64).filter(|&i| bucket(i) < pm64).count();
-        let route = if (allowed as u64) * 1000 <= (n as u64) * EXACT_PERMILLE {
+        let route = if atlas_usearch::use_exact_scan(n, allowed, FILTER_EF) {
             "exact pre-filter scan over allowed ids"
         } else {
             "native filtered HNSW walk"
