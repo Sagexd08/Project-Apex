@@ -354,6 +354,12 @@ impl Wal {
         let dir = path.parent().unwrap_or_else(|| Path::new("."));
         handle_recovery_marker(path, dir, cfg.recover_mode)?;
         let (mut file, mut scanned) = recover_file(path, dir, cfg)?;
+        // A leftover cut temp is dead: wal.log is intact until the cut's rename.
+        match std::fs::remove_file(path.with_extension("log.truncating")) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => return Err(e.into()),
+        }
         if let Some(seg) = segment_seq {
             if scanned.base_seq > seg {
                 return Err(AtlasError::WalCorrupt(format!(

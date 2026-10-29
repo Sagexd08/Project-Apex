@@ -265,9 +265,58 @@ fn checkpoints_taken_under_concurrent_writes_recover_to_the_exact_final_state() 
     let again = e
         .insert_op(&s0, "op-0-0", VectorId(0), &v(0), json!({"w": 0}))
         .unwrap();
+    let again2 = e
+        .insert_op(&s0, "op-0-0", VectorId(0), &v(0), json!({"w": 0}))
+        .unwrap();
     assert!(again >= 1);
+    assert_eq!(
+        again, again2,
+        "a retried op id must resolve to one sequence"
+    );
     assert_eq!(snapshot_of(&e, "t0"), t0);
     assert_eq!(segment_files(&d).len(), 1);
+}
+
+#[test]
+fn simultaneous_checkpoints_all_succeed_and_leave_one_valid_segment() {
+    let d = dir("simul");
+    let e = std::sync::Arc::new(Engine::open(&d, Config::new(2)).unwrap());
+    let a = full("a");
+    for i in 0..50u64 {
+        e.insert(&a, VectorId(i), &v(i), json!({"i": i})).unwrap();
+    }
+    let barrier = std::sync::Arc::new(std::sync::Barrier::new(8));
+    let hs: Vec<_> = (0..8)
+        .map(|_| {
+            let (e, b) = (e.clone(), barrier.clone());
+            std::thread::spawn(move || {
+                b.wait();
+                e.checkpoint().unwrap()
+            })
+        })
+        .collect();
+    let seqs: Vec<u64> = hs.into_iter().map(|h| h.join().unwrap()).collect();
+    assert!(seqs.iter().all(|s| *s == seqs[0] && *s > 0));
+    assert_eq!(segment_files(&d).len(), 1);
+    let want = snapshot_of(&e, "a");
+    drop(e);
+    let e = Engine::open(&d, Config::new(2)).unwrap();
+    assert_eq!(snapshot_of(&e, "a"), want);
+}
+
+#[test]
+fn leftover_wal_cut_temp_is_removed_at_open() {
+    let d = dir("cuttmp");
+    let a = full("a");
+    {
+        let e = Engine::open(&d, Config::new(2)).unwrap();
+        e.insert(&a, VectorId(1), &v(1), json!({})).unwrap();
+        e.checkpoint().unwrap();
+    }
+    std::fs::write(d.join("wal.log.truncating"), b"torn").unwrap();
+    let e = Engine::open(&d, Config::new(2)).unwrap();
+    assert_eq!(e.count(&a).unwrap(), 1);
+    assert!(!d.join("wal.log.truncating").exists());
 }
 
 #[test]

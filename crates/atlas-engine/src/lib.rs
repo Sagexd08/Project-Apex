@@ -319,6 +319,7 @@ pub struct Engine {
     #[cfg(any(test, feature = "test-support"))]
     before_gate: Mutex<Option<Arc<dyn Fn() + Send + Sync>>>,
     op_gate: Mutex<()>,
+    checkpoint_gate: Mutex<()>,
 }
 
 fn resolve_dim(dir: &Path, requested: Option<usize>) -> Result<usize, AtlasError> {
@@ -464,6 +465,7 @@ impl Engine {
             #[cfg(any(test, feature = "test-support"))]
             before_gate: Mutex::new(None),
             op_gate: Mutex::new(()),
+            checkpoint_gate: Mutex::new(()),
         })
     }
 
@@ -751,6 +753,8 @@ impl Engine {
 
     pub fn checkpoint(&self) -> Result<u64, AtlasError> {
         self.check_poison()?;
+        // Serialize checkpoints: they share the `.tmp` name and prune older segments.
+        let _gate = self.checkpoint_gate.lock().map_err(|_| generic_poison())?;
         let (seq, mut payloads) = {
             let parts = self.read_parts()?;
             (
@@ -761,12 +765,20 @@ impl Engine {
         if seq == 0 {
             return Ok(0);
         }
+        // A segment at or past `seq` already exists: never recreate a stale one.
+        if segment::list_segments(&self.dir)?
+            .last()
+            .is_some_and(|(newest, _)| *newest >= seq)
+        {
+            return Ok(seq);
+        }
         {
             let ops = self.ops.lock().map_err(|_| generic_poison())?;
             payloads.extend(checkpoint::ops(&ops, seq)?);
         }
         segment::write_segment(&self.dir, seq, &payloads)?;
-        segment::remove_older_than(&self.dir, seq)?;
+        // The new segment is already durable; failing to prune old ones is not a failure.
+        let _ = segment::remove_older_than(&self.dir, seq);
         Ok(seq)
     }
 
