@@ -36,7 +36,7 @@ export function menu(cur) {
 export const trigger = (cur) => `<div class="gx-dd"><a href="manifesto.html"${ALL.some((p) => p.slug === cur) ? ' aria-current="page"' : ''}>Manifesto</a><button class="gx-arrow" type="button" aria-label="Show Manifesto pages" aria-haspopup="true" aria-expanded="false" aria-controls="gx-menu">${CHEV}</button>${menu(cur)}</div>`;
 
 export function header(cur) {
-  return `<header class="gx" id="gx"><a class="gx-logo" href="index.html" aria-label="Bat DB, home"><img src="assets/mark.svg" alt="" width="30" height="26">Bat DB</a>
+  return `<header class="gx" id="gx"><a class="gx-logo" href="index.html" aria-label="Bat DB, home"><img src="assets/mark.svg" alt="" width="34" height="15">Bat DB</a>
 <button class="gx-burger" type="button" aria-expanded="false" aria-controls="gx-links">Menu</button>
 <ul class="gx-links" id="gx-links">
 <li><a href="index.html">Home</a></li><li><a href="index.html#product">Product</a></li><li><a href="playground.html"${cur === 'playground' ? ' aria-current="page"' : ''}>Playground</a></li><li><a href="index.html#benchmarks">Benchmarks</a></li>

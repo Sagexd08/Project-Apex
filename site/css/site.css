@@ -26,7 +26,7 @@ body{background:var(--navy)}
 /* ---------- shared header ---------- */
 .gx{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:95;width:min(96vw,1080px);display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:18px;background:rgba(10,40,100,.38);border:1px solid var(--glass-bd);backdrop-filter:blur(24px) saturate(1.5);-webkit-backdrop-filter:blur(24px) saturate(1.5);box-shadow:0 14px 44px rgba(2,12,40,.35),inset 0 1px 0 rgba(255,255,255,.3)}
 .gx-logo{display:flex;align-items:center;gap:10px;padding:2px 10px 2px 2px;font-weight:500;color:#fff;letter-spacing:-.01em}
-.gx-logo img{width:30px;height:auto;display:block;color:#fff}
+.gx-logo img{width:34px;height:auto;display:block;color:#fff}
 .gx-links{display:flex;align-items:center;gap:2px;margin:0 auto;list-style:none}
 .gx-links>li{position:relative}
 .gx-links a,.gx-arrow{font-family:var(--mono);text-transform:uppercase;font-size:12.5px;letter-spacing:.03em;color:rgba(255,255,255,.82);padding:11px 14px;border-radius:12px;display:inline-flex;align-items:center;gap:7px;transition:background .25s,color .25s}
