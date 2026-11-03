@@ -133,6 +133,27 @@ const manifesto = () => page('manifesto', 'Manifesto', 'A statement of direction
 </div></section>
 </main>`, []);
 
+
+const playgroundPage = () => page('playground', 'Playground', 'Try Bat DB agent memory in your browser: remember, recall, change a decision, time-travel and check tenant isolation.', ['playground'], 'pg-playground', `
+<main id="main" class="pgx">
+<h1>Give an agent a memory. Watch it use it.</h1>
+<p class="lead">Five steps: write decisions, ask a question, change a decision, ask what you believed before, and prove another tenant sees nothing. Click any call to see its request and response.</p>
+<p class="pgx-note"><b>This page is a JavaScript simulation</b> of the memory API with a toy 64-dimension embedder, so you can try the idea with nothing installed. It is not the Rust engine and its latencies mean nothing. The real engine serves a live playground at <b>/playground</b> when you run <b>atlas-cli</b>.</p>
+<div class="pgx-cap-wrap"><p id="pgx-cap" role="status" aria-live="polite">Press <b>Play 40s demo</b> for a narrated walk-through, or drive it yourself.</p><div class="pgx-progress"><i id="pgx-prog"></i></div><span id="pgx-time"></span></div>
+<p id="pgx-stats" class="pgx-dim"></p>
+<div class="pgx-grid">
+<section class="pgx-col" aria-label="Guided steps"><h2 class="pgx-h">Story</h2><ol id="pgx-steps"></ol>
+<div class="pgx-run"><button class="pgx-btn" id="pgx-play" type="button">Play 40s demo</button></div><div class="pgx-run"><button class="pgx-btn ghost" id="pgx-all" type="button">Run steps</button><button class="pgx-btn ghost" id="pgx-reset" type="button">Reset</button></div>
+<div class="pgx-ten" role="radiogroup" aria-label="Tenant"><label><input type="radio" name="pgx-tenant" value="team-a" checked>team-a</label><label><input type="radio" name="pgx-tenant" value="team-b">team-b</label></div></section>
+<section class="pgx-col" aria-label="Transcript"><h2 class="pgx-h">Transcript</h2><div id="pgx-feed" aria-live="polite"><div class="pgx-empty" id="pgx-empty">Press a step on the left, or run the whole story.</div></div>
+<form id="pgx-ask"><input id="pgx-q" type="text" value="why did we choose group commit?" aria-label="Ask a question"><button class="pgx-btn" type="submit">Recall</button></form>
+<div class="pgx-chips"><button type="button" class="pgx-chip">why did we choose group commit?</button><button type="button" class="pgx-chip">what happens on kill -9?</button><button type="button" class="pgx-chip">how fast is restart?</button><button type="button" class="pgx-chip">who can read this?</button></div>
+<h2 class="pgx-h" style="margin-top:18px">Add a memory</h2><div class="pgx-form"><input type="hidden" id="pgx-sup"><input id="pgx-title" type="text" placeholder="Title, e.g. Use mmap checkpoints" aria-label="Memory title"><textarea id="pgx-body" rows="2" placeholder="Detail the agent should recall" aria-label="Memory body"></textarea><button class="pgx-btn" id="pgx-save" type="button">Save memory</button></div></section>
+<section class="pgx-col" aria-label="Memory graph"><h2 class="pgx-h">Memory graph</h2><svg id="pgx-graph" viewBox="0 0 380 300" role="img" aria-label="Memory graph"></svg>
+<div class="pgx-slider"><input id="pgx-ver" type="range" min="0" max="0" value="0" disabled aria-label="Log version"><span id="pgx-verl">now</span></div>
+<h2 class="pgx-h">Inspector</h2><div id="pgx-insp"><p class="pgx-dim">Select a call, or click a node in the graph.</p></div><div class="pgx-run" style="margin-top:8px"><button class="pgx-btn ghost" id="pgx-copy" type="button">Copy call as Python</button></div></section>
+</div></main>`, ['playground']);
+
 /* ---------- abstract ---------- */
 function abstractPage() {
   const raw = doc('ABSTRACT.md').split(/\r?\n/).filter((l) => l.trim() && !l.startsWith('#'));
@@ -209,4 +230,5 @@ write('paper', paperPage());
 write('film', filmPage());
 write('lab', labPage());
 write('evidence', evidencePage());
+write('playground', playgroundPage());
 console.log('manifesto abstract paper film lab evidence prism(redirect)');

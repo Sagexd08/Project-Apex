@@ -1,0 +1,64 @@
+.pgx{max-width:1240px;margin:0 auto;padding:120px 20px 80px}
+.pgx h1{font-size:clamp(36px,5.5vw,72px);letter-spacing:-.04em;line-height:1;font-weight:400;max-width:16ch}
+.pgx .lead{color:#a3a3a3;max-width:62ch;margin-top:18px;font-size:17px;line-height:1.5}
+.pgx-note{margin-top:18px;padding:12px 14px;border:1px solid #262626;border-radius:10px;background:#141414;color:#a3a3a3;font-size:13.5px;line-height:1.5;max-width:78ch}
+.pgx-note b{color:#fff;font-weight:500}
+.pgx-grid{display:grid;grid-template-columns:260px minmax(0,1fr) 340px;gap:16px;margin-top:34px;align-items:start}
+.pgx-col{background:#141414;border:1px solid #262626;border-radius:14px;padding:16px}
+.pgx-h{font-family:var(--mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:#a3a3a3;margin-bottom:12px}
+#pgx-steps{list-style:none;display:grid;gap:8px}
+.pgx-step{display:grid;grid-template-columns:26px 1fr;column-gap:10px;text-align:left;width:100%;padding:10px;border:1px solid #262626;border-radius:10px;background:#0a0a0a;transition:border-color .2s,background .2s}
+.pgx-step:hover{border-color:#525252;background:#1c1c1c}
+.pgx-step b{grid-row:span 2;font-family:var(--mono);font-weight:400;font-size:12px;color:#0a0a0a;background:#fff;border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+.pgx-step span{font-size:14.5px;color:#fff}.pgx-step small{font-size:12.5px;color:#a3a3a3;line-height:1.35}
+.pgx-run{display:flex;gap:8px;margin-top:12px}
+.pgx-btn{flex:1;padding:11px 14px;border-radius:999px;font-family:var(--mono);font-size:12px;text-transform:uppercase;background:#fff;color:#0a0a0a;text-align:center}
+.pgx-btn.ghost{background:#141414;color:#fff;border:1px solid #262626}
+.pgx-btn:hover{opacity:.88}
+.pgx-ten{display:flex;gap:6px;margin-top:14px}
+.pgx-ten label{flex:1;text-align:center;padding:8px;border:1px solid #262626;border-radius:8px;font-size:13px;cursor:pointer;color:#a3a3a3}
+.pgx-ten input{position:absolute;opacity:0}
+.pgx-ten label:has(input:checked){background:#fff;color:#0a0a0a;border-color:#fff}
+.pgx-ten label:has(input:focus-visible){outline:2px solid #fff;outline-offset:2px}
+#pgx-feed{display:grid;gap:10px;min-height:360px;max-height:640px;overflow:auto;padding-right:4px}
+.pgx-empty{color:#737373;font-size:14px;padding:40px 10px;text-align:center}
+.pgx-say{padding:10px 12px;border-left:2px solid #404040;color:#d4d4d4;font-size:14px}
+.pgx-say p{margin-top:2px}
+.pgx-who{font-family:var(--mono);font-size:11px;text-transform:uppercase;color:#a3a3a3;display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px}
+.pgx-pill{border:1px solid #262626;border-radius:999px;padding:2px 8px;color:#fff;font-size:10.5px}
+.pgx-call{padding:12px;border:1px solid #262626;border-radius:10px;background:#0a0a0a;cursor:pointer}
+.pgx-call:hover{border-color:#525252}.pgx-call.sel{border-color:#fff}
+.pgx-mono{font-family:var(--mono);font-size:12px;color:#d4d4d4;word-break:break-word}
+.pgx-hits{list-style:none;display:grid;gap:8px;margin-top:10px}
+.pgx-hit-top{display:flex;justify-content:space-between;gap:10px;font-size:14px;color:#fff}
+.pgx-hit-top .sup{text-decoration:line-through;color:#737373}
+.pgx-dim{color:#737373;font-size:12px;font-family:var(--mono)}
+.pgx-bar{height:3px;background:#262626;border-radius:3px;margin:6px 0 3px}.pgx-bar i{display:block;height:100%;background:#fff;border-radius:3px}
+.pgx-score{font-family:var(--mono);font-size:11px;color:#a3a3a3}
+.pgx-none{color:#a3a3a3;font-size:13px}
+.pgx-trace{margin-top:10px;padding-top:8px;border-top:1px dashed #262626;font-family:var(--mono);font-size:11px;color:#737373;line-height:1.5}
+#pgx-ask{display:flex;gap:8px;margin-top:12px}
+#pgx-q{flex:1;min-width:0;padding:11px 14px;border-radius:999px;border:1px solid #262626;background:#0a0a0a;color:#fff;font:inherit;font-size:14px}
+#pgx-q:focus-visible{outline:2px solid #fff;outline-offset:2px}
+#pgx-ask .pgx-btn{flex:none}
+#pgx-graph{width:100%;height:auto;background:#0a0a0a;border:1px solid #262626;border-radius:10px;margin-bottom:10px}
+.pgx-edge{stroke:#525252;stroke-width:1.2}.pgx-edge.sup{stroke-dasharray:4 3;stroke:#a3a3a3}
+.pgx-edgel,.pgx-svgdim{fill:#737373;font:9px var(--mono)}
+.pgx-node{fill:#262626;stroke:#a3a3a3;stroke-width:1.5}.pgx-node.hl{fill:#fff;stroke:#fff}.pgx-node.sup{fill:#0a0a0a;stroke-dasharray:3 2;stroke:#737373}
+.pgx-nodel{fill:#d4d4d4;font:10px var(--mono)}
+.pgx-slider{display:grid;gap:6px;margin:6px 0 14px}.pgx-slider input{width:100%;accent-color:#fff}.pgx-slider span{font-family:var(--mono);font-size:11.5px;color:#a3a3a3}
+#pgx-insp pre{font:11.5px/1.5 var(--mono);color:#d4d4d4;background:#0a0a0a;border:1px solid #262626;border-radius:8px;padding:10px;overflow:auto;max-height:200px;margin-bottom:10px;white-space:pre-wrap;word-break:break-word}
+@media (max-width:1020px){.pgx-grid{grid-template-columns:1fr}#pgx-feed{max-height:420px}}
+
+.pgx-cap-wrap{margin-top:26px;display:grid;grid-template-columns:1fr auto;gap:8px 14px;align-items:center;padding:16px 18px;border:1px solid #262626;border-radius:14px;background:#141414}
+#pgx-cap{font-size:clamp(15px,1.6vw,19px);color:#fff;line-height:1.4;min-height:2.8em;grid-column:1/-1}
+.pgx-progress{height:3px;background:#262626;border-radius:3px;overflow:hidden}.pgx-progress i{display:block;height:100%;width:0;background:#fff;transition:width .15s linear}
+#pgx-time{font-family:var(--mono);font-size:12px;color:#a3a3a3;min-width:44px;text-align:right}
+#pgx-stats{margin:12px 2px 0}
+.pgx-step.now{border-color:#fff;background:#1c1c1c;box-shadow:0 0 0 1px #fff}
+.pgx-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.pgx-chip{padding:6px 11px;border:1px solid #262626;border-radius:999px;font-size:12.5px;color:#a3a3a3;background:#0a0a0a}.pgx-chip:hover{color:#fff;border-color:#525252}
+.pgx-form{display:grid;gap:8px}.pgx-form input,.pgx-form textarea{padding:10px 12px;border-radius:10px;border:1px solid #262626;background:#0a0a0a;color:#fff;font:inherit;font-size:14px;resize:vertical}
+.pgx-form input:focus-visible,.pgx-form textarea:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.pgx-node.pick{stroke:#fff;stroke-width:3}
+@media (prefers-reduced-motion:reduce){.pgx-progress i{transition:none}}

@@ -43,7 +43,7 @@ void main(){
   gl_FragColor=vec4(col,1.0);
 }`;
 
-function bakeTexture() {
+async function bakeTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = SIZE;
   const x = c.getContext('2d');
@@ -52,17 +52,22 @@ function bakeTexture() {
   x.textBaseline = 'middle';
   const max = (SIZE / 2) * 1.04;
   x.font = `500 ${FS}px "Geist Mono", monospace`;
+  const FRAME_BUDGET_MS = 6;
+  let sliceStart = performance.now();
   for (let r = R0_PX; r <= max; r += PITCH_PX) {
     const n = Math.max(1, Math.round((Math.PI * 2 * r) / (FS * 0.7 * WORD.length))) * WORD.length;
     for (let i = 0; i < n; i++) {
       const th = (i / n) * Math.PI * 2;
-      x.save();
-      x.translate(SIZE / 2 + Math.cos(th) * r, SIZE / 2 + Math.sin(th) * r);
-      x.rotate(th + Math.PI / 2);
+      const ca = Math.cos(th + Math.PI / 2), sa = Math.sin(th + Math.PI / 2);
+      x.setTransform(ca, sa, -sa, ca, SIZE / 2 + Math.cos(th) * r, SIZE / 2 + Math.sin(th) * r);
       x.fillText(WORD[i % WORD.length], 0, 0);
-      x.restore();
+      if (i % 64 === 63 && performance.now() - sliceStart > FRAME_BUDGET_MS) {
+        await new Promise((resume) => setTimeout(resume, 0));
+        sliceStart = performance.now();
+      }
     }
   }
+  x.setTransform(1, 0, 0, 1, 0, 0);
   const tex = new THREE.CanvasTexture(c);
   tex.generateMipmaps = true;
   tex.minFilter = THREE.LinearMipmapLinearFilter;
@@ -86,7 +91,7 @@ export async function createSpiral(host, { ticker, reduce }) {
     tMap: { value: null }, uAspect: { value: 1 }, uZoom: { value: 1 }, uRot: { value: 0 }, uTime: { value: 0 },
     uTwist: { value: 0.55 }, uShow: { value: 0 }, uPx: { value: 0.0014 },
     uCenter: { value: new THREE.Vector2(0.75, 0.5) }, uPointer: { value: new THREE.Vector2() },
-    uBg: { value: new THREE.Color('#3b0f1c') }, uInk: { value: new THREE.Color('#efe6d3') },
+    uBg: { value: new THREE.Color('#071a3d') }, uInk: { value: new THREE.Color('#eaf2ff') },
   };
   const mat = new THREE.ShaderMaterial({ uniforms: u, vertexShader: VERT, fragmentShader: FRAG, depthTest: false, depthWrite: false });
   scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat));
@@ -127,7 +132,7 @@ export async function createSpiral(host, { ticker, reduce }) {
   size();
   await document.fonts.load('500 20px "Geist Mono"');
   await new Promise((r) => (window.requestIdleCallback ? requestIdleCallback(r, { timeout: 400 }) : setTimeout(r, 60)));
-  u.tMap.value = bakeTexture();
+  u.tMap.value = await bakeTexture();
   size();
 
   return {

@@ -1,0 +1,51 @@
+/* Opt-in slab layer for index.html. Base part (facts list + card) always applies; html.slab-on (set by js/slab.js,
+   never on reduced-motion, width < 900, no preserve-3d or ?mode=flat) lays the sections below the hero on a tilted slab. */
+.slab-facts{max-width:1100px;margin:0 auto}
+.slab-facts h2{font-size:var(--t-h2);line-height:1;margin-bottom:16px}
+.slab-lede{max-width:60ch;margin-bottom:28px;font-size:var(--t-lead);color:var(--ghost)}
+.slab-facts ul{list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.slab-facts button{display:block;width:100%;height:100%;text-align:left;padding:14px 16px;border-radius:10px;font-size:14px;line-height:1.45;color:var(--off);
+ background:color-mix(in srgb,var(--white) 6%,var(--black));border:1px solid color-mix(in srgb,var(--mid) 24%,transparent);transition:background .25s,border-color .25s}
+.slab-facts button:hover{background:color-mix(in srgb,var(--white) 13%,var(--black));border-color:var(--mid)}
+.slab-facts button[aria-expanded=true]{border-color:var(--accent)}
+.slab-tag{display:inline-block;margin-bottom:8px;padding:4px 10px;border-radius:4px;font:600 11px/1.3 var(--mono);background:var(--accent);color:var(--deep)}
+.slab-tag.wip{background:transparent;color:var(--off);border:1px solid currentColor}
+.slab-t{display:block}
+.slab-card{position:fixed;z-index:90;width:min(320px,calc(100vw - 24px));padding:16px;border-radius:14px;color:var(--off);font-size:14px;line-height:1.45;
+ background:color-mix(in srgb,var(--deep) 80%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+ border:1px solid color-mix(in srgb,var(--white) 28%,transparent);box-shadow:0 20px 50px rgba(0,0,0,.4)}
+.slab-card[hidden]{display:none}
+.slab-card .slab-tag{margin-bottom:10px}
+.slab-card p{margin-bottom:14px}
+.slab-card .slab-act{display:flex;gap:8px;align-items:center;font:12px var(--mono)}
+.slab-card button{padding:7px 14px;border-radius:999px;border:1px solid var(--mid);font:600 12px var(--mono);color:var(--off)}
+.slab-card button:hover,.slab-card button:focus-visible{background:var(--accent);color:var(--deep);border-color:var(--accent)}
+.slab-card [data-collect]{display:none}
+html.slab-cubes .slab-card [data-collect]{display:inline-block}
+.slab-cv{position:fixed;inset:0;z-index:-1;width:100%;height:100%;pointer-events:none;display:none}
+html.slab-on .slab-cv{display:block}
+
+/* ---- slab mode ---- */
+html.slab-on{background:#000}
+html.slab-on body{background:transparent}
+html.slab-on .ascii-div{display:none}
+html.slab-on{--wr:clamp(640px,64vw,1280px)}
+html.slab-on .slab-world{position:relative;perspective:700px;perspective-origin:50% 0}
+html.slab-on .slab-ch{width:var(--wr);margin-inline:auto;transform-origin:50% 100%;transform-style:preserve-3d;border-inline:1px solid color-mix(in srgb,var(--mid) 26%,transparent)}
+html.slab-on .slab-ch::before{content:"";position:absolute;inset:0 0 auto 0;height:90px;z-index:2;pointer-events:none;background:linear-gradient(color-mix(in srgb,var(--white) 15%,transparent),transparent)}
+html.slab-on .slab-ch.cream::before{background:linear-gradient(color-mix(in srgb,var(--deep) 14%,transparent),transparent)}
+html.slab-on .slab-ch::after{content:"";position:absolute;inset:0 0 auto 0;height:2px;z-index:2;pointer-events:none;background:color-mix(in srgb,var(--white) 50%,transparent)}
+html.slab-on .s.dark h2{text-shadow:1px 1px 0 var(--line),2px 2px 0 var(--line),3px 3px 0 var(--line),4px 4px 0 var(--line),0 12px 26px rgba(0,0,0,.4)}
+
+/* Classic / 3D slab switch */
+.slab-sw{position:fixed;z-index:95;left:16px;bottom:16px;display:flex;padding:3px;border-radius:999px;font:600 12px var(--mono);color:var(--off);background:rgba(0,0,0,.78);border:1px solid rgba(255,255,255,.3)}
+.slab-sw span{padding:7px 14px;border-radius:999px;transition:background .25s,color .25s}
+.slab-sw[aria-checked=false] .a,.slab-sw[aria-checked=true] .b{background:var(--white);color:#000}
+.slab-sw:hover:not([aria-disabled=true]) span:not(:is([aria-checked=false] .a,[aria-checked=true] .b)){color:var(--white)}
+.slab-sw:focus-visible{outline:2px solid var(--white);outline-offset:3px}
+.slab-sw[aria-disabled=true]{opacity:.5;cursor:not-allowed}
+
+/* progress readout, readable over any background */
+.slab-hud{position:fixed;z-index:94;right:16px;top:84px;font:600 12px var(--mono);color:#fff;mix-blend-mode:difference;pointer-events:none;display:none}
+html.slab-on .slab-hud{display:block}
+html.slab-on .s.cream h2{text-shadow:1px 1px 0 var(--mid),2px 2px 0 var(--mid),3px 3px 0 var(--mid),4px 4px 0 var(--mid),0 12px 26px rgba(0,0,0,.2)}

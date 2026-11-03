@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+<title id="title">Bat DB favicon 256</title><desc id="desc">Bat DB brand identity asset</desc>
+<rect width="256" height="256" rx="40.96" fill="#202020"/><g transform="translate(10.24 11.52) scale(1.1776)">
+    <g fill="#F4F1E9">
+      <path d="M18 38 L100 4 L182 38 L100 76 Z"/>
+      <path d="M18 78 L100 116 L182 78 L182 94 L100 132 L18 94 Z"/>
+      <path d="M18 118 L100 156 L182 118 L182 134 L100 172 L18 134 Z"/>
+    </g>
+    <path d="M122 25 L145 15 L159 22 L136 33 Z" fill="#E8792C"/>
+    </g>
+</svg>

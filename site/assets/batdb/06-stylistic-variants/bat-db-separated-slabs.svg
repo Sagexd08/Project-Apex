@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 200" role="img" aria-labelledby="title desc">
+<title id="title">separated-slabs</title><desc id="desc">Bat DB brand identity asset</desc>
+<rect width="100%" height="100%" fill="#F4F1E9"/><g transform="translate(8 4)"><g fill="#202020">
+<path d="M18 35 L100 1 L182 35 L100 73 Z"/>
+<path d="M18 83 L100 121 L182 83 L182 99 L100 137 L18 99 Z"/>
+<path d="M18 131 L100 169 L182 131 L182 147 L100 185 L18 147 Z"/>
+</g><path d="M122 22 L145 12 L159 19 L136 30 Z" fill="#D96A1D"/></g>
+    <text x="225" y="94" font-family="Inter, Arial, sans-serif" font-size="52" font-weight="750" letter-spacing="-2.5" fill="#202020">Bat DB</text>
+    <text x="228" y="126" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="600" letter-spacing="3.4" fill="#202020">OPEN-SOURCE MEMORY DATABASE</text>
+</svg>

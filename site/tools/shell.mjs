@@ -36,10 +36,10 @@ export function menu(cur) {
 export const trigger = (cur) => `<div class="gx-dd"><a href="manifesto.html"${ALL.some((p) => p.slug === cur) ? ' aria-current="page"' : ''}>Manifesto</a><button class="gx-arrow" type="button" aria-label="Show Manifesto pages" aria-haspopup="true" aria-expanded="false" aria-controls="gx-menu">${CHEV}</button>${menu(cur)}</div>`;
 
 export function header(cur) {
-  return `<header class="gx" id="gx"><a class="gx-logo" href="index.html" aria-label="Bat DB, home"><i></i>Bat DB</a>
+  return `<header class="gx" id="gx"><a class="gx-logo" href="index.html" aria-label="Bat DB, home"><img src="assets/mark.svg" alt="" width="30" height="26">Bat DB</a>
 <button class="gx-burger" type="button" aria-expanded="false" aria-controls="gx-links">Menu</button>
 <ul class="gx-links" id="gx-links">
-<li><a href="index.html">Home</a></li><li><a href="index.html#product">Product</a></li><li><a href="index.html#benchmarks">Benchmarks</a></li>
+<li><a href="index.html">Home</a></li><li><a href="index.html#product">Product</a></li><li><a href="playground.html"${cur === 'playground' ? ' aria-current="page"' : ''}>Playground</a></li><li><a href="index.html#benchmarks">Benchmarks</a></li>
 <li>${trigger(cur)}</li><li><a href="${REPO}" rel="noopener">Source &#8599;</a></li></ul>
 <div class="gx-cta"><a href="index.html#status">What&rsquo;s done</a></div></header><div class="gx-prog" id="gx-prog" aria-hidden="true"></div>`;
 }
@@ -47,7 +47,7 @@ export function header(cur) {
 export function footer() {
   const col = (g) => `<div><h4>${esc(g.name)}</h4>${g.pages.map((p) => `<a href="${p.slug}.html">${esc(p.title)}</a>`).join('')}</div>`;
   return `<footer class="footx"><div class="cols">
-<div><h4>Bat DB</h4><p>An open-source vector database for AI agent memory, written in Rust. Research Note v1.0, preprint, not peer reviewed. Early development; not ready for production.</p><a href="index.html">Home</a><a href="${REPO}">Repository</a></div>
+<div><h4>Bat DB</h4><p>An open-source vector database for AI agent memory, written in Rust. Research Note v1.0, preprint, not peer reviewed. Early development; not ready for production.</p><a href="index.html">Home</a><a href="playground.html">Playground</a><a href="${REPO}">Repository</a></div>
 ${GROUPS.map(col).join('')}</div>
 <p class="fine">Synthetic data, one machine. No comparison with other systems. Nothing on these pages claims to be first, fastest or best.</p></footer>`;
 }
@@ -60,9 +60,16 @@ export function head({ title, desc, extraCss = [] }) {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)} | Bat DB</title>
 <meta name="description" content="${esc(desc)}">
-<meta name="theme-color" content="#071a3d">
-<link rel="icon" href="assets/favicon.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<meta name="theme-color" content="#0a0a0a">
+<meta property="og:site_name" content="Bat DB">
+<meta property="og:type" content="website">
+<meta property="og:title" content="${esc(title)} | Bat DB: The Vector Database for AI Agents">
+<meta property="og:description" content="${esc(desc)}">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="${esc(title)} | Bat DB">
+<meta name="twitter:description" content="${esc(desc)}">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon.svg" sizes="any">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>

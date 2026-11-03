@@ -28,7 +28,7 @@ body.pp{background:var(--black);color:var(--off)}
 .p-hero .lead,.p-hero .fine{color:var(--grey)}
 .p-hero .btn.line{color:var(--black);box-shadow:inset 0 0 0 1px var(--black)}
 .pp .tag{position:static;right:auto;bottom:auto}
-.p-hero .tag{background:#c9d8f2}.p-hero .tag.acc{background:var(--accent);color:var(--black);box-shadow:none}
+.p-hero .tag{background:#e5e5e5}.p-hero .tag.acc{background:var(--accent);color:var(--black);box-shadow:none}
 .p-hero .stack{padding:0 2%}
 @media (max-width:900px){
   .p-hero.dark{background:var(--off)}
@@ -56,8 +56,8 @@ body.pp{background:var(--black);color:var(--off)}
 .vision{margin-top:56px;display:grid;grid-template-columns:1fr 1fr;gap:clamp(20px,4vw,60px)}
 .vision>div{border-top:1px solid var(--line);padding-top:20px}
 
-.lab{border:1px solid var(--black);border-radius:14px;padding:clamp(16px,3vw,32px);background:#f4f8ff;margin-top:34px}
-.dark .lab{background:#12306a;border-color:var(--line)}
+.lab{border:1px solid var(--black);border-radius:14px;padding:clamp(16px,3vw,32px);background:#e5e5e5;margin-top:34px}
+.dark .lab{background:#1c1c1c;border-color:var(--line)}
 .lab-grid{display:grid;grid-template-columns:7fr 5fr;gap:clamp(18px,3vw,44px);align-items:start}
 .lab canvas{width:100%;height:auto;display:block;border-radius:8px;background:var(--black)}
 .ctrl{display:flex;flex-direction:column;gap:16px}
@@ -166,7 +166,7 @@ svg.geo text{font-family:var(--mono);font-size:11px;fill:currentColor}
 
 .eqband .lbl{max-width:none;text-align:center}
 
-.film{border:1px solid var(--line);border-radius:14px;padding:clamp(10px,2vw,22px);background:#06163a}
+.film{border:1px solid var(--line);border-radius:14px;padding:clamp(10px,2vw,22px);background:#0a0a0a}
 .film canvas{width:100%;height:auto;aspect-ratio:16/9;display:block;border-radius:8px;background:var(--black)}
 .film-bar{display:grid;grid-template-columns:auto 1fr auto auto;gap:14px;align-items:center;margin-top:16px}
 .film-bar .btn{padding:14px 22px;min-width:96px;justify-content:center}
@@ -230,5 +230,5 @@ html.fx .bars:not(.rv-in) .bar i b{transform:scaleX(0)}
 .algo figcaption .mono{color:var(--accent)}
 .algo pre{margin:0;overflow-x:auto;font-weight:600;font-size:15px;line-height:1.7;color:var(--off);white-space:pre}
 .algo pre i{font-style:normal;color:var(--accent)}
-.algo p{margin:14px 0 0;font-size:13.5px;line-height:1.55;color:#bfd0ee;white-space:normal}
+.algo p{margin:14px 0 0;font-size:13.5px;line-height:1.55;color:#e5e5e5;white-space:normal}
 @media(max-width:860px){.algo-pair{grid-template-columns:1fr}.algo pre{font-size:13px}}

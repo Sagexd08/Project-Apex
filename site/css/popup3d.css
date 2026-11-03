@@ -1,0 +1,6 @@
+.p3{transform-origin:50% 100%}
+.p3-keep{transform-style:preserve-3d}
+.p3-card{cursor:pointer;transition:outline-color .3s}
+.p3-card:focus-visible{outline:2px solid var(--accent,#fff);outline-offset:4px}
+.p3-card.p3-hot{filter:drop-shadow(0 28px 26px rgba(0,0,0,.45))}
+.p3-card.p3-open{outline:1px solid var(--accent,#fff);outline-offset:3px}

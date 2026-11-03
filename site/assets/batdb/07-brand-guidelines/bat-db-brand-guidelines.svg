@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1600" role="img" aria-labelledby="title desc">
+<title id="title">Bat DB brand guidelines</title><desc id="desc">Bat DB brand identity asset</desc>
+<rect width="1600" height="1600" fill="#F4F1E9"/><rect x="0" y="0" width="1600" height="390" fill="#F4F1E9" stroke="#D6D0C5" stroke-width="2"/><text x="34" y="44" font-family="Inter, Geist, Arial, sans-serif" font-size="20" font-weight="500" letter-spacing="2" fill="#202020">1. PRIMARY LOCKUP</text><g transform="translate(220 92) scale(1.12)">
+    <g fill="#202020">
+      <path d="M18 38 L100 4 L182 38 L100 76 Z"/>
+      <path d="M18 78 L100 116 L182 78 L182 94 L100 132 L18 94 Z"/>
+      <path d="M18 118 L100 156 L182 118 L182 134 L100 172 L18 134 Z"/>
+    </g>
+    <path d="M122 25 L145 15 L159 22 L136 33 Z" fill="#D96A1D"/>
+    </g><text x="500" y="220" font-family="Inter, Geist, Arial, sans-serif" font-size="96" font-weight="750" letter-spacing="-4" fill="#202020">Bat DB</text><text x="505" y="272" font-family="Inter, Geist, Arial, sans-serif" font-size="23" font-weight="600" letter-spacing="7" fill="#202020">OPEN-SOURCE MEMORY DATABASE</text><rect x="0" y="390" width="1600" height="310" fill="#202020" stroke="#202020" stroke-width="2"/><text x="34" y="435" font-family="Inter, Geist, Arial, sans-serif" font-size="20" font-weight="500" letter-spacing="2" fill="#F4F1E9">2. INVERTED LOCKUP</text><g transform="translate(280 465) scale(1.05)">
+    <g fill="#F4F1E9">
+      <path d="M18 38 L100 4 L182 38 L100 76 Z"/>
+      <path d="M18 78 L100 116 L182 78 L182 94 L100 132 L18 94 Z"/>
+      <path d="M18 118 L100 156 L182 118 L182 134 L100 172 L18 134 Z"/>
+    </g>
+    <path d="M122 25 L145 15 L159 22 L136 33 Z" fill="#E8792C"/>
+    </g><text x="540" y="580" font-family="Inter, Geist, Arial, sans-serif" font-size="88" font-weight="750" letter-spacing="-4" fill="#F4F1E9">Bat DB</text><text x="545" y="625" font-family="Inter, Geist, Arial, sans-serif" font-size="20" font-weight="600" letter-spacing="6" fill="#F4F1E9">OPEN-SOURCE MEMORY DATABASE</text><rect x="0" y="700" width="530" height="400" fill="#202020" stroke="#F4F1E9" stroke-width="2"/><text x="28" y="744" font-family="Inter, Geist, Arial, sans-serif" font-size="18" font-weight="500" letter-spacing="2" fill="#F4F1E9">3. MARK ALONE</text><g transform="translate(150 800) scale(1.18)">
+    <g fill="#F4F1E9">
+      <path d="M18 38 L100 4 L182 38 L100 76 Z"/>
+      <path d="M18 78 L100 116 L182 78 L182 94 L100 132 L18 94 Z"/>
+      <path d="M18 118 L100 156 L182 118 L182 134 L100 172 L18 134 Z"/>
+    </g>
+    <path d="M122 25 L145 15 L159 22 L136 33 Z" fill="#E8792C"/>
+    </g><rect x="530" y="700" width="520" height="400" fill="#F4F1E9" stroke="#D6D0C5" stroke-width="2"/><text x="560" y="744" font-family="Inter, Geist, Arial, sans-serif" font-size="18" font-weight="500" letter-spacing="2" fill="#202020">4. FAVICON VERSIONS</text><g transform="translate(640 800) scale(0.39)"><rect width="200" height="200" rx="28" fill="#202020"/>
+    <g fill="#F4F1E9">
+      <path d="M18 38 L100 4 L182 38 L100 76 Z"/>
+      <path d="M18 78 L100 116 L182 78 L182 94 L100 132 L18 94 Z"/>
+      <path d="M18 118 L100 156 L182 118 L182 134 L100 172 L18 134 Z"/>
+    </g>
+    <path d="M122 25 L145 15 L159 22 L136 33 Z" fill="#E8792C"/>
+    </g><text x="648" y="1015" font-family="Inter, Geist, Arial, sans-serif" font-size="16" font-weight="500" letter-spacing="0" fill="#202020">78px</text><g transform="translate(790 800) scale(0.29)"><rect width="200" height="200" rx="28" fill="#202020"/>
+    <g fill="#F4F1E9">
+      <path d="M18 38 L100 4 L182 38 L100 76 Z"/>
+      <path d="M18 78 L100 116 L182 78 L182 94 L100 132 L18 94 Z"/>
+      <path d="M18 118 L100 156 L182 118 L182 134 L100 172 L18 134 Z"/>
+    </g>
+    <path d="M122 25 L145 15 L159 22 L136 33 Z" fill="#E8792C"/>
+    </g><text x="798" y="1015" font-family="Inter, Geist, Arial, sans-serif" font-size="16" font-weight="500" letter-spacing="0" fill="#202020">58px</text><g transform="translate(920 800) scale(0.19)"><rect width="200" height="200" rx="28" fill="#202020"/>
+    <g fill="#F4F1E9">
+      <path d="M18 38 L100 4 L182 38 L100 76 Z"/>
+      <path d="M18 78 L100 116 L182 78 L182 94 L100 132 L18 94 Z"/>
+      <path d="M18 118 L100 156 L182 118 L182 134 L100 172 L18 134 Z"/>
+    </g>
+    <path d="M122 25 L145 15 L159 22 L136 33 Z" fill="#E8792C"/>
+    </g><text x="928" y="1015" font-family="Inter, Geist, Arial, sans-serif" font-size="16" font-weight="500" letter-spacing="0" fill="#202020">38px</text><rect x="1050" y="700" width="550" height="400" fill="#F4F1E9" stroke="#D6D0C5" stroke-width="2"/><text x="1080" y="744" font-family="Inter, Geist, Arial, sans-serif" font-size="18" font-weight="500" letter-spacing="2" fill="#202020">5. ONE-COLOUR BLACK</text><g transform="translate(1210 790) scale(1.05)">
+    <g fill="#000000">
+      <path d="M18 38 L100 4 L182 38 L100 76 Z"/>
+      <path d="M18 78 L100 116 L182 78 L182 94 L100 132 L18 94 Z"/>
+      <path d="M18 118 L100 156 L182 118 L182 134 L100 172 L18 134 Z"/>
+    </g>
+    
+    </g><text x="1125" y="1030" font-family="Inter, Geist, Arial, sans-serif" font-size="42" font-weight="750" letter-spacing="-1" fill="#000000">Bat DB</text><text x="1128" y="1060" font-family="Inter, Geist, Arial, sans-serif" font-size="10" font-weight="600" letter-spacing="2" fill="#000000">OPEN-SOURCE MEMORY DATABASE</text><rect x="0" y="1100" width="1600" height="500" fill="#F4F1E9" stroke="#D6D0C5" stroke-width="2"/><text x="32" y="1145" font-family="Inter, Geist, Arial, sans-serif" font-size="18" font-weight="500" letter-spacing="2" fill="#202020">6. STYLISTIC VARIANTS (SAME CORE ICON)</text><text x="45" y="1200" font-family="Inter, Geist, Arial, sans-serif" font-size="16" font-weight="500" letter-spacing="1" fill="#202020">A. SOLID SLABS</text><g transform="translate(75 1240) scale(.55)">
+    <g fill="#202020">
+      <path d="M18 38 L100 4 L182 38 L100 76 Z"/>
+      <path d="M18 78 L100 116 L182 78 L182 94 L100 132 L18 94 Z"/>
+      <path d="M18 118 L100 156 L182 118 L182 134 L100 172 L18 134 Z"/>
+    </g>
+    <path d="M122 25 L145 15 L159 22 L136 33 Z" fill="#D96A1D"/>
+    </g><text x="215" y="1320" font-family="Inter, Geist, Arial, sans-serif" font-size="32" font-weight="750" letter-spacing="-1.5" fill="#202020">Bat DB</text><text x="217" y="1350" font-family="Inter, Geist, Arial, sans-serif" font-size="9" font-weight="600" letter-spacing="1.7" fill="#202020">OPEN-SOURCE MEMORY DATABASE</text><path d="M540 1170 V1545" stroke="#D6D0C5" stroke-width="2"/><text x="565" y="1200" font-family="Inter, Geist, Arial, sans-serif" font-size="16" font-weight="500" letter-spacing="1" fill="#202020">B. SEPARATED SLABS</text><g transform="translate(595 1240) scale(.55)"><g fill="#202020">
+<path d="M18 35 L100 1 L182 35 L100 73 Z"/>
+<path d="M18 83 L100 121 L182 83 L182 99 L100 137 L18 99 Z"/>
+<path d="M18 131 L100 169 L182 131 L182 147 L100 185 L18 147 Z"/>
+</g><path d="M122 22 L145 12 L159 19 L136 30 Z" fill="#D96A1D"/></g><text x="735" y="1320" font-family="Inter, Geist, Arial, sans-serif" font-size="32" font-weight="750" letter-spacing="-1.5" fill="#202020">Bat DB</text><text x="737" y="1350" font-family="Inter, Geist, Arial, sans-serif" font-size="9" font-weight="600" letter-spacing="1.7" fill="#202020">OPEN-SOURCE MEMORY DATABASE</text><path d="M1060 1170 V1545" stroke="#D6D0C5" stroke-width="2"/><text x="1085" y="1200" font-family="Inter, Geist, Arial, sans-serif" font-size="16" font-weight="500" letter-spacing="1" fill="#202020">C. LINEAR / HAIRLINE</text><g transform="translate(1115 1240) scale(.55)">
+        <g stroke="#202020" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" fill="none">
+          <path d="M18 38 L100 4 L182 38 L100 76 Z"/>
+          <path d="M18 78 L100 116 L182 78"/>
+          <path d="M18 118 L100 156 L182 118"/>
+        </g>
+        <path d="M122 25 L145 15 L159 22 L136 33 Z" fill="#D96A1D"/></g><text x="1255" y="1320" font-family="Inter, Geist, Arial, sans-serif" font-size="32" font-weight="750" letter-spacing="-1.5" fill="#202020">Bat DB</text><text x="1257" y="1350" font-family="Inter, Geist, Arial, sans-serif" font-size="9" font-weight="600" letter-spacing="1.7" fill="#202020">OPEN-SOURCE MEMORY DATABASE</text><text x="35" y="1465" font-family="Inter, Geist, Arial, sans-serif" font-size="16" font-weight="500" letter-spacing="2" fill="#202020">BRAND PALETTE</text><rect x="220" y="1435" width="54" height="54" fill="#202020" stroke="#B8B1A5"/><text x="288" y="1467" font-family="Inter, Geist, Arial, sans-serif" font-size="13" font-weight="500" letter-spacing="1" fill="#202020">INK</text><rect x="490" y="1435" width="54" height="54" fill="#F4F1E9" stroke="#B8B1A5"/><text x="558" y="1467" font-family="Inter, Geist, Arial, sans-serif" font-size="13" font-weight="500" letter-spacing="1" fill="#202020">WARM IVORY</text><rect x="760" y="1435" width="54" height="54" fill="#D96A1D" stroke="#B8B1A5"/><text x="828" y="1467" font-family="Inter, Geist, Arial, sans-serif" font-size="13" font-weight="500" letter-spacing="1" fill="#202020">SIGNAL ORANGE</text><rect x="1030" y="1435" width="54" height="54" fill="#6E6E6E" stroke="#B8B1A5"/><text x="1098" y="1467" font-family="Inter, Geist, Arial, sans-serif" font-size="13" font-weight="500" letter-spacing="1" fill="#202020">SLATE</text>
+</svg>

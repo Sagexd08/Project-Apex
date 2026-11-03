@@ -54,7 +54,7 @@
 
   // Reeded-glass background on inner pages (WebGL; the CSS mesh is the fallback). Not on the paper sheet.
   if (document.body.classList.contains('gxp') && !document.body.classList.contains('pg-paper')) {
-    import('./reeded.js').then((m) => { if (m.createReeded({ reduce })) document.body.classList.add('rd-on'); }).catch(() => {});
+    if (false) import('./reeded.js').then((m) => { if (m.createReeded({ reduce })) document.body.classList.add('rd-on'); }).catch(() => {});
   }
 
   // Paper: table-of-contents highlight and "Save as PDF" (browser print dialog -> PDF).

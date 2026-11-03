@@ -7,7 +7,7 @@
 <meta name="description" content="Project Apex is an open-source database written in Rust. It logs every write, keeps tenants' data separate, and applies a retried write once. Early development, not ready for production.">
 <meta property="og:title" content="Project Apex: a database for AI agent memory">
 <meta property="og:description" content="Open source, written in Rust. Write-ahead log, tenant scoping and idempotent writes. Early development.">
-<meta name="theme-color" content="#3b0f1c">
+<meta name="theme-color" content="#071a3d">
 <link rel="icon" href="assets/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192.png">
@@ -18,6 +18,9 @@
 <link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/site.css">
+<link rel="stylesheet" href="css/slab.css">
+<link rel="stylesheet" href="css/popup3d.css">
 <noscript><style>.reveal{visibility:visible;clip-path:none}</style></noscript>
 </head>
 <body>
@@ -33,7 +36,7 @@
     <li><a class="nl" href="#repo">Source</a></li>
     <li><a class="nl" href="#status">Status<i class="ping"></i></a></li>
     <li><a class="nl" href="#faq">FAQ</a></li>
-    <li><a class="nl" href="#manifesto">Manifesto</a></li>
+    <li class="has-dd"><a class="nl" href="manifesto.html">Manifesto</a><button class="gx-arrow" type="button" aria-label="Show Manifesto pages" aria-haspopup="true" aria-expanded="false" aria-controls="gx-menu"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.2 6 8l4-3.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="gx-menu" id="gx-menu" role="group" aria-label="Manifesto pages"><div class="gx-col"><h4>The argument</h4><a href="manifesto.html"><b>01</b>Manifesto<small>Why we are building this, and what would prove us wrong</small></a><a href="abstract.html"><b>02</b>Abstract<small>The whole research note in one page</small></a><a href="paper.html"><b>03</b>Research paper<small>arXiv-style, with every table. Save as PDF</small></a><a href="evidence.html"><b>04</b>Evidence<small>Every measurement, loaded from the raw results</small></a></div><div class="gx-col"><h4>The method</h4><a href="algorithm.html"><b>05</b>Algorithm<small>Encode, cascade, rerank, snapshot</small></a><a href="mathematics.html"><b>06</b>Mathematics<small>Derivations, lemma, open problem</small></a><a href="film.html"><b>07</b>Film<small>The mathematics in ninety seconds</small></a><a href="lab.html"><b>08</b>Interactive lab<small>Move the sliders, see the geometry</small></a><a href="snapshot-protocol.html"><b>09</b>Snapshot protocol<small>What a reader pin has to mean</small></a></div><div class="gx-col"><h4>The honesty</h4><a href="related-work.html"><b>10</b>Related work<small>Prior art and the claim audit</small></a><a href="tournament.html"><b>11</b>Algorithm tournament<small>Seven candidates, no winner yet</small></a><a href="loopholes.html"><b>12</b>Loophole audit<small>Where an easy-data win can break</small></a><a href="roadmap.html"><b>13</b>Roadmap<small>Done, next, and what we cannot do</small></a></div></div></li>
   </ul>
   <div class="ticker" aria-hidden="true">
     <span>Early development · Not ready for production · Open source · Written in Rust ·</span>
@@ -114,7 +117,7 @@
     </div>
   </div>
 
-  <canvas class="ascii-div" data-from="#efe6d3" data-to="#3b0f1c" aria-hidden="true"></canvas>
+  <canvas class="ascii-div" data-from="#eaf2ff" data-to="#071a3d" aria-hidden="true"></canvas>
 
   <section class="s dark" id="product" aria-labelledby="product-h">
     <div class="feat-wrap">
@@ -133,7 +136,7 @@
     </div>
   </section>
 
-  <canvas class="ascii-div" data-from="#3b0f1c" data-to="#efe6d3" aria-hidden="true"></canvas>
+  <canvas class="ascii-div" data-from="#071a3d" data-to="#eaf2ff" aria-hidden="true"></canvas>
 
   <section class="s cream" id="principles" aria-labelledby="prin-h">
     <p class="mono lbl" data-rv>Design</p>
@@ -267,7 +270,7 @@
     </div>
   </section>
 
-  <canvas class="ascii-div" data-from="#efe6d3" data-to="#3b0f1c" aria-hidden="true"></canvas>
+  <canvas class="ascii-div" data-from="#eaf2ff" data-to="#071a3d" aria-hidden="true"></canvas>
 
   <section class="s dark" id="manifesto" aria-labelledby="mf-h">
     <h2 id="mf-h" data-rv>Memory fast enough to disappear.</h2>
@@ -278,7 +281,7 @@
       <li data-rv><span class="rule" aria-hidden="true"></span><h3>A reader never sees half a write.</h3><p>Every read happens at a named position in the log, so a surprising result can be replayed and explained.</p></li>
       <li data-rv><span class="rule" aria-hidden="true"></span><h3>Say what was measured.</h3><p>A number from synthetic data says so. A claim without a measurement is a goal, and we label it as one.</p></li>
     </ul>
-    <p class="lede wide lt" data-rv style="margin-top:32px"><a class="u" href="prism.html#manifesto">Read the full manifesto and the Prism research</a></p>
+    <p class="lede wide lt" data-rv style="margin-top:32px"><a class="u" href="manifesto.html">Read the full manifesto and the Prism research</a></p>
   </section>
 
   <section class="s dark" id="open" aria-labelledby="open-h" style="padding-top:0">
@@ -322,6 +325,31 @@
     </div>
   </section>
 
+  <section class="s dark" id="facts" aria-labelledby="facts-h" style="padding-top:0">
+    <div class="slab-facts">
+      <h2 id="facts-h">What is live, what is not</h2>
+      <p class="slab-lede">Sixteen facts from docs/MVP_STATUS.md, each tagged. Gate 2 is still open. Where the page margins show floating cubes, they carry this same list.</p>
+      <ul>
+      <li><button type="button" data-fact data-tag="live" aria-label="Live: Ingest Markdown with a SHA-256 per file; re-runs are idempotent and unresolved links are reported."><span class="slab-tag live">LIVE</span><span class="slab-t">Ingest Markdown with a SHA-256 per file; re-runs are idempotent and unresolved links are reported.</span></button></li>
+      <li><button type="button" data-fact data-tag="live" aria-label="Live: Objects and typed relations are canonical engine records: WAL, recovery, tenant isolation, auth."><span class="slab-tag live">LIVE</span><span class="slab-t">Objects and typed relations are canonical engine records: WAL, recovery, tenant isolation, auth.</span></button></li>
+      <li><button type="button" data-fact data-tag="live" aria-label="Live: Supersession keeps the old record; overwriting the same key is a CONFLICT."><span class="slab-tag live">LIVE</span><span class="slab-t">Supersession keeps the old record; overwriting the same key is a CONFLICT.</span></button></li>
+      <li><button type="button" data-fact data-tag="live" aria-label="Live: Reads can be pinned to a version (as_of) and stay consistent under concurrent writers."><span class="slab-tag live">LIVE</span><span class="slab-t">Reads can be pinned to a version (as_of) and stay consistent under concurrent writers.</span></button></li>
+      <li><button type="button" data-fact data-tag="live" aria-label="Live: Context queries are deterministic, return a trace, and say no match instead of inventing one."><span class="slab-tag live">LIVE</span><span class="slab-t">Context queries are deterministic, return a trace, and say no match instead of inventing one.</span></button></li>
+      <li><button type="button" data-fact data-tag="live" aria-label="Live: Explorer and Query Studio at /explorer: browser-checked at the release candidate, not re-checked after the ingest rework."><span class="slab-tag live">LIVE</span><span class="slab-t">Explorer and Query Studio at /explorer: browser-checked at the release candidate, not re-checked after the ingest rework.</span></button></li>
+      <li><button type="button" data-fact data-tag="live" aria-label="Live: Simulated torn-WAL enumeration: 1003 byte offsets recover exactly the acked prefix (Windows only; not power loss)."><span class="slab-tag live">LIVE</span><span class="slab-t">Simulated torn-WAL enumeration: 1003 byte offsets recover exactly the acked prefix (Windows only; not power loss).</span></button></li>
+      <li><button type="button" data-fact data-tag="live" aria-label="Live: About 1.1k to 1.2k writes per second with 16 writers: one Windows dev machine, one run, not a benchmark claim."><span class="slab-tag live">LIVE</span><span class="slab-t">About 1.1k to 1.2k writes per second with 16 writers: one Windows dev machine, one run, not a benchmark claim.</span></button></li>
+      <li><button type="button" data-fact data-tag="wip" aria-label="In progress: Real embedding quality: the default embedder is a lexical hash proxy, not semantic."><span class="slab-tag wip">IN PROGRESS</span><span class="slab-t">Real embedding quality: the default embedder is a lexical hash proxy, not semantic.</span></button></li>
+      <li><button type="button" data-fact data-tag="wip" aria-label="In progress: Optional HTTP embedder: tested against a mock only."><span class="slab-tag wip">IN PROGRESS</span><span class="slab-t">Optional HTTP embedder: tested against a mock only.</span></button></li>
+      <li><button type="button" data-fact data-tag="wip" aria-label="In progress: ANN and filtered-search acceptance: vector candidates use an exact scan today."><span class="slab-tag wip">IN PROGRESS</span><span class="slab-t">ANN and filtered-search acceptance: vector candidates use an exact scan today.</span></button></li>
+      <li><button type="button" data-fact data-tag="wip" aria-label="In progress: macOS execution: the CI job is written but has never run."><span class="slab-tag wip">IN PROGRESS</span><span class="slab-t">macOS execution: the CI job is written but has never run.</span></button></li>
+      <li><button type="button" data-fact data-tag="wip" aria-label="In progress: Real power loss on hardware: the harness is built; a human has to pull the plug."><span class="slab-tag wip">IN PROGRESS</span><span class="slab-t">Real power loss on hardware: the harness is built; a human has to pull the plug.</span></button></li>
+      <li><button type="button" data-fact data-tag="wip" aria-label="In progress: Independent review of the LCF layer."><span class="slab-tag wip">IN PROGRESS</span><span class="slab-t">Independent review of the LCF layer.</span></button></li>
+      <li><button type="button" data-fact data-tag="wip" aria-label="In progress: Explorer ingest panel and read-version control."><span class="slab-tag wip">IN PROGRESS</span><span class="slab-t">Explorer ingest panel and read-version control.</span></button></li>
+      <li><button type="button" data-fact data-tag="wip" aria-label="In progress: Temporal ranking, deletes of knowledge objects, and TLS for the HTTP embedder."><span class="slab-tag wip">IN PROGRESS</span><span class="slab-t">Temporal ranking, deletes of knowledge objects, and TLS for the HTTP embedder.</span></button></li>
+      </ul>
+    </div>
+  </section>
+
   <section class="ring-cta" id="cta" aria-labelledby="cta-h">
     <div class="ring-gl" id="gl2"><canvas aria-hidden="true"></canvas></div>
     <div class="ring-disc" id="ringDisc">
@@ -333,7 +361,7 @@
     </div>
   </section>
 
-  <canvas class="ascii-div" data-from="#3b0f1c" data-to="#efe6d3" aria-hidden="true"></canvas>
+  <canvas class="ascii-div" data-from="#071a3d" data-to="#eaf2ff" aria-hidden="true"></canvas>
 
   <footer class="foot">
     <div class="foot-top">
@@ -384,5 +412,9 @@
 <script src="vendor/ScrollTrigger.min.js"></script>
 <script src="vendor/lenis.min.js"></script>
 <script type="module" src="js/main.js"></script>
+<script src="js/site.js" defer></script>
+<script src="js/popup3d.js" defer></script>
+<script src="js/slab.js" defer></script>
+<script type="module" src="js/slab-cubes.js"></script>
 </body>
 </html>

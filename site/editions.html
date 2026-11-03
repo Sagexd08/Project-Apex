@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Atlas Editions: living context for agents</title>
+<meta name="description" content="Atlas MVP v3: ingest real documents, query connected context with a trace, pin reads to a version. What is live today and what is still in implementation.">
+<link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/editions.css">
+<link rel="stylesheet" href="css/popup3d.css">
+</head>
+<body class="ed-page">
+<header class="ed-top">
+  <b>Bat DB</b><span>Atlas Editions · MVP v3</span>
+  <span class="ed-sp"></span>
+  <a class="ed-toplink" href="#run">Run it</a>
+  <a class="ed-pill" href="#run">Try the Explorer</a>
+</header>
+<nav aria-label="Chapters"><ul class="ed-idx">
+  <li><a href="#a">Memory</a></li><li><a href="#b">Ingest</a></li><li><a href="#c">Context</a></li>
+  <li><a href="#d">Explorer</a></li><li><a href="#e">Tenants</a></li><li><a href="#f">Durable</a></li>
+  <li><a href="#g">Time</a></li><li><a href="#h">Scale</a></li><li><a href="#i">Honest</a></li>
+</ul></nav>
+<a class="ed-back" href="index.html">&#8249; Back</a>
+<div class="ed-end" role="status">
+  <span><b data-n="ch">9</b> chapters</span><i></i>
+  <span><b data-n="live">0</b> claims live</span><i></i>
+  <span><b data-n="wip">0</b> in progress</span><i></i>
+  <button type="button" data-act="again">again</button><button type="button" data-act="close">close</button>
+</div>
+<canvas class="ed-gl" aria-hidden="true"></canvas>
+
+<div class="ed-view"><main class="ed-world">
+<section class="ed-ch" id="a" data-name="Memory" aria-labelledby="ha"><div class="ed-in">
+  <h1 class="ed-title" id="ha">Memory</h1>
+  <p class="ed-lede">Point Atlas at a folder of Markdown. It becomes objects and typed relations you can query, with the source hash kept.</p>
+  <a class="ed-pill" href="#run">Run it</a>
+  <p class="ed-k">Every file's SHA-256 is recorded with its objects.</p>
+  <div class="ed-stage">
+    <div class="ed-card"><h4>Provenance</h4><div class="ed-row"><span>adr-wal-durability</span><span>sha-256 recorded</span></div><div class="ed-row"><span>unresolved links</span><span>reported, never guessed</span></div></div>
+    <figure class="ed-card ed-fig"><iframe src="assets/ledger.html?theme=dark" loading="lazy" width="400" height="360" title="Illustration: a log of tablets; a retried write is applied once"></iframe><figcaption>Illustration, not a measurement.</figcaption></figure>
+  </div>
+  <div class="ed-cols">
+    <p><span class="ed-tag live">LIVE</span><br>Ingest Markdown with front matter, idempotent re-runs, real SHA-256 per file.</p>
+    <p><span class="ed-tag live">LIVE</span><br>Every object and relation is a canonical engine record: WAL, recovery, tenant isolation, auth.</p>
+    <p><span class="ed-tag wip">IN PROGRESS</span><br>Deletes of knowledge objects.</p>
+  </div>
+</div></section>
+
+<section class="ed-ch" id="b" data-name="Ingest" aria-labelledby="hb"><div class="ed-in">
+  <h2 class="ed-title" id="hb">Ingest</h2>
+  <p class="ed-lede">One command turns a folder of notes into records. Run it twice and nothing changes.</p>
+  <p class="ed-k">Second run: 0 new, 13 unchanged.</p>
+  <div class="ed-stage">
+    <div class="ed-card inv"><h4>atlas ingest</h4><div class="ed-mono">$ atlas ingest examples/atlas-decisions
+ingested 13 file(s): objects 13 new / 0 unchanged,
+relationships 27 new / 0 unchanged
+$ atlas ingest examples/atlas-decisions
+ingested 13 file(s): objects 0 new / 13 unchanged</div></div>
+    <div class="ed-card"><h4>Against a server</h4><div class="ed-mono">atlas ingest ./your-notes --key $ATLAS_KEY</div><div class="ed-row"><span>HTTP</span><span>POST /v1/lcf/ingest</span></div></div>
+  </div>
+  <div class="ed-cols">
+    <p><span class="ed-tag live">LIVE</span><br>atlas ingest and POST /v1/lcf/ingest: Markdown with front matter, idempotent, SHA-256 per file.</p>
+    <p><span class="ed-tag live">LIVE</span><br>Unresolved links are reported, never guessed (scripts/e2e-lcf.sh: 13 docs, re-ingest 0 new).</p>
+    <p><span class="ed-tag wip">IN PROGRESS</span><br>Formats beyond Markdown and text.</p>
+  </div>
+</div></section>
+
+<section class="ed-ch" id="c" data-name="Context" aria-labelledby="hc"><div class="ed-in">
+  <h2 class="ed-title" id="hc">Context</h2>
+  <p class="ed-lede">Ask in plain words. Get the decision and its neighbours, with the path that found them.</p>
+  <p class="ed-k">Each answer carries the path that found it.</p>
+  <div class="ed-stage">
+    <div class="ed-card"><h4>Query</h4><div class="ed-mono">why did we choose group commit WAL durability</div></div>
+    <div class="ed-card inv"><h4>Result · trace</h4>
+      <div class="ed-row"><span class="ed-hit">adr-wal-durability</span><span>seed: lexical + vector</span></div>
+      <div class="ed-row"><span>neighbour</span><span>hop 1, typed relation</span></div>
+      <div class="ed-row"><span>bounds</span><span>hops ≤ 4 · nodes ≤ 60</span></div>
+      <div class="ed-row"><span>no match</span><span>reported, not invented</span></div></div>
+  </div>
+  <div class="ed-cols">
+    <p><span class="ed-tag live">LIVE</span><br>Deterministic retrieval: intent picks relations, bounded graph walk, full trace and warnings.</p>
+    <p><span class="ed-tag wip">IN PROGRESS</span><br>Semantic embeddings. The default embedder is a lexical hash. An HTTP embedder exists; it has only been tested against a mock.</p>
+  </div>
+</div></section>
+<section class="ed-ch lt" id="d" data-name="Explorer" aria-labelledby="hd"><div class="ed-in">
+  <h2 class="ed-title" id="hd">Explorer</h2>
+  <p class="ed-lede">A browser page served by the same binary: ask questions, read the trace, add documents.</p>
+  <p class="ed-k">Served at /explorer by the atlas server.</p>
+  <div class="ed-stage">
+    <div class="ed-card"><h4>Query Studio</h4><div class="ed-mono">question  : why did we choose group commit WAL durability
+result    : decision + neighbours + trace</div></div>
+    <div class="ed-card inv"><h4>Add documents</h4><div class="ed-row"><span>panel</span><span>ingest from the page</span></div><div class="ed-row"><span>key</span><span>kept for this tab only</span></div></div>
+  </div>
+  <div class="ed-cols">
+    <p><span class="ed-tag live">LIVE (checked by hand in a browser; no automated test yet)</span><br>Explorer and Query Studio at <b>/explorer</b>, with an Add documents panel.</p>
+    <p><span class="ed-tag wip">IN PROGRESS</span><br>A read-version control in the Explorer; the page was not re-checked after the ingest rework.</p>
+  </div>
+</div></section>
+
+<section class="ed-ch grid" id="e" data-name="Tenants" aria-labelledby="he"><div class="ed-in">
+  <h2 class="ed-title" id="he">Tenants</h2>
+  <p class="ed-lede">Every record belongs to one tenant. A key can only reach its own tenant, and only what it was granted.</p>
+  <p class="ed-k">Cross-tenant reads come back as not found.</p>
+  <div class="ed-stage">
+    <div class="ed-card inv"><h4>Scope = principal AND key</h4><div class="ed-row"><span>tenant A key reads B</span><span>NOT_FOUND</span></div><div class="ed-row"><span>tenant A deletes B</span><span>false</span></div><div class="ed-row"><span>tenant mismatch</span><span>FORBIDDEN</span></div></div>
+    <div class="ed-card"><h4>Structural</h4><div class="ed-mono">one index per tenant
+no post-filter to get wrong
+WAL record without tenant: open fails</div></div>
+  </div>
+  <div class="ed-cols">
+    <p><span class="ed-tag live">LIVE</span><br>Tenant isolation and permission scopes enforced in the engine (docs/SECURITY.md).</p>
+    <p><span class="ed-tag live">LIVE</span><br>A WAL record with a missing or invalid tenant fails recovery; nothing is defaulted.</p>
+    <p><span class="ed-tag wip">IN PROGRESS</span><br>Key storage, hashing and rotation sit outside the engine; timing side channels are not covered.</p>
+  </div>
+</div></section>
+
+<section class="ed-ch" id="f" data-name="Durable" aria-labelledby="hf"><div class="ed-in">
+  <h2 class="ed-title" id="hf">Durable</h2>
+  <p class="ed-lede">Acknowledged means on disk. Kill the server mid-write and the same records come back.</p>
+  <p class="ed-k">kill -9 and restart: the same 44 records.</p>
+  <div class="ed-stage">
+    <div class="ed-card inv"><h4>kill -9, restart</h4><div class="ed-mono">records before: 44
+records after restart: 44
+supersession survives restart: yes</div></div>
+    <div class="ed-card inv"><h4>Torn-WAL enumeration (simulated)</h4><div class="ed-mono">1003 byte offsets checked
+recovered set == acked prefix, every time
+this is NOT power-loss evidence</div></div>
+  </div>
+  <div class="ed-cols">
+    <p><span class="ed-tag live">LIVE</span><br>Write-ahead log, checkpoints, repair mode, group commit with an explicit sync-per-commit option.</p>
+    <p><span class="ed-tag live">LIVE</span><br>Windows and Linux (Docker) verify green on one source digest.</p>
+    <p><span class="ed-tag wip">IN PROGRESS</span><br>Real power-loss run on hardware; macOS CI job is written but has not executed yet.</p>
+  </div>
+</div></section>
+<section class="ed-ch" id="g" data-name="Time" aria-labelledby="hg"><div class="ed-in">
+  <h2 class="ed-title" id="hg">Time</h2>
+  <p class="ed-lede">Nothing is overwritten. Decisions are superseded, and any read can be pinned to a version.</p>
+  <p class="ed-k">A pinned read hides newer writes.</p>
+  <div class="ed-stage">
+    <div class="ed-card"><h4>Read version</h4><div class="ed-mono">read at version 5 of 40
+pinned: newer writes are hidden</div></div>
+    <div class="ed-card inv"><h4>Supersede</h4><div class="ed-row"><span>old record</span><span>kept, marked</span></div><div class="ed-row"><span>overwrite same key</span><span>CONFLICT</span></div></div>
+  </div>
+  <div class="ed-cols">
+    <p><span class="ed-tag live">LIVE</span><br>Per-tenant monotonic versions; pinned reads stay consistent under concurrent writers (tested).</p>
+    <p><span class="ed-tag live">LIVE</span><br>Supersession as a new object plus a SUPERSEDES relation.</p>
+    <p><span class="ed-tag wip">IN PROGRESS</span><br>Temporal ranking of results.</p>
+  </div>
+</div></section>
+<section class="ed-ch grid" id="h" data-name="Scale" aria-labelledby="hh"><div class="ed-in">
+  <h2 class="ed-title" id="hh">Scale</h2>
+  <p class="ed-lede">Measured on one Windows dev machine, release build, one run each. Not a benchmark claim.</p>
+  <p class="ed-k">One machine, one run each.</p>
+  <div class="ed-stage">
+    <div class="ed-card"><h4>16 writers</h4><div class="ed-scroll"><table class="ed-tbl">
+      <tr><th>nodes</th><th>records</th><th>query p50 / p95</th><th>restart</th></tr>
+      <tr><td>10,000</td><td>40k</td><td>7 / 9 ms</td><td>0.14 s + 0.17 s</td></tr>
+      <tr><td>50,000</td><td>200k</td><td>86 / 121 ms</td><td>1.75 s + 2.40 s</td></tr></table></div></div>
+  </div>
+  <div class="ed-cols">
+    <p><span class="ed-tag live">LIVE</span><br>About 1.1k to 1.2k writes per second with 16 concurrent writers, group-committed.</p>
+    <p><span class="ed-tag wip">IN PROGRESS</span><br>Vector candidate search is an exact scan, so latency grows with records. An ANN index is not built.</p>
+    <p><span class="ed-tag wip">IN PROGRESS</span><br>The read index is in memory and rebuilt on start; 100k+ nodes untested.</p>
+  </div>
+</div></section>
+<section class="ed-ch lt" id="i" data-name="Honest" aria-labelledby="hi"><div class="ed-in">
+  <h2 class="ed-title" id="hi">Honest</h2>
+  <p class="ed-lede">Gate 2 is open. This page lists what is not done as plainly as what is.</p>
+  <p class="ed-k">Open items are listed, not hidden.</p>
+  <div class="ed-stage">
+    <div class="ed-card inv" id="run"><h4>Run it</h4><div class="ed-mono">bash scripts/demo.sh
+# builds, starts the server, ingests the sample docs,
+# prints the Explorer URL
+
+atlas ingest ./your-notes --key $ATLAS_KEY</div></div>
+  </div>
+  <div class="ed-cols">
+    <p><span class="ed-tag wip">IN PROGRESS</span><br>Real power loss, macOS execution.</p>
+    <p><span class="ed-tag wip">IN PROGRESS</span><br>ANN and filtered-search acceptance.</p>
+    <p><span class="ed-tag wip">IN PROGRESS</span><br>Independent review of the LCF layer.</p>
+    <p><span class="ed-tag wip">IN PROGRESS</span><br>TLS for the HTTP embedder.</p>
+  </div>
+</div></section>
+</main></div>
+<script src="vendor/gsap.min.js" defer></script>
+<script src="vendor/ScrollTrigger.min.js" defer></script>
+<script src="vendor/lenis.min.js" defer></script>
+<script src="js/popup3d.js" defer></script>
+<script src="js/editions.js" defer></script>
+<script type="module" src="js/editions-gl.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" role="img" aria-labelledby="title desc">
+<title id="title">Bat DB vector asset index</title><desc id="desc">Bat DB brand identity asset</desc>
+<rect width="1000" height="700" fill="#F4F1E9"/>
+<text x="55" y="90" font-family="Inter,Arial,sans-serif" font-size="42" font-weight="750" fill="#202020">Bat DB</text>
+<text x="55" y="130" font-family="Inter,Arial,sans-serif" font-size="16" letter-spacing="4" fill="#202020">VECTOR BRAND ASSET INDEX</text>
+<g transform="translate(55 180) scale(.65)">
+    <g fill="#202020">
+      <path d="M18 38 L100 4 L182 38 L100 76 Z"/>
+      <path d="M18 78 L100 116 L182 78 L182 94 L100 132 L18 94 Z"/>
+      <path d="M18 118 L100 156 L182 118 L182 134 L100 172 L18 134 Z"/>
+    </g>
+    <path d="M122 25 L145 15 L159 22 L136 33 Z" fill="#D96A1D"/>
+    </g>
+<text x="310" y="210" font-family="Inter,Arial,sans-serif" font-size="21" font-weight="700" fill="#202020">01 / PRIMARY LOCKUPS</text><text x="310" y="237" font-family="Inter,Arial,sans-serif" font-size="14" fill="#6E6E6E">Primary horizontal and vertical brand signatures</text><text x="310" y="272" font-family="Inter,Arial,sans-serif" font-size="21" font-weight="700" fill="#202020">02 / INVERTED LOCKUPS</text><text x="310" y="299" font-family="Inter,Arial,sans-serif" font-size="14" fill="#6E6E6E">Light logo treatments for dark backgrounds</text><text x="310" y="334" font-family="Inter,Arial,sans-serif" font-size="21" font-weight="700" fill="#202020">03 / SYMBOLS</text><text x="310" y="361" font-family="Inter,Arial,sans-serif" font-size="14" fill="#6E6E6E">Standalone mark, white, black and outline</text><text x="310" y="396" font-family="Inter,Arial,sans-serif" font-size="21" font-weight="700" fill="#202020">04 / FAVICONS</text><text x="310" y="423" font-family="Inter,Arial,sans-serif" font-size="14" fill="#6E6E6E">Scalable square SVG favicons from 16 to 512</text><text x="310" y="458" font-family="Inter,Arial,sans-serif" font-size="21" font-weight="700" fill="#202020">05 / MONOCHROME</text><text x="310" y="485" font-family="Inter,Arial,sans-serif" font-size="14" fill="#6E6E6E">One-colour logo variants</text><text x="310" y="520" font-family="Inter,Arial,sans-serif" font-size="21" font-weight="700" fill="#202020">06 / STYLISTIC VARIANTS</text><text x="310" y="547" font-family="Inter,Arial,sans-serif" font-size="14" fill="#6E6E6E">Solid, separated and hairline constructions</text><text x="310" y="582" font-family="Inter,Arial,sans-serif" font-size="21" font-weight="700" fill="#202020">07 / GUIDELINES</text><text x="310" y="609" font-family="Inter,Arial,sans-serif" font-size="14" fill="#6E6E6E">Complete vector brand guideline sheet</text>
+</svg>

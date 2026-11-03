@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Playground | Bat DB</title>
+<meta name="description" content="Try Bat DB agent memory in your browser: remember, recall, change a decision, time-travel and check tenant isolation.">
+<meta name="theme-color" content="#0a0a0a">
+<meta property="og:site_name" content="Bat DB">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Playground | Bat DB: The Vector Database for AI Agents">
+<meta property="og:description" content="Try Bat DB agent memory in your browser: remember, recall, change a decision, time-travel and check tenant isolation.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Playground | Bat DB">
+<meta name="twitter:description" content="Try Bat DB agent memory in your browser: remember, recall, change a decision, time-travel and check tenant isolation.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon.svg" sizes="any">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/playground.css">
+<link rel="stylesheet" href="css/site.css">
+</head>
+<body class="gxp pg-playground">
+<a class="skip" href="#main">Skip to content</a>
+<header class="gx" id="gx"><a class="gx-logo" href="index.html" aria-label="Bat DB, home"><img src="assets/mark.svg" alt="" width="30" height="26">Bat DB</a>
+<button class="gx-burger" type="button" aria-expanded="false" aria-controls="gx-links">Menu</button>
+<ul class="gx-links" id="gx-links">
+<li><a href="index.html">Home</a></li><li><a href="index.html#product">Product</a></li><li><a href="playground.html" aria-current="page">Playground</a></li><li><a href="index.html#benchmarks">Benchmarks</a></li>
+<li><div class="gx-dd"><a href="manifesto.html">Manifesto</a><button class="gx-arrow" type="button" aria-label="Show Manifesto pages" aria-haspopup="true" aria-expanded="false" aria-controls="gx-menu"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.2 6 8l4-3.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="gx-menu" id="gx-menu" role="group" aria-label="Manifesto pages"><div class="gx-col"><h4>The argument</h4><a href="manifesto.html"><b>01</b>Manifesto<small>Why we are building this, and what would prove us wrong</small></a><a href="abstract.html"><b>02</b>Abstract<small>The whole research note in one page</small></a><a href="paper.html"><b>03</b>Research paper<small>arXiv-style, with every table. Save as PDF</small></a><a href="evidence.html"><b>04</b>Evidence<small>Every measurement, loaded from the raw results</small></a></div><div class="gx-col"><h4>The method</h4><a href="algorithm.html"><b>05</b>Algorithm<small>Encode, cascade, rerank, snapshot</small></a><a href="mathematics.html"><b>06</b>Mathematics<small>Derivations, lemma, open problem</small></a><a href="film.html"><b>07</b>Film<small>The mathematics in ninety seconds</small></a><a href="lab.html"><b>08</b>Interactive lab<small>Move the sliders, see the geometry</small></a><a href="snapshot-protocol.html"><b>09</b>Snapshot protocol<small>What a reader pin has to mean</small></a></div><div class="gx-col"><h4>The honesty</h4><a href="related-work.html"><b>10</b>Related work<small>Prior art and the claim audit</small></a><a href="tournament.html"><b>11</b>Algorithm tournament<small>Seven candidates, no winner yet</small></a><a href="loopholes.html"><b>12</b>Loophole audit<small>Where an easy-data win can break</small></a><a href="roadmap.html"><b>13</b>Roadmap<small>Done, next, and what we cannot do</small></a></div></div></div></li><li><a href="https://github.com/Sagexd08/Project-Apex" rel="noopener">Source &#8599;</a></li></ul>
+<div class="gx-cta"><a href="index.html#status">What&rsquo;s done</a></div></header><div class="gx-prog" id="gx-prog" aria-hidden="true"></div>
+
+<main id="main" class="pgx">
+<h1>Give an agent a memory. Watch it use it.</h1>
+<p class="lead">Five steps: write decisions, ask a question, change a decision, ask what you believed before, and prove another tenant sees nothing. Click any call to see its request and response.</p>
+<p class="pgx-note"><b>This page is a JavaScript simulation</b> of the memory API with a toy 64-dimension embedder, so you can try the idea with nothing installed. It is not the Rust engine and its latencies mean nothing. The real engine serves a live playground at <b>/playground</b> when you run <b>atlas-cli</b>.</p>
+<div class="pgx-cap-wrap"><p id="pgx-cap" role="status" aria-live="polite">Press <b>Play 40s demo</b> for a narrated walk-through, or drive it yourself.</p><div class="pgx-progress"><i id="pgx-prog"></i></div><span id="pgx-time"></span></div>
+<p id="pgx-stats" class="pgx-dim"></p>
+<div class="pgx-grid">
+<section class="pgx-col" aria-label="Guided steps"><h2 class="pgx-h">Story</h2><ol id="pgx-steps"></ol>
+<div class="pgx-run"><button class="pgx-btn" id="pgx-play" type="button">Play 40s demo</button></div><div class="pgx-run"><button class="pgx-btn ghost" id="pgx-all" type="button">Run steps</button><button class="pgx-btn ghost" id="pgx-reset" type="button">Reset</button></div>
+<div class="pgx-ten" role="radiogroup" aria-label="Tenant"><label><input type="radio" name="pgx-tenant" value="team-a" checked>team-a</label><label><input type="radio" name="pgx-tenant" value="team-b">team-b</label></div></section>
+<section class="pgx-col" aria-label="Transcript"><h2 class="pgx-h">Transcript</h2><div id="pgx-feed" aria-live="polite"><div class="pgx-empty" id="pgx-empty">Press a step on the left, or run the whole story.</div></div>
+<form id="pgx-ask"><input id="pgx-q" type="text" value="why did we choose group commit?" aria-label="Ask a question"><button class="pgx-btn" type="submit">Recall</button></form>
+<div class="pgx-chips"><button type="button" class="pgx-chip">why did we choose group commit?</button><button type="button" class="pgx-chip">what happens on kill -9?</button><button type="button" class="pgx-chip">how fast is restart?</button><button type="button" class="pgx-chip">who can read this?</button></div>
+<h2 class="pgx-h" style="margin-top:18px">Add a memory</h2><div class="pgx-form"><input type="hidden" id="pgx-sup"><input id="pgx-title" type="text" placeholder="Title, e.g. Use mmap checkpoints" aria-label="Memory title"><textarea id="pgx-body" rows="2" placeholder="Detail the agent should recall" aria-label="Memory body"></textarea><button class="pgx-btn" id="pgx-save" type="button">Save memory</button></div></section>
+<section class="pgx-col" aria-label="Memory graph"><h2 class="pgx-h">Memory graph</h2><svg id="pgx-graph" viewBox="0 0 380 300" role="img" aria-label="Memory graph"></svg>
+<div class="pgx-slider"><input id="pgx-ver" type="range" min="0" max="0" value="0" disabled aria-label="Log version"><span id="pgx-verl">now</span></div>
+<h2 class="pgx-h">Inspector</h2><div id="pgx-insp"><p class="pgx-dim">Select a call, or click a node in the graph.</p></div><div class="pgx-run" style="margin-top:8px"><button class="pgx-btn ghost" id="pgx-copy" type="button">Copy call as Python</button></div></section>
+</div></main>
+<footer class="footx"><div class="cols">
+<div><h4>Bat DB</h4><p>An open-source vector database for AI agent memory, written in Rust. Research Note v1.0, preprint, not peer reviewed. Early development; not ready for production.</p><a href="index.html">Home</a><a href="playground.html">Playground</a><a href="https://github.com/Sagexd08/Project-Apex">Repository</a></div>
+<div><h4>The argument</h4><a href="manifesto.html">Manifesto</a><a href="abstract.html">Abstract</a><a href="paper.html">Research paper</a><a href="evidence.html">Evidence</a></div><div><h4>The method</h4><a href="algorithm.html">Algorithm</a><a href="mathematics.html">Mathematics</a><a href="film.html">Film</a><a href="lab.html">Interactive lab</a><a href="snapshot-protocol.html">Snapshot protocol</a></div><div><h4>The honesty</h4><a href="related-work.html">Related work</a><a href="tournament.html">Algorithm tournament</a><a href="loopholes.html">Loophole audit</a><a href="roadmap.html">Roadmap</a></div></div>
+<p class="fine">Synthetic data, one machine. No comparison with other systems. Nothing on these pages claims to be first, fastest or best.</p></footer>
+<script src="js/site.js" defer></script>
+<script src="js/playground.js" defer></script>
+</body>
+</html>

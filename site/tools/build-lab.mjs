@@ -72,7 +72,8 @@ function build(p, i) {
 <title>${esc(p.title)} | Prism | Bat DB</title>
 <meta name="description" content="${esc(p.lead)}">
 <meta name="theme-color" content="#071a3d">
-<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon.svg" sizes="any">
 <link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/main.css">
