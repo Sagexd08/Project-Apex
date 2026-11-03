@@ -298,7 +298,7 @@ html.static .chip{display:none}
 @media(max-width:640px){.bgrid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.viz .ghostline,.viz .bars rect{animation:none}.bcard{transition:none}}
 
-.logo{background:url(../assets/nav-mark.png) center/contain no-repeat}
+.logo{background:url(../assets/mark.svg) center/contain no-repeat}
 .foot .logo{background-image:url(../assets/mark-dark.png)}
 
 .anat-grid{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,5fr);gap:clamp(24px,5vw,90px);align-items:center;margin-top:clamp(32px,5vw,72px)}

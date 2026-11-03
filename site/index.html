@@ -3,14 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Project Apex: open-source database for AI agent memory</title>
-<meta name="description" content="Project Apex is an open-source database written in Rust. It logs every write, keeps tenants' data separate, and applies a retried write once. Early development, not ready for production.">
-<meta property="og:title" content="Project Apex: a database for AI agent memory">
+<title>Bat DB: The Vector Database for AI Agents</title>
+<meta name="description" content="Bat DB is an open-source database written in Rust. It logs every write, keeps tenants' data separate, and applies a retried write once. Early development, not ready for production.">
+<meta property="og:title" content="Bat DB: a database for AI agent memory">
 <meta property="og:description" content="Open source, written in Rust. Write-ahead log, tenant scoping and idempotent writes. Early development.">
 <meta name="theme-color" content="#071a3d">
-<link rel="icon" href="assets/favicon.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
-<link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192.png">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta property="og:image" content="https://project-apex-db.vercel.app/assets/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -29,9 +27,10 @@
 
 <nav class="nav" id="nav" aria-label="Primary">
   <ul>
-    <li><a class="logo" href="#top" aria-label="Project Apex, back to top"></a></li>
+    <li><a class="logo" href="#top" aria-label="Bat DB, back to top"></a></li>
     <li><a class="nl" href="#problem" data-p=".5">Problem</a></li>
     <li><a class="nl" href="#product">Features</a></li>
+    <li><a class="nl" href="playground.html">Playground</a></li>
     <li><a class="nl" href="#benchmarks">Benchmarks</a></li>
     <li><a class="nl" href="#repo">Source</a></li>
     <li><a class="nl" href="#status">Status<i class="ping"></i></a></li>
@@ -53,7 +52,7 @@
       <div class="hero-copy" id="copy">
         <p class="mono" data-in>Open-source database for AI agents</p>
         <h1><span class="ln"><span>A database for</span></span><span class="ln"><span>agent memory.</span></span></h1>
-        <p class="lead" data-in>Project Apex writes every change to a log, keeps each tenant’s records separate, and applies a retried write once. It is written in Rust and in early development.</p>
+        <p class="lead" data-in>Bat DB writes every change to a log, keeps each tenant’s records separate, and applies a retried write once. It is written in Rust and in early development.</p>
         <div class="btns" data-in>
           <a class="btn" data-hold href="https://github.com/Sagexd08/Project-Apex" target="_blank" rel="noopener"><span class="odo">View the source</span></a>
           <a class="btn" data-hold href="#status"><span class="odo">What’s done</span><i class="ping"></i></a>
@@ -110,7 +109,7 @@
               <p class="para">When retrieval returns something unexpected, you need a record of what was written, and when, to work out why.</p>
             </div>
 
-            <p class="note">Project Apex puts the log, scoping and retry handling in the database instead of in application code.</p>
+            <p class="note">Bat DB puts the log, scoping and retry handling in the database instead of in application code.</p>
           </div>
         </div>
       </section>
@@ -124,7 +123,7 @@
       <div class="globe" aria-hidden="true"><canvas id="globe"></canvas></div>
       <div class="feat-head">
         <p class="mono lbl" data-rv>Features</p>
-        <h2 id="product-h" data-rv>What Project Apex does.</h2>
+        <h2 id="product-h" data-rv>What Bat DB does.</h2>
         <p data-rv>It is an embedded storage engine in Rust, split into four crates: core, storage, index and engine.</p>
       </div>
       <div class="feats">
@@ -244,7 +243,7 @@
       <summary><span>Planned measurements</span><i aria-hidden="true"></i></summary>
       <table class="bench">
           <caption class="mono">Planned measurements</caption>
-          <thead><tr><th scope="col">Metric</th><th scope="col">Project Apex</th><th scope="col">Baseline</th><th scope="col">Conditions</th></tr></thead>
+          <thead><tr><th scope="col">Metric</th><th scope="col">Bat DB</th><th scope="col">Baseline</th><th scope="col">Conditions</th></tr></thead>
           <tbody>
             <tr><th scope="row">Query latency p50 / p95 / p99</th><td>Not run</td><td>Not run</td><td>Hardware, dataset</td></tr>
             <tr><th scope="row">Recall@10</th><td>Not run</td><td>Not run</td><td>Exact-search ground truth</td></tr>
@@ -262,11 +261,11 @@
   <section class="s cream" id="fit" aria-labelledby="fit-h" style="padding-top:0">
     <p class="mono lbl" data-rv>Where it fits</p>
     <h2 id="fit-h" data-rv>A storage layer, not a framework.</h2>
-    <p class="lede wide" data-rv>Project Apex stores and retrieves data. It is not a model, an agent framework or a hosted service, so it sits next to whatever you already use.</p>
+    <p class="lede wide" data-rv>Bat DB stores and retrieves data. It is not a model, an agent framework or a hosted service, so it sits next to whatever you already use.</p>
     <div class="cols3">
       <article data-rv><h3>Try it if</h3><p>You want a database that logs every write, scopes queries by tenant and applies retries once, and you are happy to read the source and report problems.</p></article>
       <article data-rv><h3>Stay with PostgreSQL if</h3><p>You need relational queries, transactions or a vector index that works today. pgvector covers exact and approximate search.</p></article>
-      <article data-rv><h3>Stay with your vector database if</h3><p>You need approximate search at scale now. Project Apex has no approximate index wired in yet.</p></article>
+      <article data-rv><h3>Stay with your vector database if</h3><p>You need approximate search at scale now. Bat DB has no approximate index wired in yet.</p></article>
     </div>
   </section>
 
@@ -287,7 +286,7 @@
   <section class="s dark" id="open" aria-labelledby="open-h" style="padding-top:0">
     <p class="mono lbl" data-rv>Contributing</p>
     <h2 id="open-h" data-rv>Where help is useful.</h2>
-    <p class="lede wide lt" data-rv>Project Apex is open source. These are the contributions that help most right now.</p>
+    <p class="lede wide lt" data-rv>Bat DB is open source. These are the contributions that help most right now.</p>
     <div class="cols4">
       <article data-rv><h3>Report a bug</h3><p>Include the steps to reproduce it and the platform you ran it on.</p></article>
       <article data-rv><h3>Add a failure test</h3><p>A crash, a retry or a tenant mix-up that the current tests don’t cover.</p></article>
@@ -313,7 +312,7 @@
     <div class="faq-grid" id="faq">
       <h2 data-rv>Questions</h2>
       <div class="faq" data-rv>
-        <details><summary><span class="q">Q.001 /</span><span>What is Project Apex?</span></summary><div class="ans"><div><p>An open-source database in Rust for storing and searching the data AI agents produce.</p></div></div></details>
+        <details><summary><span class="q">Q.001 /</span><span>What is Bat DB?</span></summary><div class="ans"><div><p>An open-source database in Rust for storing and searching the data AI agents produce.</p></div></div></details>
         <details><summary><span class="q">Q.002 /</span><span>Is it faster than pgvector or Qdrant?</span></summary><div class="ans"><div><p>Unknown. No search benchmark has been run.</p></div></div></details>
         <details><summary><span class="q">Q.003 /</span><span>Can I use it in production?</span></summary><div class="ans"><div><p>No. See the status section for what is missing.</p></div></div></details>
         <details><summary><span class="q">Q.004 /</span><span>Does it do approximate nearest-neighbour search?</span></summary><div class="ans"><div><p>Not yet. Search is exact (brute force). An approximate index is planned, and it has to match the exact results before it ships.</p></div></div></details>
@@ -365,7 +364,7 @@
 
   <footer class="foot">
     <div class="foot-top">
-      <p class="brand"><span class="logo" aria-hidden="true"></span>Project Apex</p>
+      <p class="brand"><span class="logo" aria-hidden="true"></span>Bat DB</p>
       <nav class="fnav mono" aria-label="Footer">
         <a href="#product">Features</a><a href="#benchmarks">Benchmarks</a><a href="#repo">Source</a><a href="#status">Status</a><a href="#faq">FAQ</a><a href="#manifesto">Manifesto</a>
       </nav>
@@ -376,23 +375,23 @@
 
 <div class="widget">
   <span class="w-label"><span class="odo">Learn more</span></span>
-  <button class="w-btn" id="w-btn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="drawer" aria-label="Learn more about Project Apex. Press and hold to open.">
+  <button class="w-btn" id="w-btn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="drawer" aria-label="Learn more about Bat DB. Press and hold to open.">
     <svg viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="25"/></svg><span class="plus" aria-hidden="true">+</span>
   </button>
 </div>
 <div class="scrim" id="scrim"></div>
 <div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="d-title">
-  <div class="d-tabs" id="d-tabs" role="tablist" aria-label="About Project Apex">
+  <div class="d-tabs" id="d-tabs" role="tablist" aria-label="About Bat DB">
     <button role="tab" aria-selected="true" aria-controls="p1" id="t1">001 / What it is</button>
     <button role="tab" aria-selected="false" aria-controls="p2" id="t2" tabindex="-1">002 / Reading the evidence</button>
     <button role="tab" aria-selected="false" aria-controls="p3" id="t3" tabindex="-1">003 / What isn’t done</button>
   </div>
   <div class="d-body">
     <button class="d-close" id="d-close" type="button">Close <span aria-hidden="true">×</span></button>
-    <p class="mono" id="d-title">README / Project Apex</p>
+    <p class="mono" id="d-title">README / Bat DB</p>
     <div class="pane on" id="p1" role="tabpanel" aria-labelledby="t1">
       <h2>A database for agent memory.</h2>
-      <p>Project Apex writes every change to a write-ahead log and rebuilds its index from that log when it starts. Queries run inside a tenant scope, and a retried write with the same id and the same bytes is applied once.</p>
+      <p>Bat DB writes every change to a write-ahead log and rebuilds its index from that log when it starts. Queries run inside a tenant scope, and a retried write with the same id and the same bytes is applied once.</p>
       <p>It is an embedded Rust library. There is no server and no approximate index yet.</p>
     </div>
     <div class="pane" id="p2" role="tabpanel" aria-labelledby="t2">
