@@ -1,0 +1,9 @@
+    Finished `release` profile [optimized] target(s) in 2.13s
+     Running `/cache/target/release/profile --dir /cache/glove --out /work/benchmarks/h2h/profiling/raw/glove.json --ef 64,256,512 --queries 2000 --reps 3 --ip --f16`
+accel compiled=serial, haswell, skylake, icelake, genoa, sapphire, sapphireamx, graniteamx, turin, sierra, alder available=serial, haswell, skylake, icelake, genoa
+built n=1183514 (parallel) in 365.9s
+built n=1183514 (parallel) in 369.0s
+built n=1183514 (parallel) in 302.8s
+ef=64 native=0.620ms rescore=0.007ms full=0.626ms recall=0.8325
+ef=256 native=2.241ms rescore=0.007ms full=1.954ms recall=0.9334
+ef=512 native=3.710ms rescore=0.005ms full=3.680ms recall=0.9633

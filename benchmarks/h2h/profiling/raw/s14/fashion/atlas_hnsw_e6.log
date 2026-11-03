@@ -1,0 +1,15 @@
+   Compiling atlas-index v0.1.0 (/work/crates/atlas-index)
+   Compiling atlas-usearch v0.1.0 (/work/adapters/atlas-usearch)
+   Compiling atlas-bench v0.0.0 (/work/benchmarks/h2h/atlas-bench)
+    Finished `release` profile [optimized] target(s) in 18.33s
+     Running `/cache/target/release/atlas-bench --dir /cache/fashion --out /work/benchmarks/h2h/profiling/raw/s14/fashion/atlas_hnsw_e6.json --hnsw --fq 300`
+built n=60000 in 101.4s
+atlas ef=64 recall=0.9994699999999995 p95=1.523983ms
+atlas ef=128 recall=0.99974 p95=2.850712ms
+atlas ef=256 recall=0.9999199999999999 p95=5.483868ms
+atlas ef=512 recall=0.99998 p95=7.87084ms
+atlas ef=1024 recall=1.0 p95=10.33457ms
+atlas sel=100permille recall=1.0 p95=10.308493ms route=exact pre-filter scan over allowed ids
+atlas sel=50permille recall=1.0 p95=5.064812ms route=exact pre-filter scan over allowed ids
+atlas sel=10permille recall=1.0 p95=1.055001ms route=exact pre-filter scan over allowed ids
+atlas sel=1permille recall=1.0 p95=0.350121ms route=exact pre-filter scan over allowed ids

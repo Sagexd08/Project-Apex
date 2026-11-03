@@ -28,6 +28,8 @@ impl Running {
         let server = Arc::new(Server {
             engine: Arc::new(engine),
             auth: Authenticator::new(keys),
+            lcf: Default::default(),
+            throttle: Default::default(),
         });
         let stop = Arc::new(AtomicBool::new(false));
         let s2 = Arc::clone(&stop);
@@ -91,7 +93,9 @@ fn health_console_and_auth_gate() {
         (200, "ok".into())
     );
     let (status, page) = raw(srv.addr, b"GET / HTTP/1.1\r\n\r\n");
-    assert!(status == 200 && page.contains("Atlas console"));
+    assert!(status == 200 && page.contains("Bat DB console"));
+    let (pstatus, playground) = raw(srv.addr, b"GET /playground HTTP/1.1\r\n\r\n");
+    assert!(pstatus == 200 && playground.contains("Bat DB Playground"));
     assert_eq!(call(srv.addr, "GET", "/v1/count", None, "").0, 401);
     assert_eq!(
         call(srv.addr, "GET", "/v1/count", Some("wrong-wrong-key"), "").0,
@@ -204,7 +208,7 @@ fn hostile_input_is_rejected_not_fatal() {
     let nested = format!(r#"{{"id":1,"vector":[1,0,0,0],"metadata":{deep}}}"#);
     assert_eq!(post("/v1/insert", &nested), 400);
     let big = format!(
-        "POST /v1/insert HTTP/1.1\r\nContent-Length: {}\r\n\r\n",
+        "POST /v1/insert HTTP/1.1\r\nAuthorization: Bearer {ALICE}\r\nContent-Length: {}\r\n\r\n",
         9 * 1024 * 1024
     );
     assert_eq!(raw(srv.addr, big.as_bytes()).0, 413);
@@ -253,6 +257,39 @@ fn key_parsing_rejects_weak_or_malformed_specs() {
     assert!(StaticKeys::parse("alice=longenoughsecret").is_ok());
     assert!(StaticKeys::parse("alice=samesecret1234,bob=samesecret1234").is_err());
     assert!(StaticKeys::parse("alice=samesecret1234,bob=othersecret5678").is_ok());
+}
+
+#[test]
+fn unauthenticated_body_is_never_read() {
+    let dir = tmp("preauth");
+    let srv = Running::start(&dir);
+    let mut s = TcpStream::connect(srv.addr).unwrap();
+    s.write_all(b"POST /v1/insert HTTP/1.1\r\ncontent-length: 8000000\r\n\r\n")
+        .unwrap();
+    let mut out = Vec::new();
+    let _ = s.read_to_end(&mut out);
+    assert!(String::from_utf8_lossy(&out).starts_with("HTTP/1.1 401"));
+    let req = "POST /v1/insert HTTP/1.1\r\nauthorization: Bearer wrong-wrong-key\r\ncontent-length: 8000000\r\n\r\n";
+    let (status, _) = raw(srv.addr, req.as_bytes());
+    assert_eq!(status, 401);
+    srv.shutdown();
+}
+
+#[test]
+fn repeated_failed_authentication_is_throttled() {
+    let dir = tmp("throttle");
+    let srv = Running::start(&dir);
+    let mut seen_429 = false;
+    for _ in 0..40 {
+        if call(srv.addr, "GET", "/v1/count", Some("wrong-wrong-key"), "").0 == 429 {
+            seen_429 = true;
+            break;
+        }
+    }
+    assert!(seen_429);
+    assert_eq!(call(srv.addr, "GET", "/v1/count", Some(ALICE), "").0, 429);
+    assert_eq!(raw(srv.addr, b"GET /healthz HTTP/1.1\r\n\r\n").0, 200);
+    srv.shutdown();
 }
 
 #[test]
@@ -344,4 +381,56 @@ fn metadata_filter_search_over_http() {
     assert_eq!(st, 200);
     assert!(out["hits"].as_array().unwrap().is_empty());
     srv.shutdown();
+}
+
+#[test]
+fn batch_insert_is_tenant_scoped_and_validated() {
+    let dir = tmp("batch");
+    let srv = Running::start(&dir);
+    let items: Vec<Value> = (0..50u64)
+        .map(|i| json!({ "id": i, "vector": [1.0, i as f32, 0.0, 0.0] }))
+        .collect();
+    let ok = call(
+        srv.addr,
+        "POST",
+        "/v1/insert_batch",
+        Some(ALICE),
+        &json!({ "items": items }).to_string(),
+    );
+    assert_eq!(ok.0, 200);
+    assert_eq!(ok.1["inserted"], 50);
+    assert_eq!(
+        call(srv.addr, "GET", "/v1/count", Some(ALICE), "").1,
+        json!({ "count": 50 })
+    );
+    assert_eq!(
+        call(srv.addr, "GET", "/v1/count", Some(BOB), "").1,
+        json!({ "count": 0 })
+    );
+    let empty = call(
+        srv.addr,
+        "POST",
+        "/v1/insert_batch",
+        Some(ALICE),
+        r#"{"items":[]}"#,
+    );
+    assert_eq!(empty.0, 400);
+    let noauth = call(
+        srv.addr,
+        "POST",
+        "/v1/insert_batch",
+        None,
+        r#"{"items":[]}"#,
+    );
+    assert_eq!(noauth.0, 401);
+    let mixed = json!({ "items": [
+        { "id": 100, "vector": [1.0, 0.0, 0.0, 0.0] },
+        { "id": 101, "vector": [1.0, 0.0] }
+    ]})
+    .to_string();
+    let r = call(srv.addr, "POST", "/v1/insert_batch", Some(ALICE), &mixed);
+    assert_eq!(r.0, 400);
+    assert_eq!(r.1["inserted"], 1);
+    srv.shutdown();
+    let _ = std::fs::remove_dir_all(dir);
 }

@@ -1,0 +1,5 @@
+date: 2026-11-03T21:28:15+05:30
+digest: files=83 digest=11065ea5d74e1d71a44a3257269cbf1b
+atlas_sha256: 72009cd0d7b4df998eeee7abc6fe00d081a7923ba0e61a81f2c8e75d195a8210
+note: Atlas only, populate on open; Qdrant comparison numbers are exp09/n1000000 stages 2 and 3, not contiguous
+docker_running: 

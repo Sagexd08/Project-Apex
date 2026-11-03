@@ -1,0 +1,53 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
+   Compiling shlex v2.0.1
+   Compiling find-msvc-tools v0.1.15
+   Compiling hashbrown v0.17.1
+   Compiling equivalent v1.0.3
+   Compiling scratch v1.0.9
+   Compiling cc v1.10.0
+   Compiling serde_core v1.0.229
+   Compiling termcolor v1.4.1
+   Compiling cxxbridge-flags v1.0.205
+   Compiling indexmap v2.14.2
+   Compiling crossbeam-utils v0.8.23
+   Compiling unicode-width v0.2.3
+   Compiling codespan-reporting v0.13.1
+   Compiling zmij v1.0.23
+   Compiling serde v1.0.229
+   Compiling crossbeam-epoch v0.9.21
+   Compiling thiserror v2.0.21
+   Compiling crossbeam-deque v0.8.8
+   Compiling syn v3.0.9
+   Compiling link-cplusplus v1.0.12
+   Compiling cxx v1.0.205
+   Compiling numkong v7.8.6
+   Compiling serde_json v1.0.154
+   Compiling foldhash v0.2.0
+   Compiling itoa v1.0.18
+   Compiling rayon-core v1.13.0
+   Compiling memchr v2.8.3
+   Compiling either v1.19.0
+   Compiling cxx-build v1.0.205
+   Compiling rayon v1.12.0
+   Compiling thiserror-impl v2.0.21
+   Compiling serde_derive v1.0.229
+   Compiling cxxbridge-macro v1.0.205
+   Compiling usearch v2.26.6
+   Compiling atlas-core v0.1.0 (/work/crates/atlas-core)
+   Compiling atlas-index v0.1.0 (/work/crates/atlas-index)
+   Compiling atlas-usearch v0.1.0 (/work/adapters/atlas-usearch)
+   Compiling atlas-bench v0.0.0 (/work/benchmarks/h2h/atlas-bench)
+    Finished `release` profile [optimized] target(s) in 4m 20s
+     Running `/cache/target/release/atlas-bench --dir /cache/fashion --out /work/benchmarks/h2h/profiling/raw/s14/fashion/atlas_hnsw_native.json --hnsw --fq 300`
+built n=60000 in 63.6s
+atlas ef=64 recall=0.9994699999999995 p95=0.823895ms
+atlas ef=128 recall=0.99974 p95=1.351299ms
+atlas ef=256 recall=0.9999199999999999 p95=3.974618ms
+atlas ef=512 recall=0.99998 p95=4.992192999999999ms
+atlas ef=1024 recall=1.0 p95=7.526863ms
+atlas sel=100permille recall=1.0 p95=6.909998ms route=exact pre-filter scan over allowed ids
+atlas sel=50permille recall=1.0 p95=3.387005ms route=exact pre-filter scan over allowed ids
+atlas sel=10permille recall=1.0 p95=0.805097ms route=exact pre-filter scan over allowed ids
+atlas sel=1permille recall=1.0 p95=0.42310299999999995ms route=exact pre-filter scan over allowed ids

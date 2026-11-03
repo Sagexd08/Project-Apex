@@ -38,7 +38,7 @@
 <p>Segments are immutable once sealed. A commit builds one new sealed segment and publishes a new snapshot that lists the old segments plus the new one. A reader copies the current snapshot pointer, then never takes a lock again. Because the quantizer has no trained state, a writer encodes a new vector from the seed alone: no codebook to retrain and no moment when stored codes and the quantizer disagree. The full definition, and what is not yet defined, is on the <a href="snapshot-protocol.html">snapshot protocol</a> page.</p></section>
 
 <section id="result"><h2>What was measured</h2>
-<p>One synthetic benchmark, one machine, one run of each configuration. Raw results are in <code>benchmarks/prism/results/results.json</code>, and the <a href="prism.html#evidence">evidence page</a> shows them with their limits.</p>
+<p>One synthetic benchmark, one machine, one run of each configuration. Raw results are in <code>benchmarks/prism/results/results.json</code>, and the <a href="evidence.html">evidence page</a> shows them with their limits.</p>
 <div class="tw"><table><thead><tr><th>Quantity</th><th>Value</th><th>Status</th></tr></thead><tbody>
 <tr><td>Bits read per coordinate per vector at z = 3</td><td>about 1.06, against 4 for a flat 4-bit scan</td><td><span class="badge b-measured">Measured</span> synthetic data</td></tr>
 <tr><td>Fewer bits read than a flat 4-bit scan</td><td>about 3.8 times</td><td><span class="badge b-measured">Measured</span></td></tr>

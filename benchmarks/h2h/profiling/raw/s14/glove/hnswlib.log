@@ -1,0 +1,9 @@
+hnswlib ef=64 recall=0.8332 p95=0.414ms
+hnswlib ef=128 recall=0.8895 p95=0.685ms
+hnswlib ef=256 recall=0.9340 p95=1.251ms
+hnswlib ef=512 recall=0.9659 p95=2.367ms
+hnswlib ef=1024 recall=0.9853 p95=4.562ms
+hnswlib sel=10% recall=0.997 p95=24.6ms ret=10.0
+hnswlib sel=5% recall=0.999 p95=45.8ms ret=10.0
+hnswlib sel=1% recall=1.000 p95=166.6ms ret=10.0
+hnswlib sel=0.1% recall=1.000 p95=1039.5ms ret=10.0

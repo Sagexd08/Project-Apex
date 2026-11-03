@@ -10,6 +10,7 @@ atlas-storage.workspace = true
 atlas-index.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+crc32fast.workspace = true
 
 [dev-dependencies]
 atlas-core = { workspace = true, features = ["test-auth"] }

@@ -1,0 +1,12 @@
+    Finished `release` profile [optimized] target(s) in 1.60s
+     Running `/cache/target/release/atlas-bench --dir /cache/nytimes --out /work/benchmarks/h2h/profiling/raw/s14/nytimes/atlas_f16.json --f16 --fq 300`
+built n=290000 in 704.2s
+atlas ef=64 recall=0.8860499999999826 p95=1.080405ms
+atlas ef=128 recall=0.9133299999999815 p95=1.858947ms
+atlas ef=256 recall=0.9360899999999803 p95=3.356562ms
+atlas ef=512 recall=0.9556299999999753 p95=7.854873ms
+atlas ef=1024 recall=0.9706099999999745 p95=14.795317ms
+atlas sel=100permille recall=0.9956666666666668 p95=22.899283999999998ms route=exact pre-filter scan over allowed ids
+atlas sel=50permille recall=0.9990000000000001 p95=12.369773ms route=exact pre-filter scan over allowed ids
+atlas sel=10permille recall=1.0 p95=4.382631ms route=exact pre-filter scan over allowed ids
+atlas sel=1permille recall=1.0 p95=2.255994ms route=exact pre-filter scan over allowed ids

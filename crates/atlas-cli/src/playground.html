@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bat DB Playground</title>
+<style>
+:root{--bg:#0a0a0a;--panel:#141414;--fg:#ffffff;--mut:#a3a3a3;--line:#262626;--acc:#ffffff;--acc2:#e5e5e5;--err:#f87171;--ok:#86efac;--hl:#e5e5e5;--code:#0a0a0a;--k:#ffffff;--s:#a3a3a3;--n:#e5e5e5;color-scheme:dark}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:13px/1.5 Inter,Geist,system-ui,-apple-system,Segoe UI,sans-serif;display:grid;grid-template-rows:auto 1fr}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+h1{font:700 17px Inter,Geist,system-ui,sans-serif;margin:0;letter-spacing:-.01em}h1 small{font:12px system-ui;color:var(--mut);margin-left:8px}
+.conn{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap}
+.conn input{width:210px}.dot{width:9px;height:9px;border-radius:50%;background:var(--mut);display:inline-block}.dot.on{background:var(--ok)}.dot.bad{background:var(--err)}
+input,textarea,select{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:100%}
+textarea{resize:vertical;min-height:64px;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+button{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 11px;cursor:pointer}
+button:hover{border-color:var(--acc)}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+button.primary{background:var(--acc);color:#0a0a0a;border-color:var(--acc);font-weight:600}button[disabled]{opacity:.5;cursor:default}
+main{display:grid;grid-template-columns:320px minmax(0,1fr) 380px;min-height:0}
+@media (max-width:1100px){body{overflow:auto;display:block}main{display:block}aside,section{border:0!important}}
+aside,section{min-height:0;overflow:auto;padding:14px}
+#left{border-right:1px solid var(--line);background:var(--panel)}#right{border-left:1px solid var(--line);background:var(--panel)}
+h2{font:600 11px system-ui;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:16px 0 8px}h2:first-child{margin-top:0}
+.tool{border:1px solid var(--line);border-radius:8px;margin:6px 0;background:var(--bg)}
+.tool>button{width:100%;text-align:left;border:0;background:none;display:flex;justify-content:space-between;gap:8px;padding:8px 10px}
+.tool .nm{font:600 12.5px ui-monospace,Consolas,monospace;color:var(--acc)}.tool .ds{color:var(--mut);font-size:12px;display:block;font-weight:400;font-family:system-ui}
+.tool form{display:none;padding:0 10px 10px;gap:6px}.tool.open form{display:grid}
+.tool label{font-size:11.5px;color:var(--mut);display:grid;gap:2px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.mut{color:var(--mut)}.mono{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+#feed{display:grid;gap:10px;align-content:start}
+.msg{border:1px solid var(--line);border-left:4px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--panel);cursor:pointer}
+.msg.say{border-left-color:var(--acc2);background:transparent;cursor:default}.msg.say .who{color:var(--acc2)}
+.msg.call{border-left-color:var(--acc)}.msg.call.err{border-left-color:var(--err)}.msg.sel{outline:2px solid var(--hl);outline-offset:1px}
+.who{font:600 11px system-ui;text-transform:uppercase;letter-spacing:.07em;color:var(--mut)}
+.pill{display:inline-block;font:11px ui-monospace,Consolas,monospace;border:1px solid var(--line);border-radius:9px;padding:0 7px;margin-left:6px;color:var(--mut)}.pill.ok{color:var(--ok);border-color:var(--ok)}.pill.err{color:var(--err);border-color:var(--err)}
+.hits{margin:6px 0 0;padding:0;list-style:none;display:grid;gap:4px}.hits li{border:1px solid var(--line);border-radius:6px;padding:5px 8px;background:var(--bg)}.hits b{font-weight:600}.hits .sup{text-decoration:line-through;color:var(--mut)}
+pre{margin:0;background:var(--code);border:1px solid var(--line);border-radius:6px;padding:9px 10px;overflow:auto;max-height:300px;font:12px/1.45 ui-monospace,Consolas,monospace;white-space:pre-wrap;word-break:break-word}
+.k{color:var(--k)}.s{color:var(--s)}.n{color:var(--n)}
+#spark{width:100%;height:46px;display:block}
+.empty{color:var(--mut);padding:22px;border:1px dashed var(--line);border-radius:8px;text-align:center}
+.note{color:var(--mut);font-size:12px;margin-top:6px}
+@media (prefers-reduced-motion:no-preference){.msg{transition:border-color .15s}}
+</style>
+</head>
+<body>
+<header>
+<h1>Bat DB Playground<small>The Vector Database for AI Agents</small></h1>
+<div class="conn">
+<span class="dot" id="dot"></span><span id="cs" class="mut">not connected</span>
+<input id="key" type="password" placeholder="API key" autocomplete="off" aria-label="API key">
+<button id="go" class="primary">Connect</button>
+</div>
+</header>
+<main>
+<aside id="left">
+<h2>Scenario</h2>
+<div class="row"><button id="demo" class="primary">Run agent demo</button><button id="seed">Seed sample memory</button></div>
+<div class="note">The demo is scripted, with no language model. It issues the same tool calls an agent would: remember, link, recall, supersede, and a time-travel recall.</div>
+<h2>Second tenant (optional)</h2>
+<input id="key2" type="password" placeholder="another tenant's API key" autocomplete="off" aria-label="Second tenant API key">
+<div class="note">With a second key, the demo proves the other tenant's recall returns nothing.</div>
+<h2>Agent tools</h2>
+<div id="tools"></div>
+</aside>
+<section id="mid">
+<div id="feed"><div class="empty" id="empty">Connect with an API key, then press <b>Run agent demo</b> or open a tool on the left.</div></div>
+</section>
+<aside id="right">
+<h2>Latency (ms, last 40 calls)</h2>
+<svg id="spark" viewBox="0 0 340 46" preserveAspectRatio="none" role="img" aria-label="latency of recent calls"></svg>
+<div id="lat" class="note">no calls yet</div>
+<h2>Inspector</h2>
+<div id="insp" class="note">Select a call in the transcript.</div>
+</aside>
+</main>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const S={key:"",key2:"",calls:[],sel:null,ver:null,busy:false};
+function store(k,v){try{if(v===undefined)return sessionStorage.getItem(k);sessionStorage.setItem(k,v)}catch(e){return null}}
+function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e}
+function jsonNode(v,ind){
+  const f=document.createDocumentFragment(),pad="  ".repeat(ind||0);
+  if(v===null||v===undefined){f.append(el("span","n","null"));return f}
+  if(typeof v==="string"){f.append(el("span","s",JSON.stringify(v)));return f}
+  if(typeof v!=="object"){f.append(el("span","n",String(v)));return f}
+  const arr=Array.isArray(v),ks=arr?v.map((_,i)=>i):Object.keys(v);
+  if(!ks.length){f.append(document.createTextNode(arr?"[]":"{}"));return f}
+  f.append(document.createTextNode(arr?"[\n":"{\n"));
+  ks.forEach((k,i)=>{f.append(document.createTextNode(pad+"  "));if(!arr){f.append(el("span","k",JSON.stringify(k)),document.createTextNode(": "))}f.append(jsonNode(v[k],(ind||0)+1));f.append(document.createTextNode(i<ks.length-1?",\n":"\n"))});
+  f.append(document.createTextNode(pad+(arr?"]":"}")));return f}
+function pre(v){const p=el("pre");p.append(jsonNode(v,0));return p}
+async function raw(key,method,path,body){
+  const t0=performance.now();let status=0,data=null;
+  try{const r=await fetch(path,{method,headers:{"Authorization":"Bearer "+key,"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});status=r.status;const tx=await r.text();try{data=JSON.parse(tx)}catch(e){data={raw:tx}}}
+  catch(e){data={error:"NETWORK",detail:String(e)}}
+  return {status,data,ms:performance.now()-t0}}
+const TOOLS=[
+ {name:"remember",d:"Store a decision, fact or note as a memory node.",m:"POST",p:"/v1/lcf/node",f:[["key","key","adr-demo-1"],["title","title","Use group commit for the WAL"],["body","body","Batch fsyncs across concurrent writers to raise write throughput.","ta"],["kind","kind","decision"]],b:v=>({key:v.key,title:v.title,body:v.body,kind:v.kind})},
+ {name:"recall",d:"Ask a question; get the relevant memories and how they connect.",m:"POST",p:"/v1/lcf/query",f:[["q","question","why did we choose group commit?"],["max_hops","max hops","2"],["max_nodes","max nodes","12"],["as_of","as of version (optional)",""]],b:v=>{const o={q:v.q,max_hops:+v.max_hops||2,max_nodes:+v.max_nodes||12};if(v.as_of)o.as_of=+v.as_of;return o}},
+ {name:"get_memory",d:"Fetch one memory by key.",m:"POST",p:"/v1/lcf/node/get",f:[["key","key","adr-demo-1"]],b:v=>({key:v.key})},
+ {name:"expand",d:"List what a memory connects to.",m:"POST",p:"/v1/lcf/expand",f:[["key","key","adr-demo-1"]],b:v=>({key:v.key})},
+ {name:"link",d:"Relate two memories.",m:"POST",p:"/v1/lcf/edge",f:[["rel","relation","SUPPORTS"],["from","from key","adr-demo-2"],["to","to key","adr-demo-1"]],b:v=>({rel:v.rel,from:v.from,to:v.to})},
+ {name:"supersede",d:"Replace a decision; the old one is kept and marked.",m:"POST",p:"/v1/lcf/supersede",f:[["old","old key","adr-demo-1"],["key","new key","adr-demo-3"],["title","new title","Use per-core WAL shards"],["body","new body","Shard the log per core to remove the single fsync queue.","ta"],["kind","kind","decision"]],b:v=>({old:v.old,node:{key:v.key,title:v.title,body:v.body,kind:v.kind}})},
+ {name:"stats",d:"How many records, and the current version.",m:"GET",p:"/v1/lcf/stats",f:[],b:()=>undefined}
+];
+const SAMPLE=[
+ {key:"adr-demo-1",title:"Use group commit for the WAL",body:"Batch fsyncs across concurrent writers to raise write throughput without weakening durability.",kind:"decision"},
+ {key:"adr-demo-2",title:"Acked writes must survive kill -9",body:"A write is acknowledged only after its record is flushed to the log.",kind:"requirement"},
+ {key:"adr-demo-4",title:"Restart must not replay the whole log",body:"Checkpoints write a memory-mapped vector file so restart maps it instead of parsing every record.",kind:"decision"}];
+function curlOf(c){return "curl -s -X "+c.method+" http://127.0.0.1:8080"+c.path+" -H \"Authorization: Bearer $BATDB_KEY\" -H \"Content-Type: application/json\""+(c.req?" -d '"+JSON.stringify(c.req)+"'":"")}
+function pyOf(c){return "import os, requests\nr = requests.request(\""+c.method+"\", \"http://127.0.0.1:8080"+c.path+"\",\n    headers={\"Authorization\": \"Bearer \"+os.environ[\"BATDB_KEY\"]},\n    json="+JSON.stringify(c.req||null)+")\nprint(r.json())"}
+function toolSchema(t){const props={},req=[];t.f.forEach(f=>{props[f[0]]={type:"string",description:f[1]};if(f[0]!=="as_of")req.push(f[0])});return {type:"function",function:{name:t.name,description:t.d,parameters:{type:"object",properties:props,required:req}}}}
+async function call(tool,body,key,tag){
+  const k=key||S.key;if(!k){toast("Enter an API key first");return null}
+  const r=await raw(k,tool.m,tool.p,body);
+  const c={id:S.calls.length+1,tool:tool.name,method:tool.m,path:tool.p,req:body,res:r.data,status:r.status,ms:r.ms,tag:tag||"",t:new Date()};
+  S.calls.push(c);addCall(c);spark();
+  if(tool.name==="stats"&&r.data&&typeof r.data.version==="number")S.ver=r.data.version;
+  return c}
+function toast(m){const e=$("empty");if(e){e.textContent=m}else{addSay("playground",m)}}
+function feedAdd(n){const e=$("empty");if(e)e.remove();$("feed").append(n);n.scrollIntoView({block:"end",behavior:"smooth"})}
+function addSay(who,text){const d=el("div","msg say");d.append(el("div","who",who),el("div","",text));feedAdd(d)}
+function summary(c){
+  const r=c.res,box=el("div");
+  const nodes=r&&(r.nodes||(r.center?[r.center]:null));
+  if(nodes&&nodes.length){const ul=el("ul","hits");nodes.slice(0,6).forEach(n=>{const li=el("li");const b=el("b",n.status==="superseded"?"sup":"",n.title||n.key);li.append(b,el("span","mut","  "+(n.kind||"")+" · "+n.key));ul.append(li)});box.append(ul);if(nodes.length>6)box.append(el("div","note","+"+(nodes.length-6)+" more, see the inspector"))}
+  else if(r&&r.error)box.append(el("div","",r.error+(r.detail?": "+r.detail:"")));
+  else if(r&&typeof r.seq==="number")box.append(el("div","mut","written at sequence "+r.seq));
+  else if(r&&typeof r.records==="number")box.append(el("div","mut",r.records+" records, version "+r.version));
+  return box}
+function addCall(c){
+  const ok=c.status>=200&&c.status<300,d=el("div","msg call"+(ok?"":" err"));d.tabIndex=0;d.dataset.id=c.id;
+  const h=el("div","who");h.append(document.createTextNode((c.tag?c.tag+" · ":"")+"tool call"));
+  h.append(el("span","pill "+(ok?"ok":"err"),String(c.status||"net")),el("span","pill",c.ms.toFixed(0)+" ms"));
+  const line=el("div","mono",c.tool+"("+(c.req?JSON.stringify(c.req).slice(0,140):"")+")");
+  d.append(h,line,summary(c));
+  d.addEventListener("click",()=>select(c.id));d.addEventListener("keydown",e=>{if(e.key==="Enter")select(c.id)});
+  feedAdd(d)}
+function select(id){
+  S.sel=id;document.querySelectorAll(".msg.call").forEach(n=>n.classList.toggle("sel",+n.dataset.id===id));
+  const c=S.calls[id-1],box=$("insp");box.textContent="";if(!c)return;
+  box.append(el("div","who","request"));
+  const rq={method:c.method,path:c.path,headers:{Authorization:"Bearer ***"},body:c.req||null};box.append(pre(rq));
+  box.append(el("div","who","response · "+c.status+" · "+c.ms.toFixed(1)+" ms"),pre(c.res));
+  const row=el("div","row");row.style.margin="10px 0";
+  [["Copy curl",()=>curlOf(c)],["Copy Python",()=>pyOf(c)],["Copy tool schema",()=>JSON.stringify(toolSchema(TOOLS.find(t=>t.name===c.tool)),null,2)]].forEach(a=>{const b=el("button","",a[0]);b.onclick=async()=>{try{await navigator.clipboard.writeText(a[1]());b.textContent="Copied"}catch(e){b.textContent="Copy failed"}setTimeout(()=>b.textContent=a[0],1200)};row.append(b)});
+  box.append(row)}
+function spark(){
+  const last=S.calls.slice(-40),xs=last.map(c=>c.ms),svg=$("spark");svg.textContent="";if(!xs.length)return;
+  const mx=Math.max(...xs,1),w=340/Math.max(xs.length,1),NS="http://www.w3.org/2000/svg";
+  xs.forEach((x,i)=>{const r=document.createElementNS(NS,"rect"),h=Math.max(2,44*x/mx);r.setAttribute("x",i*w+1);r.setAttribute("y",46-h);r.setAttribute("width",Math.max(1,w-2));r.setAttribute("height",h);r.setAttribute("rx","1");r.setAttribute("fill",last[i].status<300?"var(--acc)":"var(--err)");svg.append(r)});
+  const s=[...xs].sort((a,b)=>a-b);$("lat").textContent="p50 "+s[s.length>>1].toFixed(1)+" ms · max "+mx.toFixed(1)+" ms · "+S.calls.length+" calls"}
+function buildTools(){
+  const root=$("tools");TOOLS.forEach(t=>{
+    const w=el("div","tool"),b=el("button");const l=el("span");l.append(el("span","nm",t.name),el("span","ds",t.d));b.append(l,el("span","mut","▸"));
+    const f=el("form");f.setAttribute("autocomplete","off");const inputs={};
+    t.f.forEach(x=>{const lab=el("label","",x[1]);const i=x[3]==="ta"?el("textarea"):el("input");i.value=x[2];inputs[x[0]]=i;lab.append(i);f.append(lab)});
+    const run=el("button","primary","Run "+t.name);run.type="submit";f.append(run);
+    f.addEventListener("submit",async e=>{e.preventDefault();const v={};for(const k in inputs)v[k]=inputs[k].value;await call(t,t.b(v))});
+    b.onclick=()=>w.classList.toggle("open");w.append(b,f);root.append(w)})}
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+async function seed(){
+  const node=TOOLS[0];addSay("agent","Seeding a small memory so there is something to recall.");
+  for(const n of SAMPLE){await call(node,n,null,"seed")}
+  const link=TOOLS.find(t=>t.name==="link");await call(link,{rel:"SUPPORTS",from:"adr-demo-2",to:"adr-demo-1"},null,"seed");
+  await call(TOOLS.find(t=>t.name==="stats"),undefined,null,"seed")}
+async function demo(){
+  if(S.busy)return;if(!S.key){toast("Enter an API key first");return}
+  S.busy=true;$("demo").disabled=true;
+  try{
+    const T=n=>TOOLS.find(t=>t.name===n);
+    addSay("agent","Step 1. I will write down what the team decided, so I can recall it later.");await wait(500);
+    await seed();await wait(500);
+    const v1=S.ver;
+    addSay("agent","Step 2. A teammate asks why we use group commit. I recall instead of guessing.");await wait(600);
+    await call(T("recall"),{q:"why did we choose group commit?",max_hops:2,max_nodes:12},null,"step 2");await wait(600);
+    addSay("agent","Step 3. The decision changed. I supersede it; the old memory is kept but marked, never overwritten.");await wait(600);
+    await call(T("supersede"),{old:"adr-demo-1",node:{key:"adr-demo-3",title:"Use per-core WAL shards",body:"Shard the log per core to remove the single fsync queue.",kind:"decision"}},null,"step 3");await wait(500);
+    await call(T("stats"),undefined,null,"step 3");await wait(500);
+    addSay("agent","Step 4. What do I recall now, and what did I believe before the change? The second call pins the earlier version.");await wait(600);
+    await call(T("recall"),{q:"why did we choose group commit?",max_hops:2,max_nodes:12},null,"step 4 now");await wait(400);
+    if(typeof v1==="number")await call(T("recall"),{q:"why did we choose group commit?",max_hops:2,max_nodes:12,as_of:v1},null,"step 4 as of v"+v1);
+    if(S.key2){await wait(500);addSay("agent","Step 5. Isolation. Another tenant asks the same question with its own key. It must see none of this.");await wait(600);
+      const o=await call(T("recall"),{q:"why did we choose group commit?",max_hops:2,max_nodes:12},S.key2,"step 5 other tenant");
+      const n=o&&o.res&&(o.res.nodes||[]).length;addSay("result",n===0?"Other tenant received 0 memories. Isolation held.":(n>0?"Other tenant received "+n+" memories. That is a leak.":"The second key was rejected or returned an error; check the inspector."))}
+    else addSay("note","Add a second tenant key on the left to include the isolation check.");
+    addSay("agent","Done. Click any tool call to see the exact request and response, and copy it as curl, Python or a tool schema.");
+  }finally{S.busy=false;$("demo").disabled=false}}
+async function connect(){
+  S.key=$("key").value.trim();S.key2=$("key2").value.trim();store("batdb_key",S.key);store("batdb_key2",S.key2);
+  if(!S.key){$("cs").textContent="enter a key";return}
+  const r=await raw(S.key,"GET","/v1/lcf/stats");
+  const ok=r.status===200;$("dot").className="dot "+(ok?"on":"bad");
+  $("cs").textContent=ok?"connected · "+r.data.records+" records · v"+r.data.version:(r.status===401?"key rejected":"server unreachable");
+  if(ok)S.ver=r.data.version}
+$("go").onclick=connect;$("demo").onclick=demo;$("seed").onclick=async()=>{if(!S.key){toast("Enter an API key first");return}await seed()};
+buildTools();
+(function init(){const h=location.hash.match(/key=([^&]+)/);const k=h?decodeURIComponent(h[1]):store("batdb_key");if(h)history.replaceState(null,"",location.pathname);
+  if(k){$("key").value=k;}const k2=store("batdb_key2");if(k2)$("key2").value=k2;if(k)connect()})();
+</script>
+</body>
+</html>

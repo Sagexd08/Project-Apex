@@ -1,0 +1,14 @@
+<section class="s cream" id="h2h" aria-labelledby="h2h-h">
+    <div class="wrap">
+      <p class="mono lbl">Head to head</p>
+      <h2 id="h2h-h">Atlas against hnswlib, measured the same session.</h2>
+      <p class="grey">Atlas with the USearch graph stored as F16 and exact F32 rescoring, against hnswlib. Same build settings (M 32, ef_construction 200, one build thread), three repetitions, median. The host was not idle, so these are observations and not a ranking. Cell: ef, recall@10, p50 ms / p99 ms, at the first ef with recall@10 of at least 0.95.</p>
+      <div class="tbl wrapc"><table><thead><tr><th>Dataset</th><th>hnswlib</th><th>Atlas F32</th><th>Atlas F16</th><th>Reading</th></tr></thead><tbody>
+        <tr><td>Fashion-784 (60k)</td><td>64, 0.9984, 0.327 / 1.716</td><td>64, 0.9984, 0.384 / 0.818</td><td>64, 0.9984, 0.241 / 0.515</td><td>Atlas F16 faster at equal recall, p99 about 3x lower</td></tr>
+        <tr><td>SIFT-128 (1M)</td><td>64, 0.9810, 0.196 / 0.398</td><td>64, 0.9811, 0.432 / 0.997</td><td>64, 0.9811, 0.317 / 0.737</td><td>hnswlib faster, gap 1.6x</td></tr>
+        <tr><td>NYTimes-256 (290k)</td><td>512, 0.9578, 3.500 / 10.941</td><td>512, 0.9565, 7.758 / 13.743</td><td>512, 0.9556, 5.788 / 9.365</td><td>hnswlib faster at p50, gap 1.65x</td></tr>
+        <tr><td>GloVe-100 (1.18M)</td><td>512, 0.9659, 1.591 / 3.135</td><td>512, 0.9659, 3.615 / 7.777</td><td>512, 0.9654, 2.880 / 6.664</td><td>hnswlib faster, gap 1.8x</td></tr>
+      </tbody></table></div>
+      <p class="grey">Not claimed: any ranking. Source and caveats: <code>docs/evidence/s14-f16-same-session.md</code>. Zero cross-tenant or filtered-search leaks were recorded in every earlier run.</p>
+    </div>
+  </section>

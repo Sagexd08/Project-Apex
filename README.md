@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/brand/readme-banner.png" alt="Project Apex DB: open-source memory database" width="100%">
+  <img src="docs/brand/readme-banner.png" alt="Bat DB: open-source memory database" width="100%">
 </p>
 
 <p align="center">
@@ -9,7 +9,7 @@
   <a href="docs/HANDOFF.md">Handoff</a>
 </p>
 
-# Project Apex DB
+# Bat DB
 
 An open-source database for AI agent memory, written in Rust.
 
@@ -19,7 +19,7 @@ It writes every change to a write-ahead log, keeps each tenant's records separat
 
 ## Why
 
-An agent that runs for days has to remember earlier work, keep one user's data apart from another's, and cope with a request that may or may not have been applied. Most projects write that logic themselves, across a vector index, metadata tables, retry code and custom persistence. Project Apex puts the log, tenant scoping and retry handling in the database, to find out whether that is simpler than doing it in application code.
+An agent that runs for days has to remember earlier work, keep one user's data apart from another's, and cope with a request that may or may not have been applied. Most projects write that logic themselves, across a vector index, metadata tables, retry code and custom persistence. Bat DB puts the log, tenant scoping and retry handling in the database, to find out whether that is simpler than doing it in application code.
 
 ## What it does
 
@@ -51,7 +51,7 @@ docs/              status, security model, WAL format, durability notes, plan
 site/              the project website (plain HTML, CSS and JavaScript)
 ```
 
-The crates keep their internal `atlas-*` names. The public name is Project Apex DB.
+The crates keep their internal `atlas-*` names. The public name is Bat DB.
 
 ## Build and test
 
@@ -98,7 +98,7 @@ None have been run. When they exist, each result will list the dataset, hardware
 
 ## Where it fits
 
-Project Apex stores and retrieves data. It is not a model, an agent framework or a hosted service.
+Bat DB stores and retrieves data. It is not a model, an agent framework or a hosted service.
 
 - **Try it if** you want a database that logs every write, scopes queries by tenant and applies retries once, and you are happy to read the source and report problems.
 - **Stay with PostgreSQL if** you need relational queries, transactions or a vector index that works today. pgvector covers exact and approximate search.

@@ -1,0 +1,39 @@
+{
+ "engine": "qdrant",
+ "n": 1000000,
+ "dim": 64,
+ "cpus": 4.0,
+ "mem": "6g",
+ "reps": 5,
+ "runs": [
+  {
+   "rep": 0,
+   "restart_to_ready_ms": 522.9089999993448,
+   "acked_missing": 0
+  },
+  {
+   "rep": 1,
+   "restart_to_ready_ms": 471.08270000171615,
+   "acked_missing": 0
+  },
+  {
+   "rep": 2,
+   "restart_to_ready_ms": 479.3385000011767,
+   "acked_missing": 0
+  },
+  {
+   "rep": 3,
+   "restart_to_ready_ms": 469.21609999844804,
+   "acked_missing": 0
+  },
+  {
+   "rep": 4,
+   "restart_to_ready_ms": 426.99069999798667,
+   "acked_missing": 0
+  }
+ ],
+ "load_seconds": 85.39818740000192,
+ "count_after_load": 1000000,
+ "median_ms": 471.08270000171615,
+ "acked_missing_total": 0
+}

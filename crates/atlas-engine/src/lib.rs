@@ -19,6 +19,7 @@ pub use atlas_index::Hit;
 pub use atlas_index::Filter;
 
 mod checkpoint;
+mod vecfile;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Item {
@@ -304,6 +305,7 @@ pub struct Engine {
     max_tenant_vectors: usize,
     dir: PathBuf,
     applied: Arc<AtomicU64>,
+    checkpointed: AtomicU64,
     wal: Wal,
     parts: Arc<RwLock<Parts>>,
     ops: Arc<Mutex<OpMap>>,
@@ -420,13 +422,30 @@ impl Engine {
         });
         let wal_path = dir.join("wal.log");
         segment::remove_stale_temp(dir)?;
-        let seg_seq = match segment::latest_segment(dir)? {
+        vecfile::remove_stale_temp(dir);
+        let (seg_seq, mapped) = match segment::latest_segment_raw(dir)? {
             Some(seg) => {
-                checkpoint::load(&parts, &ops, &seg.payloads)?;
-                seg.wal_seq
+                let mapped = checkpoint::load(&parts, &ops, seg.payloads(), dir, seg.wal_seq)?;
+                (seg.wal_seq, mapped)
             }
-            None => 0,
+            None => (0, None),
         };
+        let legacy_segment = seg_seq > 0 && mapped.is_none();
+        if let Some(file) = mapped {
+            if std::env::var_os("ATLAS_EAGER_VERIFY").is_some() {
+                vecfile::verify(&file)?;
+            } else {
+                let (vp, vw, vs) = (poison.clone(), wal_failed.clone(), sink.clone());
+                std::thread::spawn(move || {
+                    if let Err(e) = vecfile::verify(&file) {
+                        vw.store(true, Ordering::SeqCst);
+                        if let Some(detail) = note_failure(&vp, Err(e)) {
+                            call_sink(&vs, &detail);
+                        }
+                    }
+                });
+            }
+        }
         if seg_seq > 0 && !wal_path.exists() {
             return Err(AtlasError::WalCorrupt(format!(
                 "segment ends at sequence {seg_seq} but wal.log is missing"
@@ -450,6 +469,7 @@ impl Engine {
             max_tenant_vectors: cfg.max_tenant_vectors,
             dir: dir.to_path_buf(),
             applied,
+            checkpointed: AtomicU64::new(if legacy_segment { 0 } else { seg_seq }),
             wal,
             parts,
             ops,
@@ -751,6 +771,14 @@ impl Engine {
         })
     }
 
+    pub fn applied_seq(&self) -> u64 {
+        self.applied.load(Ordering::SeqCst)
+    }
+
+    pub fn checkpointed_seq(&self) -> u64 {
+        self.checkpointed.load(Ordering::SeqCst)
+    }
+
     pub fn checkpoint(&self) -> Result<u64, AtlasError> {
         self.check_poison()?;
         // Serialize checkpoints: they share the `.tmp` name and prune older segments.
@@ -762,25 +790,30 @@ impl Engine {
                 checkpoint::snapshot(&parts),
             )
         };
-        let mut payloads = checkpoint::encode(snapshot)?;
         if seq == 0 {
             return Ok(0);
         }
         // A segment at or past `seq` already exists: never recreate a stale one.
         if segment::list_segments(&self.dir)?
             .last()
-            .is_some_and(|(newest, _)| *newest >= seq)
+            .is_some_and(|(newest, _)| {
+                *newest >= seq && self.dir.join(vecfile::file_name(*newest)).exists()
+            })
         {
+            self.checkpointed.fetch_max(seq, Ordering::SeqCst);
             return Ok(seq);
         }
+        let written = vecfile::write(&self.dir, seq, self.dim, &snapshot)?;
+        let mut payloads = vec![checkpoint::map_record(&written)];
         {
             let ops = self.ops.lock().map_err(|_| generic_poison())?;
             payloads.extend(checkpoint::ops(&ops, seq)?);
         }
         segment::write_segment(&self.dir, seq, &payloads)?;
-        // The new segment is already durable; failing to prune old ones is not a failure.
         let _ = segment::remove_older_than(&self.dir, seq);
+        vecfile::prune(&self.dir, seq);
         let _ = self.wal.cut_prefix(seq);
+        self.checkpointed.fetch_max(seq, Ordering::SeqCst);
         Ok(seq)
     }
 

@@ -1,0 +1,9 @@
+   Compiling atlas-bench v0.0.0 (/work/benchmarks/h2h/atlas-bench)
+    Finished `release` profile [optimized] target(s) in 7.14s
+     Running `/cache/target/release/profile --dir /cache/fashion --out /work/benchmarks/h2h/profiling/raw/fashion.json --ef 64,256,512 --queries 2000 --reps 3 --f16`
+accel compiled=serial, haswell, skylake, icelake, genoa, sapphire, sapphireamx, graniteamx, turin, sierra, alder available=serial, haswell, skylake, icelake, genoa
+loaded /cache/fashion/profile-L2sq.usearch
+built n=60000 (parallel) in 6.2s
+ef=64 native=0.379ms rescore=0.011ms full=0.387ms recall=0.9976
+ef=256 native=0.910ms rescore=0.011ms full=0.943ms recall=0.9992
+ef=512 native=1.555ms rescore=0.009ms full=1.525ms recall=0.9994

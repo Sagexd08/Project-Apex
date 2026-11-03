@@ -2,6 +2,12 @@ import json
 import os
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import manifest
+
+LEGACY = "--allow-legacy" in sys.argv
+sys.argv = [a for a in sys.argv if a != "--allow-legacy"]
+
 root = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "results")
 ENGINES = ["atlas", "hnswlib", "qdrant"]
 
@@ -16,7 +22,11 @@ for ds in datasets:
     res = {e: load(ds, e) for e in ENGINES}
     if not any(res.values()):
         continue
-    print(f"\n## {ds}\n")
+    ok, why = manifest.valid(os.path.join(root, ds))
+    if not ok and not LEGACY:
+        print(f"\n## {ds}\n\nNOT RANKABLE: {why} (use --allow-legacy to view old observations)")
+        continue
+    print(f"\n## {ds}\n" + ("" if ok else f"\nLEGACY, not rankable: {why}\n"))
     print("### Unfiltered recall@10 vs latency (median of repetitions, sequential single client)\n")
     print("| engine | ef | recall@10 | p50 ms | p95 ms | p99 ms | QPS seq | QPS 8 workers | reps |")
     print("|---|---|---|---|---|---|---|---|---|")

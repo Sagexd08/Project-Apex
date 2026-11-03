@@ -1,0 +1,13 @@
+   Compiling atlas-bench v0.0.0 (/work/benchmarks/h2h/atlas-bench)
+    Finished `release` profile [optimized] target(s) in 6.76s
+     Running `/cache/target/release/atlas-bench --dir /cache/fashion --out /work/benchmarks/h2h/profiling/raw/s14/fashion/atlas_f32.json --reps 3`
+built n=60000 in 41.6s
+atlas ef=64 recall=0.9984299999999983 p95=0.6003160000000001ms
+atlas ef=128 recall=0.9993599999999995 p95=0.946153ms
+atlas ef=256 recall=0.9997099999999997 p95=1.42537ms
+atlas ef=512 recall=0.9999599999999998 p95=2.33317ms
+atlas ef=1024 recall=0.99998 p95=3.746357ms
+atlas sel=100permille recall=1.0 p95=5.716894999999999ms route=exact pre-filter scan over allowed ids
+atlas sel=50permille recall=1.0 p95=3.060657ms route=exact pre-filter scan over allowed ids
+atlas sel=10permille recall=1.0 p95=0.7898000000000001ms route=exact pre-filter scan over allowed ids
+atlas sel=1permille recall=1.0 p95=0.414302ms route=exact pre-filter scan over allowed ids

@@ -1,9 +1,54 @@
 use atlas_core::{Metric, VectorId};
-use atlas_index::AnnIndex;
+use atlas_core::AtlasError;
+use atlas_index::{AnnIndex, Hit, HnswIndex};
 use atlas_usearch::UsearchIndex;
 use rayon::prelude::*;
 use serde_json::{json, Value};
 use std::time::Instant;
+
+enum Eng {
+    U(UsearchIndex),
+    H(HnswIndex),
+}
+
+impl Eng {
+    fn insert(&mut self, id: VectorId, v: &[f32]) -> Result<(), AtlasError> {
+        match self {
+            Eng::U(i) => i.insert(id, v, Value::Null),
+            Eng::H(i) => i.insert(id, v, Value::Null),
+        }
+    }
+    fn set_ef_search(&mut self, ef: usize) {
+        match self {
+            Eng::U(i) => i.set_ef_search(ef),
+            Eng::H(i) => i.set_ef_search(ef),
+        }
+    }
+    fn graph_serialized_len(&self) -> usize {
+        match self {
+            Eng::U(i) => i.graph_serialized_len(),
+            Eng::H(_) => 0,
+        }
+    }
+    fn search(&self, q: &[f32], k: usize, m: Metric) -> Result<Vec<Hit>, AtlasError> {
+        match self {
+            Eng::U(i) => i.search(q, k, m),
+            Eng::H(i) => i.search(q, k, m),
+        }
+    }
+    fn search_filtered(
+        &self,
+        q: &[f32],
+        k: usize,
+        m: Metric,
+        allow: &dyn Fn(VectorId) -> bool,
+    ) -> Result<Vec<Hit>, AtlasError> {
+        match self {
+            Eng::U(i) => i.search_filtered(q, k, m, allow),
+            Eng::H(i) => i.search_filtered(q, k, m, allow),
+        }
+    }
+}
 
 const K: usize = 10;
 const FILTER_EF: usize = 512;
@@ -186,11 +231,23 @@ fn main() {
         assert_eq!(v, bucket(id as u64), "filter hash mismatch at id {id}");
     }
 
-    let mut idx = UsearchIndex::with_metric(d, metric);
+    let f16 = a.iter().any(|x| x == "--f16");
+    let own = a.iter().any(|x| x == "--hnsw");
+    let mut idx = if own {
+        let h = HnswIndex::with_metric(d, metric)
+            .with_graph_params(32, 200)
+            .with_exact_below(0);
+        Eng::H(if f16 { h.with_f16_graph() } else { h })
+    } else {
+        let mut u = UsearchIndex::with_metric(d, metric);
+        if f16 {
+            u = u.with_f16_graph();
+        }
+        Eng::U(u)
+    };
     let t = Instant::now();
     for (i, v) in base.chunks_exact(d).enumerate() {
-        idx.insert(VectorId(i as u64), v, Value::Null)
-            .expect("insert");
+        idx.insert(VectorId(i as u64), v).expect("insert");
     }
     let build = t.elapsed().as_secs_f64();
     let hw_build = vmhwm_kb();
@@ -201,6 +258,22 @@ fn main() {
         .num_threads(8)
         .build()
         .expect("pool");
+    let variants: Vec<(String, usize, usize)> = if own {
+        vec![
+            ("base".into(), 4, 0),
+            ("pat16".into(), 4, 16),
+            ("pat32".into(), 4, 32),
+            ("pat64".into(), 4, 64),
+        ]
+    } else {
+        vec![("base".into(), 4, 0)]
+    };
+    let mut variants_out = serde_json::Map::new();
+    for (vname, vlines, vpat) in &variants {
+    if let Eng::H(h) = &mut idx {
+        h.set_prefetch_lines(*vlines);
+        h.set_patience(*vpat);
+    }
     let mut sweep = Vec::new();
     for &ef in &efs {
         idx.set_ef_search(ef);
@@ -223,6 +296,13 @@ fn main() {
             med["recall_at_10"], med["p95_ms"]
         );
         sweep.push(json!({"ef": ef, "reps": rs, "median": med, "qps_conc8": conc}));
+    }
+    variants_out.insert(vname.clone(), json!(sweep));
+    }
+    let sweep = variants_out["base"].clone();
+    if let Eng::H(h) = &mut idx {
+        h.set_prefetch_lines(4);
+        h.set_patience(0);
     }
 
     idx.set_ef_search(FILTER_EF);
@@ -263,7 +343,7 @@ fn main() {
     }
 
     let res = json!({
-        "engine": "atlas-usearch-adapter",
+        "engine": if own && f16 { "atlas-hnsw-own-f16" } else if own { "atlas-hnsw-own" } else if f16 { "atlas-usearch-adapter-f16" } else { "atlas-usearch-adapter" },
         "mode": "embedded library via AnnIndex trait, no WAL, no API",
         "params": {"M": 32, "ef_construction": 200, "metric": format!("{metric:?}"), "build_threads": 1},
         "n": n, "dim": d, "queries": nq, "filtered_queries": fq, "reps": reps, "warmup": WARM,
@@ -271,7 +351,7 @@ fn main() {
         "vmhwm_kb_after_build": hw_build, "vmhwm_kb_end": vmhwm_kb(),
         "graph_serialized_bytes": graph_bytes,
         "disk_note": "graph is derived data and never persisted by Atlas; graph_serialized_bytes is the size if saved",
-        "sweep": sweep, "filtered": filtered,
+        "sweep": sweep, "variants": variants_out, "filtered": filtered,
     });
     std::fs::write(&out, serde_json::to_string_pretty(&res).expect("json")).expect("write");
 }

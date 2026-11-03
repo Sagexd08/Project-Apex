@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Evidence | Bat DB</title>
+<meta name="description" content="Every Prism measurement, loaded from the raw benchmark results, with the weak points and what we did about them.">
+<meta name="theme-color" content="#071a3d">
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/prism.css">
+<link rel="stylesheet" href="css/site.css">
+</head>
+<body class="gxp pg-evidence">
+<a class="skip" href="#main">Skip to content</a>
+<header class="gx" id="gx"><a class="gx-logo" href="index.html" aria-label="Bat DB, home"><i></i>Bat DB</a>
+<button class="gx-burger" type="button" aria-expanded="false" aria-controls="gx-links">Menu</button>
+<ul class="gx-links" id="gx-links">
+<li><a href="index.html">Home</a></li><li><a href="index.html#product">Product</a></li><li><a href="index.html#benchmarks">Benchmarks</a></li>
+<li><div class="gx-dd"><a href="manifesto.html" aria-current="page">Manifesto</a><button class="gx-arrow" type="button" aria-label="Show Manifesto pages" aria-haspopup="true" aria-expanded="false" aria-controls="gx-menu"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.2 6 8l4-3.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="gx-menu" id="gx-menu" role="group" aria-label="Manifesto pages"><div class="gx-col"><h4>The argument</h4><a href="manifesto.html"><b>01</b>Manifesto<small>Why we are building this, and what would prove us wrong</small></a><a href="abstract.html"><b>02</b>Abstract<small>The whole research note in one page</small></a><a href="paper.html"><b>03</b>Research paper<small>arXiv-style, with every table. Save as PDF</small></a><a href="evidence.html" aria-current="page"><b>04</b>Evidence<small>Every measurement, loaded from the raw results</small></a></div><div class="gx-col"><h4>The method</h4><a href="algorithm.html"><b>05</b>Algorithm<small>Encode, cascade, rerank, snapshot</small></a><a href="mathematics.html"><b>06</b>Mathematics<small>Derivations, lemma, open problem</small></a><a href="film.html"><b>07</b>Film<small>The mathematics in ninety seconds</small></a><a href="lab.html"><b>08</b>Interactive lab<small>Move the sliders, see the geometry</small></a><a href="snapshot-protocol.html"><b>09</b>Snapshot protocol<small>What a reader pin has to mean</small></a></div><div class="gx-col"><h4>The honesty</h4><a href="related-work.html"><b>10</b>Related work<small>Prior art and the claim audit</small></a><a href="tournament.html"><b>11</b>Algorithm tournament<small>Seven candidates, no winner yet</small></a><a href="loopholes.html"><b>12</b>Loophole audit<small>Where an easy-data win can break</small></a><a href="roadmap.html"><b>13</b>Roadmap<small>Done, next, and what we cannot do</small></a></div></div></div></li><li><a href="https://github.com/Sagexd08/Project-Apex" rel="noopener">Source &#8599;</a></li></ul>
+<div class="gx-cta"><a href="index.html#status">What&rsquo;s done</a></div></header><div class="gx-prog" id="gx-prog" aria-hidden="true"></div>
+
+<main id="main"><header class="pg-hero" style="min-height:58svh"><p class="crumb"><a href="index.html">Home</a><span>/</span><a href="manifesto.html">Manifesto</a><span>/</span><span>Evidence</span></p><h1>What was measured.</h1><p class="lead">Loaded from <code>data/prism-results.json</code>, written by the Rust benchmark in <code>benchmarks/prism</code>. Synthetic data, one machine, not reproduced by anyone else.</p></header>
+<section class="sx"><div class="wrapx">
+    <div class="kpi"><b data-count="1.06" data-dec="2">1.06</b><span>bits read per coordinate per vector at z = 3 (measured, synthetic). A flat 4-bit scan reads 4. Raw float32 is still stored for the exact rerank.</span></div>
+    <div class="kpi"><b data-count="3.8" data-dec="1" data-suf="×">3.8×</b><span>fewer bits read than a flat 4-bit scan. At z = 3 the top 10 matched exact search on this set; the gate is empirical, not a guarantee.</span></div>
+    <div class="kpi"><b data-count="1000" data-dec="0" data-suf=" / 1000">1000 / 1000</b><span>queries returned all ten true neighbours at z = 3 on one synthetic set. Not a proof; the provable bound reads about 4 bits.</span></div>
+    <div class="kpi warn"><b data-count="0.61" data-dec="2" data-suf=" ms">0.61 ms</b><span>per query for the z = 2 cascade against 0.55 ms for an optimised exact scan (first run). A re-run reversed the sign (0.48 vs 0.63 ms): inconclusive, no speed claim.</span></div>
+  </div></section>
+<section class="s dark" id="evidence" aria-labelledby="evidence-h">
+    <div class="wrap">
+      <p class="mono lbl">Evidence</p>
+      <h2 id="evidence-h">What was measured.</h2>
+      <p class="grey">Loaded from <code>data/prism-results.json</code>, written by the Rust benchmark in <code>benchmarks/prism</code>.</p>
+      <div id="evidence-root" aria-live="polite"><p class="grey" style="margin-top:30px">Loading results…</p></div>
+    </div>
+  </section>
+<section class="s cream" id="h2h" aria-labelledby="h2h-h">
+    <div class="wrap">
+      <p class="mono lbl">Head to head</p>
+      <h2 id="h2h-h">Atlas against hnswlib, measured the same session.</h2>
+      <p class="grey">Atlas with the USearch graph stored as F16 and exact F32 rescoring, against hnswlib. Same build settings (M 32, ef_construction 200, one build thread), three repetitions, median. The host was not idle, so these are observations and not a ranking. Cell: ef, recall@10, p50 ms / p99 ms, at the first ef with recall@10 of at least 0.95.</p>
+      <div class="tbl wrapc"><table><thead><tr><th>Dataset</th><th>hnswlib</th><th>Atlas F32</th><th>Atlas F16</th><th>Reading</th></tr></thead><tbody>
+        <tr><td>Fashion-784 (60k)</td><td>64, 0.9984, 0.327 / 1.716</td><td>64, 0.9984, 0.384 / 0.818</td><td>64, 0.9984, 0.241 / 0.515</td><td>Atlas F16 faster at equal recall, p99 about 3x lower</td></tr>
+        <tr><td>SIFT-128 (1M)</td><td>64, 0.9810, 0.196 / 0.398</td><td>64, 0.9811, 0.432 / 0.997</td><td>64, 0.9811, 0.317 / 0.737</td><td>hnswlib faster, gap 1.6x</td></tr>
+        <tr><td>NYTimes-256 (290k)</td><td>512, 0.9578, 3.500 / 10.941</td><td>512, 0.9565, 7.758 / 13.743</td><td>512, 0.9556, 5.788 / 9.365</td><td>hnswlib faster at p50, gap 1.65x</td></tr>
+        <tr><td>GloVe-100 (1.18M)</td><td>512, 0.9659, 1.591 / 3.135</td><td>512, 0.9659, 3.615 / 7.777</td><td>512, 0.9654, 2.880 / 6.664</td><td>hnswlib faster, gap 1.8x</td></tr>
+      </tbody></table></div>
+      <p class="grey">Not claimed: any ranking. Source and caveats: <code>docs/evidence/s14-f16-same-session.md</code>. Zero cross-tenant or filtered-search leaks were recorded in every earlier run.</p>
+    </div>
+  </section>
+
+<section class="s cream" id="limits" aria-labelledby="limits-h">
+    <div class="wrap">
+      <p class="mono lbl">Limits</p>
+      <h2 id="limits-h">Where this was weak, and what we did.</h2>
+      <div class="tbl wrapc"><table><thead><tr><th>Weakness</th><th>What we did</th><th>Result</th><th>Still open</th></tr></thead><tbody><tr><td>All data synthetic and clustered</td><td>Added out-of-distribution queries, isotropic data, overlapping clusters and n = 100,000</td><td>1.04 to 1.40 bits at z = 2, recall at least 0.997. At z = 4 the harder sets read about 3 bits.</td><td>Real embeddings. Needs a dataset download.</td></tr><tr><td>Gate calibrated, not proved</td><td>Measured error tails over 20 million pairs. Built a per-vector bound and a deterministic bound.</td><td>Tails reach 5.2 to 7.1σ. The per-vector bound holds on at least 99.94% of pairs but costs about as much as z = 4. The deterministic bound never misses and prunes almost nothing.</td><td>A sharper bound, in the style of RaBitQ.</td></tr><tr><td>Bits read did not become time</td><td>Lookup-table kernel with incremental planes, and an optimised exact baseline</td><td>7× faster than the scalar cascade (first run). 0.61 ms against 0.55 ms for the exact scan; a re-run reversed the sign. Inconclusive.</td><td>SIMD, and larger n where memory bandwidth dominates.</td></tr><tr><td>Concurrency result inconclusive</td><td>Seven alternating writer on/off trials with a lookup-table reader</td><td>Median P99 ratio 1.21 (1.12 to 1.34). Throughput down 12%. Every trial above 1.</td><td>Quiet machine, multi-core writer, profiling.</td></tr><tr><td>Scan floor of one bit per vector</td><td>Nothing yet</td><td>The cascade sits at 1.04 to 1.06 bits on easy data.</td><td>A partitioning index in front.</td></tr><tr><td>No comparison with other systems</td><td>Nothing yet</td><td>–</td><td>Flat, PQ, RaBitQ, TurboQuant-style and HNSW on identical hardware.</td></tr><tr><td>Deletes, filters, AnnIndex</td><td>Nothing yet</td><td>–</td><td>All three.</td></tr><tr><td>Novelty</td><td>Nothing yet</td><td>Multi-stage filtering and rotation quantization exist. The new part is the packaging with snapshots.</td><td>A full related-work pass.</td></tr></tbody></table></div>
+    </div>
+  </section></main>
+<footer class="footx"><div class="cols">
+<div><h4>Bat DB</h4><p>An open-source vector database for AI agent memory, written in Rust. Research Note v1.0, preprint, not peer reviewed. Early development; not ready for production.</p><a href="index.html">Home</a><a href="https://github.com/Sagexd08/Project-Apex">Repository</a></div>
+<div><h4>The argument</h4><a href="manifesto.html">Manifesto</a><a href="abstract.html">Abstract</a><a href="paper.html">Research paper</a><a href="evidence.html">Evidence</a></div><div><h4>The method</h4><a href="algorithm.html">Algorithm</a><a href="mathematics.html">Mathematics</a><a href="film.html">Film</a><a href="lab.html">Interactive lab</a><a href="snapshot-protocol.html">Snapshot protocol</a></div><div><h4>The honesty</h4><a href="related-work.html">Related work</a><a href="tournament.html">Algorithm tournament</a><a href="loopholes.html">Loophole audit</a><a href="roadmap.html">Roadmap</a></div></div>
+<p class="fine">Synthetic data, one machine. No comparison with other systems. Nothing on these pages claims to be first, fastest or best.</p></footer>
+<script src="js/site.js" defer></script>
+<script src="js/prism.js" defer></script>
+<script src="js/prism-evidence.js" defer></script>
+</body>
+</html>

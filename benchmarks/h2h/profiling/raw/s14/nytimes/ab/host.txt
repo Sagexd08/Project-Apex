@@ -1,0 +1,1 @@
+idle-check: supabase_rest_Lumeo 0.15%;supabase_inbucket_Lumeo 0.00%;supabase_auth_Lumeo 3.33%;supabase_kong_Lumeo 0.01%;supabase_db_Lumeo 0.00%;n8n 0.19%;self-hosted-ai-starter-kit-postgres-1 5.63%;qdrant 0.26%;ollama 0.00%;

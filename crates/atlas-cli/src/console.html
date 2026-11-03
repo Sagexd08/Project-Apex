@@ -3,11 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Atlas console</title>
+<title>Bat DB console</title>
 <style>
-  :root { --bg:#fbfaf7; --fg:#1b1b1b; --mut:#5c5c58; --line:#d9d6cc; --acc:#0b5d4b; --err:#a1260f; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#141412; --fg:#ecebe6; --mut:#a3a199; --line:#34332e; --acc:#5fc4a8; --err:#ff8a73; } }
-  body { margin:0 auto; padding:16px; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui, sans-serif; max-width:760px; }
+  :root { --bg:#0a0a0a; --fg:#ffffff; --mut:#a3a3a3; --line:#262626; --acc:#ffffff; --err:#f87171; color-scheme:dark; }
+  body { margin:0 auto; padding:16px; background:var(--bg); color:var(--fg); font:15px/1.5 Inter, Geist, system-ui, sans-serif; max-width:760px; }
   h1 { font-size:1.2rem; margin:.2rem 0 1rem; }
   label { display:block; margin:.7rem 0 .2rem; color:var(--mut); font-size:.85rem; }
   input, textarea, select, button { font:inherit; color:inherit; background:transparent; border:1px solid var(--line); border-radius:6px; padding:.45rem .6rem; width:100%; box-sizing:border-box; }
@@ -20,7 +19,7 @@
 </style>
 </head>
 <body>
-<h1>Atlas console</h1>
+<h1>Bat DB console</h1>
 <p class="note">Talks to this server's JSON API with your API key. The key stays in this page's memory only. Nothing here is a benchmark.</p>
 <label for="key">API key (Bearer)</label>
 <input id="key" type="password" autocomplete="off" spellcheck="false">

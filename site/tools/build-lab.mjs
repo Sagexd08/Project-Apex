@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { header, footer } from './shell.mjs';
 
 const SITE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = 'https://github.com/Sagexd08/Project-Apex';
@@ -46,7 +47,6 @@ const FIGS = {
 };
 
 const PAGES = [
-  { slug: 'manifesto', title: 'Manifesto', lead: 'Why agents need a better-measured memory layer, what Prism is trying to show, and what would prove it wrong.', fig: 'planes', desc: 'The statement of direction and the falsifiers', badges: ['proposed'] },
   { slug: 'related-work', title: 'Related work', lead: 'Where Prism sits among quantization, streaming-index, filtered-search and snapshot systems, and what is already known.', fig: 'graph', desc: 'Prior art and the claim audit', badges: ['reported'] },
   { slug: 'algorithm', title: 'Algorithm', lead: 'One stored code, read progressively: encode once, score with a few bits, spend more only where the answer is still in doubt.', fig: 'funnel', desc: 'Encode, cascade, rerank, snapshot', badges: ['implemented', 'measured'] },
   { slug: 'mathematics', title: 'Mathematics', lead: 'The geometry, the rotation, the quantizer error, the pruning gate and its proof, with every assumption stated.', fig: 'bell', desc: 'Derivations, lemma, open problem', badges: ['proved', 'proposed'] },
@@ -59,57 +59,33 @@ const PAGES = [
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const badge = (b) => `<span class="badge b-${b}">${b === 'reported' ? 'Reported, not reproduced' : b[0].toUpperCase() + b.slice(1)}</span>`;
 
-function bar(cur) {
-  const items = PAGES.map((p, i) => `<a href="${p.slug}.html"${p.slug === cur ? ' aria-current="page"' : ''}><b>${String(i + 1).padStart(2, '0')}</b>${esc(p.title)}<small>${esc(p.desc)}</small></a>`).join('');
-  return `<header class="lb-bar" role="banner"><a class="logo" href="index.html" aria-label="Project Apex home"></a>
-  <a class="lb-brand" href="prism.html">Prism</a>
-  <button class="lb-burger" type="button" aria-expanded="false" aria-controls="lb-nav">Menu</button>
-  <ul class="lb-nav" id="lb-nav" aria-label="Primary">
-    <li><a href="prism.html#abstract">Abstract</a></li><li><a href="prism.html#film-sec">Film</a></li>
-    <li><button class="lb-dd cur" type="button" aria-expanded="false" aria-haspopup="true" aria-controls="lb-menu">Manifesto &#9662;</button>
-      <div class="lb-menu" id="lb-menu">${items}</div></li>
-    <li><a href="prism.html#lab">Lab</a></li><li><a href="prism.html#paper">Paper</a></li>
-    <li><a href="prism.html#evidence">Evidence<i class="ping"></i></a></li>
-    <li><a href="${REPO}">Source &#8599;</a></li>
-  </ul></header><div class="lb-prog" aria-hidden="true"></div>`;
-}
-
-function foot() {
-  const col = PAGES.map((p) => `<a href="${p.slug}.html">${esc(p.title)}</a>`).join('');
-  return `<footer class="lb-foot"><div class="cols">
-    <div><h4>Project Apex / Prism</h4><p>An open research prototype about progressively refined vector codes and per-reader snapshots. Research Note v1.0, preprint, not peer reviewed.</p></div>
-    <div><h4>Pages</h4>${col}</div>
-    <div><h4>Evidence</h4><a href="prism.html#evidence">Measurements</a><a href="prism.html#paper">Research note</a><a href="prism.html#lab">Interactive lab</a></div>
-    <div><h4>Open source</h4><a href="${REPO}">Repository</a><a href="${REPO}/tree/main/benchmarks/prism">Benchmark source</a><a href="${REPO}/issues">Issues</a></div></div>
-    <p class="fine">Synthetic data, one machine. No comparison with other systems. Nothing on these pages is a claim to be first, fastest or best.</p></footer>`;
-}
-
 function build(p, i) {
   const body = readFileSync(join(SITE, 'src', `${p.slug}.html`), 'utf8');
   const toc = [...body.matchAll(/<section id="([^"]+)"[^>]*>\s*<h2>(.*?)<\/h2>/g)].map((m) => `<li><a href="#${m[1]}">${m[2]}</a></li>`).join('');
   const prev = PAGES[i - 1], next = PAGES[i + 1];
-  const pn = (q, dir) => (q ? `<a href="${q.slug}.html"><small>${dir}</small><span>${esc(q.title)}</span></a>` : `<a href="prism.html"><small>${dir === 'Previous' ? 'Overview' : 'Back to'}</small><span>Prism overview</span></a>`);
+  const pn = (q, dir) => (q ? `<a href="${q.slug}.html"><small>${dir}</small><span>${esc(q.title)}</span></a>` : `<a href="manifesto.html"><small>${dir === 'Previous' ? 'Overview' : 'Back to'}</small><span>Manifesto</span></a>`);
   const html = `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(p.title)} | Prism | Project Apex</title>
+<title>${esc(p.title)} | Prism | Bat DB</title>
 <meta name="description" content="${esc(p.lead)}">
-<meta name="theme-color" content="#232323">
+<meta name="theme-color" content="#071a3d">
 <link rel="icon" href="assets/favicon.ico" sizes="any">
 <link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/main.css">
 <link rel="stylesheet" href="css/lab.css">
+<link rel="stylesheet" href="css/site.css">
 </head>
 <body class="lab">
 <a class="skip" href="#main">Skip to content</a>
-${bar(p.slug)}
+${header(p.slug)}
 <main id="main">
 <section class="lh" aria-labelledby="h1">
   <div class="lh-l">
-    <p class="crumb"><a href="prism.html">Prism</a><span>/</span><a href="manifesto.html">Manifesto</a>${p.slug === 'manifesto' ? '' : `<span>/</span><span>${esc(p.title)}</span>`}</p>
+    <p class="crumb"><a href="index.html">Home</a><span>/</span><a href="manifesto.html">Manifesto</a><span>/</span><span>${esc(p.title)}</span></p>
     <h1 id="h1">${esc(p.title)}</h1>
     <p class="lead">${esc(p.lead)}</p>
     <div class="status-row">${p.badges.map(badge).join(' ')}</div>
@@ -123,7 +99,8 @@ ${bar(p.slug)}
 </div>
 <nav class="pn" aria-label="Page navigation">${pn(prev, 'Previous')}${pn(next, 'Next')}</nav>
 </main>
-${foot()}
+${footer()}
+<script src="js/site.js" defer></script>
 <script src="js/lab.js" defer></script>
 </body>
 </html>

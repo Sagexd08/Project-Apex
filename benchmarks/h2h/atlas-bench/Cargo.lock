@@ -17,6 +17,7 @@ dependencies = [
  "atlas-usearch",
  "rayon",
  "serde_json",
+ "usearch",
 ]
 
 [[package]]

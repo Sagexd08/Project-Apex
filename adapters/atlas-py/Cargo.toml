@@ -1,0 +1,24 @@
+[package]
+name = "atlas-py"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+name = "atlas_ann"
+crate-type = ["cdylib"]
+
+[workspace]
+
+[dependencies]
+atlas-core = { path = "../../crates/atlas-core" }
+atlas-index = { path = "../../crates/atlas-index" }
+pyo3 = { version = "0.23", features = ["extension-module", "abi3-py38"] }
+numpy = "0.23"
+serde_json = { version = "=1.0.154", features = ["float_roundtrip"] }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1

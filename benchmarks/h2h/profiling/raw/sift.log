@@ -1,0 +1,8 @@
+    Finished `release` profile [optimized] target(s) in 2.60s
+     Running `/cache/target/release/profile --dir /cache/sift --out /work/benchmarks/h2h/profiling/raw/sift.json --ef 64,256,512 --queries 2000 --reps 3 --f16`
+accel compiled=serial, haswell, skylake, icelake, genoa, sapphire, sapphireamx, graniteamx, turin, sierra, alder available=serial, haswell, skylake, icelake, genoa
+built n=1000000 (parallel) in 176.4s
+built n=1000000 (parallel) in 124.8s
+ef=64 native=0.438ms rescore=0.006ms full=0.450ms recall=0.9781
+ef=256 native=1.291ms rescore=0.005ms full=1.306ms recall=0.9988
+ef=512 native=2.320ms rescore=0.006ms full=2.297ms recall=0.9996

@@ -1,0 +1,10 @@
+hnswlib threads=1 build=830.2s
+    Finished `release` profile [optimized] target(s) in 1.75s
+     Running `/cache/target/release/buildbench --dir /cache/glove --out /work/benchmarks/h2h/profiling/raw/s14/glove/build_usearch_t1.json --threads 1`
+f32 threads=1 build=1877.7s mem=1066434640
+f16 threads=1 build=1372.4s mem=797999184
+hnswlib threads=8 build=240.5s
+    Finished `release` profile [optimized] target(s) in 2.49s
+     Running `/cache/target/release/buildbench --dir /cache/glove --out /work/benchmarks/h2h/profiling/raw/s14/glove/build_usearch_t8.json --threads 8`
+f32 threads=8 build=375.8s mem=1066434640
+f16 threads=8 build=271.4s mem=797999184

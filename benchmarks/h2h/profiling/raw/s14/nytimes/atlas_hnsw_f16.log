@@ -1,0 +1,30 @@
+   Compiling atlas-index v0.1.0 (/work/crates/atlas-index)
+   Compiling atlas-usearch v0.1.0 (/work/adapters/atlas-usearch)
+   Compiling atlas-bench v0.0.0 (/work/benchmarks/h2h/atlas-bench)
+    Finished `release` profile [optimized] target(s) in 15.86s
+     Running `/cache/target/release/atlas-bench --dir /cache/nytimes --out /work/benchmarks/h2h/profiling/raw/s14/nytimes/atlas_hnsw_f16.json --hnsw --f16 --queries 5000 --fq 300`
+built n=290000 in 523.3s
+atlas ef=64 recall=0.8910600000000033 p95=0.666725ms
+atlas ef=128 recall=0.918860000000004 p95=1.105333ms
+atlas ef=256 recall=0.941200000000002 p95=1.9895ms
+atlas ef=512 recall=0.9625800000000019 p95=5.525439ms
+atlas ef=1024 recall=0.9777600000000006 p95=11.140341999999999ms
+atlas ef=64 recall=0.8900200000000034 p95=0.898069ms
+atlas ef=128 recall=0.9175800000000043 p95=1.477149ms
+atlas ef=256 recall=0.9390000000000024 p95=3.056969ms
+atlas ef=512 recall=0.9602000000000022 p95=10.560334ms
+atlas ef=1024 recall=0.9745400000000009 p95=16.750754999999998ms
+atlas ef=64 recall=0.8909000000000031 p95=1.1828400000000001ms
+atlas ef=128 recall=0.918800000000004 p95=2.343141ms
+atlas ef=256 recall=0.9408000000000024 p95=5.257865ms
+atlas ef=512 recall=0.9621600000000019 p95=8.344041ms
+atlas ef=1024 recall=0.9771200000000007 p95=13.725798000000001ms
+atlas ef=64 recall=0.8910600000000033 p95=1.148657ms
+atlas ef=128 recall=0.9188400000000041 p95=2.066839ms
+atlas ef=256 recall=0.9411400000000022 p95=3.803556ms
+atlas ef=512 recall=0.962520000000002 p95=7.333251ms
+atlas ef=1024 recall=0.9776600000000008 p95=14.305821ms
+atlas sel=100permille recall=0.9956666666666668 p95=31.078639000000003ms route=exact pre-filter scan over allowed ids
+atlas sel=50permille recall=0.9990000000000001 p95=16.900616ms route=exact pre-filter scan over allowed ids
+atlas sel=10permille recall=1.0 p95=6.101766ms route=exact pre-filter scan over allowed ids
+atlas sel=1permille recall=1.0 p95=1.625078ms route=exact pre-filter scan over allowed ids

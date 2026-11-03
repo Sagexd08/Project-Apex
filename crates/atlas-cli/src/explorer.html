@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bat DB Explorer</title>
+<style>
+:root{--bg:#f6f5f1;--panel:#fbfaf7;--fg:#1c1c1a;--mut:#6a6860;--line:#dcd9cf;--bark:#8d8573;--acc:#0b5d4b;--err:#a1260f;--hl:#e8b931;
+--CONTAINS:#8d8573;--RELATES_TO:#6b7a8f;--SUPPORTS:#2f7d5b;--DISPUTES:#b4372a;--DERIVED_FROM:#6a4fb0;--CAUSED_BY:#c26a1b;--DEPENDS_ON:#1f6f8b;--SUPERSEDES:#8a5a9c}
+@media (prefers-color-scheme:dark){:root{--bg:#121311;--panel:#191a17;--fg:#ecebe6;--mut:#9d9b92;--line:#33322d;--bark:#7d7667;--acc:#5fc4a8;--err:#ff8a73;--hl:#f2c94c;
+--CONTAINS:#7d7667;--RELATES_TO:#8fa0b8;--SUPPORTS:#5fc491;--DISPUTES:#ff7d6e;--DERIVED_FROM:#a58cf0;--CAUSED_BY:#f0a35c;--DEPENDS_ON:#62b6d4;--SUPERSEDES:#c48ad8}}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:13px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;display:grid;grid-template-rows:44px 1fr;overflow:hidden}
+header{display:flex;align-items:center;gap:14px;padding:0 14px;border-bottom:1px solid var(--line);background:var(--panel)}
+h1{font:600 15px ui-serif,Georgia,serif;letter-spacing:.01em;margin:0}
+.mut{color:var(--mut)}.mono{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+main{display:grid;grid-template-columns:340px 1fr 340px;min-height:0}
+aside{background:var(--panel);overflow:auto;padding:12px;min-height:0}
+#left{border-right:1px solid var(--line)}#right{border-left:1px solid var(--line)}
+#stage{position:relative;min-width:0}svg{width:100%;height:100%;display:block;cursor:grab}svg.drag{cursor:grabbing}
+h2{font:600 11px system-ui;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:14px 0 6px}
+textarea,input{width:100%;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 8px}
+textarea{resize:vertical;min-height:62px}
+select{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px}
+button{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
+button:hover{border-color:var(--acc)}button.primary{background:var(--acc);color:var(--bg);border-color:var(--acc);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}.chips button{font-size:11.5px;padding:3px 8px;color:var(--mut);text-align:left}
+.card{border:1px solid var(--line);border-radius:6px;padding:7px 9px;margin:5px 0;background:var(--bg)}
+.card .t{font-weight:600}.card.sup .t{text-decoration:line-through;color:var(--mut)}
+.badge{display:inline-block;font-size:10.5px;padding:0 6px;border:1px solid var(--line);border-radius:9px;color:var(--mut);margin-right:4px}
+.badge.warn{color:var(--err);border-color:var(--err)}
+.rel{font:600 10.5px ui-monospace,Consolas,monospace}
+.trace{font:11.5px ui-monospace,Consolas,monospace;color:var(--mut);margin:2px 0}
+.kv{display:grid;grid-template-columns:92px 1fr;gap:2px 8px;margin:6px 0}.kv div:nth-child(odd){color:var(--mut)}
+.link{color:var(--acc);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+#legend{position:absolute;left:10px;bottom:10px;display:flex;flex-wrap:wrap;gap:4px 10px;max-width:560px;font-size:11px;background:var(--panel);padding:6px 8px;border:1px solid var(--line);border-radius:6px;opacity:.95}
+#legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:4px}
+#hint{position:absolute;right:10px;top:8px;font-size:11px;color:var(--mut)}
+.node text{font-size:11px;fill:var(--fg);paint-order:stroke;stroke:var(--bg);stroke-width:3px;pointer-events:none}
+.node circle.b{stroke-width:1.6;fill:var(--panel)}.node circle.h{fill:none;stroke:none}.node.hl circle.h{stroke:var(--hl);stroke-width:3}
+.node.sup{opacity:.55}.node.sup circle.b{stroke-dasharray:3 2}.node.sel circle.b{stroke-width:3.4}
+.node{cursor:pointer}#gate{position:absolute;inset:0;display:none;place-items:center;background:var(--bg);z-index:5}
+#gate div{width:340px}#err{color:var(--err);margin:8px 0}
+@media (max-width:980px){main{grid-template-columns:1fr;overflow:auto}aside{max-height:40vh}#stage{height:50vh}body{overflow:auto}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header><h1>Bat DB Explorer</h1><span class="mut">Living Context Forest</span><span id="stats" class="mut mono" style="margin-left:auto"></span><button id="rekey">API key</button></header>
+<div id="gate"><div><h1>Bat DB Explorer</h1><p class="mut">Enter an API key for this server (ATLAS_API_KEYS). It is kept for this tab only.</p><input id="keyin" type="password" placeholder="secret" autocomplete="off"><div id="err"></div><button class="primary" id="keygo">Connect</button></div></div>
+<main>
+<aside id="left">
+ <h2>Query Studio</h2>
+ <textarea id="q" placeholder="Ask a context question"></textarea>
+ <div class="chips" id="chips"></div>
+ <div style="display:flex;gap:8px;align-items:center"><button class="primary" id="run">Run context query</button>
+ <label class="mut">hops <select id="hops"><option>1</option><option>2</option><option selected>3</option><option>4</option></select></label>
+ <label class="mut">pin version <input id="asof" type="number" min="0" placeholder="latest" style="width:70px"></label></div>
+ <div id="qres"></div>
+ <h2>Add documents</h2>
+ <input id="ipath" placeholder="path, e.g. notes/my-decision.md" style="width:100%">
+ <textarea id="itext" placeholder="Markdown with front matter: id, kind, title, status, parent, depends_on, relates_to, supersedes"></textarea>
+ <button id="ingest">Ingest document</button><div id="ires"></div>
+ <h2>History</h2><div id="hist" class="mut"></div>
+</aside>
+<div id="stage"><svg id="svg"><defs>
+ <marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L8 4L0 8z" fill="context-stroke"/></marker></defs>
+ <g id="world"><g id="edges"></g><g id="nodes"></g></g></svg>
+ <div id="legend"></div><div id="hint">scroll to zoom · drag to pan · click a node to open it · double-click to collapse</div></div>
+<aside id="right"><h2>Selected</h2><div id="detail" class="mut">Click a node in the forest.</div></aside>
+</main>
+<script>
+"use strict";
+const KIND_COLOR={workspace:"#0b5d4b",project:"#2f6f9f",agent:"#8a5a9c",episode:"#8d7a3a",observation:"#c26a1b",entity:"#5b6b7a",fact:"#3b7d5b",decision:"#a1260f",experiment:"#1f6f8b",artifact:"#6b5b95",evidence:"#2f7d5b"};
+const RELS=["CONTAINS","RELATES_TO","SUPPORTS","DISPUTES","DERIVED_FROM","CAUSED_BY","DEPENDS_ON","SUPERSEDES"];
+const EXAMPLES=["why did we choose group commit WAL durability","what problems did the filtered search planner have","what is the status of Gate 2","what did the WAL v3 review find"];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const S={key:null,nodes:new Map(),edges:new Map(),expanded:new Set(),collapsed:new Set(),hl:new Set(),sel:null,root:null,pos:new Map(),target:new Map(),tree:new Map(),hidden:new Set(),kids:new Map(),view:{x:0,y:0,k:1},goal:null};
+function store(k,v){try{if(v===undefined)return sessionStorage.getItem(k);sessionStorage.setItem(k,v)}catch(e){return null}}
+function lstore(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+
+async function api(method,path,body){
+ const r=await fetch(path,{method:method,headers:{"Authorization":"Bearer "+S.key,"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
+ const j=await r.json().catch(()=>({error:"BAD_RESPONSE"}));
+ if(r.status===401){gate("Key rejected.");throw new Error("401")}
+ if(!r.ok)throw new Error((j.error||r.status)+(j.detail?": "+j.detail:""));
+ return j;
+}
+function gate(msg){$("gate").style.display="grid";$("err").textContent=msg||""}
+function ekey(e){return e.from+"|"+e.rel+"|"+e.to}
+function addNode(n){const o=S.nodes.get(n.key);S.nodes.set(n.key,Object.assign(o||{},n))}
+function addEdge(e){S.edges.set(ekey(e),e)}
+function merge(res){if(res.center)addNode(res.center);(res.nodes||[]).forEach(addNode);(res.edges||[]).forEach(addEdge)}
+
+/* layout: spanning tree (CONTAINS first), radial sectors by leaf count */
+function layout(){
+ const adj=new Map();
+ for(const e of S.edges.values()){
+  if(!S.nodes.has(e.from)||!S.nodes.has(e.to))continue;
+  if(!adj.has(e.from))adj.set(e.from,[]);if(!adj.has(e.to))adj.set(e.to,[]);
+  adj.get(e.from).push({n:e.to,c:e.rel==="CONTAINS"?1:0,e:e});
+  adj.get(e.to).push({n:e.from,c:0,e:e});
+ }
+ const parent=new Map(),kids=new Map(),seen=new Set();
+ const roots=[];if(S.root)roots.push(S.root);
+ for(const k of S.nodes.keys())if(k!==S.root)roots.push(k);
+ for(const r of roots){
+  if(seen.has(r))continue;seen.add(r);const q=[r];
+  while(q.length){
+   const u=q.shift();
+   const nb=(adj.get(u)||[]).slice().sort((a,b)=>(b.c-a.c)||a.n.localeCompare(b.n));
+   for(const x of nb){
+    if(seen.has(x.n))continue;seen.add(x.n);
+    parent.set(x.n,{p:u,e:x.e,virt:false});
+    if(!kids.has(u))kids.set(u,[]);kids.get(u).push(x.n);q.push(x.n);
+   }
+  }
+  if(r!==S.root){parent.set(r,{p:S.root,e:null,virt:true});if(!kids.has(S.root))kids.set(S.root,[]);kids.get(S.root).push(r)}
+ }
+ const hidden=new Set();
+ const hide=u=>{for(const c of kids.get(u)||[]){hidden.add(c);hide(c)}};
+ for(const c of S.collapsed)hide(c);
+ const leaves=new Map();
+ const cnt=u=>{
+  const k=(kids.get(u)||[]).filter(c=>!hidden.has(c));
+  if(!k.length||S.collapsed.has(u)){leaves.set(u,1);return 1}
+  let s=0;for(const c of k)s+=cnt(c);leaves.set(u,s);return s;
+ };
+ if(S.root)cnt(S.root);
+ S.tree=parent;S.hidden=hidden;S.kids=kids;S.target=new Map();
+ const R=[0,150,290,420,540,650,750];
+ const place=(u,a0,a1,d)=>{
+  const a=(a0+a1)/2,r=d<R.length?R[d]:R[R.length-1]+(d-R.length+1)*90;
+  S.target.set(u,{x:Math.cos(a)*r,y:Math.sin(a)*r,a:a,d:d});
+  if(S.collapsed.has(u))return;
+  const k=(kids.get(u)||[]).filter(c=>!hidden.has(c));let t=a0;
+  for(const c of k){const w=(a1-a0)*leaves.get(c)/leaves.get(u);place(c,t,t+w,d+1);t+=w}
+ };
+ if(S.root)place(S.root,-Math.PI*1.46,Math.PI*0.54,0);
+ for(const [k,t] of S.target){
+  if(!S.pos.has(k)){const p=S.tree.get(k),pp=p&&S.pos.get(p.p);S.pos.set(k,{x:pp?pp.x:t.x,y:pp?pp.y:t.y})}
+ }
+}
+/* render */
+const NS="http://www.w3.org/2000/svg";
+function el(t,a,p){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e}
+let raf=0;
+function animate(){
+ cancelAnimationFrame(raf);
+ const step=()=>{
+  let moving=false;
+  for(const [k,t] of S.target){
+   const p=S.pos.get(k);if(!p)continue;
+   const dx=t.x-p.x,dy=t.y-p.y;
+   if(Math.abs(dx)+Math.abs(dy)>.4){p.x+=dx*.2;p.y+=dy*.2;moving=true}else{p.x=t.x;p.y=t.y}
+  }
+  if(S.goal){
+   const v=S.view,g=S.goal,d=Math.abs(g.x-v.x)+Math.abs(g.y-v.y)+Math.abs(g.k-v.k)*200;
+   if(d>.5){v.x+=(g.x-v.x)*.18;v.y+=(g.y-v.y)*.18;v.k+=(g.k-v.k)*.18;moving=true}else{v.x=g.x;v.y=g.y;v.k=g.k;S.goal=null}
+  }
+  draw();
+  if(moving)raf=requestAnimationFrame(step);
+ };
+ raf=requestAnimationFrame(step);
+}
+function vis(k){return S.target.has(k)&&!S.hidden.has(k)}
+function draw(){
+ $("world").setAttribute("transform","translate("+S.view.x+","+S.view.y+") scale("+S.view.k+")");
+ const eg=$("edges"),ng=$("nodes");eg.textContent="";
+ for(const [k,t] of S.tree){
+  if(!vis(k)||!vis(t.p))continue;
+  const p=S.pos.get(k),q=S.pos.get(t.p);if(!p||!q)continue;
+  const d=S.target.get(k).d,c=S.target.get(t.p).a;
+  const cx=(p.x+q.x)/2+Math.cos(c)*18,cy=(p.y+q.y)/2+Math.sin(c)*18;
+  el("path",{d:"M"+q.x+","+q.y+" Q"+cx+","+cy+" "+p.x+","+p.y,fill:"none",stroke:t.virt?"var(--line)":"var(--bark)","stroke-width":Math.max(1.2,5.5-d*1.1),"stroke-linecap":"round",opacity:t.virt?.5:.8,"stroke-dasharray":t.virt?"2 5":"none"},eg);
+ }
+ for(const e of S.edges.values()){
+  if(!vis(e.from)||!vis(e.to))continue;
+  const tr=S.tree.get(e.to);
+  const isTree=e.rel==="CONTAINS"&&tr&&tr.e&&ekey(tr.e)===ekey(e);
+  if(isTree)continue;
+  if(e.rel==="CONTAINS"&&S.sel!==e.from&&S.sel!==e.to)continue;
+  const a=S.pos.get(e.from),b=S.pos.get(e.to);if(!a||!b)continue;
+  const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1,off=Math.min(90,L*.28);
+  const cx=(a.x+b.x)/2-dy/L*off,cy=(a.y+b.y)/2+dx/L*off;
+  const on=S.sel===e.from||S.sel===e.to;
+  const pa=el("path",{d:"M"+a.x+","+a.y+" Q"+cx+","+cy+" "+(b.x-dx/L*11)+","+(b.y-dy/L*11),fill:"none",stroke:"var(--"+e.rel+")","stroke-width":on?2.6:1.5,opacity:on?1:.72,"marker-end":"url(#arr)"},eg);
+  el("title",{},pa).textContent=e.from+" -["+e.rel+"]-> "+e.to+"  ("+(e.epistemic_status||"")+"; source "+(e.source||"")+")";
+ }
+ const have=new Map();for(const c of Array.from(ng.children))have.set(c.dataset.k,c);
+ for(const [k,c] of have)if(!vis(k)){c.remove();have.delete(k)}
+ for(const [k] of S.target){
+  if(!vis(k))continue;const n=S.nodes.get(k);if(!n)continue;const p=S.pos.get(k);let g=have.get(k);
+  if(!g){
+   g=el("g",{},ng);g.dataset.k=k;const r=8+Math.min(7,(n.degree||0)/2);
+   el("circle",{"class":"h",r:r+5},g);el("circle",{"class":"b",r:r,stroke:KIND_COLOR[n.kind]||"#888"},g);
+   el("circle",{r:r*.45,fill:KIND_COLOR[n.kind]||"#888"},g);
+   el("text",{x:r+6,y:4},g).textContent=n.title.length>34?n.title.slice(0,33)+"…":n.title;
+   g.addEventListener("click",ev=>{ev.stopPropagation();openNode(k)});
+   g.addEventListener("dblclick",ev=>{ev.stopPropagation();toggleCollapse(k)});
+  }
+  g.setAttribute("class","node"+(n.lifecycle==="superseded"?" sup":"")+(S.hl.has(k)?" hl":"")+(S.sel===k?" sel":""));
+  g.setAttribute("transform","translate("+p.x+","+p.y+")");
+ }
+ let shown=0;for(const k of S.target.keys())if(vis(k))shown++;
+ $("stats").textContent=shown+" shown · "+S.nodes.size+" loaded";
+}
+function focusOn(k,zoom){
+ const t=S.target.get(k);if(!t)return;
+ const r=$("svg").getBoundingClientRect(),kk=zoom||Math.max(S.view.k,.9);
+ S.goal={k:kk,x:r.width/2-t.x*kk,y:r.height/2-t.y*kk};animate();
+}
+function fit(only){
+ const r=$("svg").getBoundingClientRect();const xs=[],ys=[];
+ for(const [k,t] of S.target)if(vis(k)&&(!only||only.has(k))){xs.push(t.x);ys.push(t.y)}
+ if(!xs.length)return;
+ const x0=Math.min(...xs)-140,x1=Math.max(...xs)+260,y0=Math.min(...ys)-80,y1=Math.max(...ys)+80;
+ const k=Math.min(1.2,r.width/(x1-x0),r.height/(y1-y0));
+ S.goal={k:k,x:r.width/2-(x0+x1)/2*k,y:r.height/2-(y0+y1)/2*k};animate();
+}
+/* actions */
+async function loadRoots(){
+ const r=await api("GET","/v1/lcf/roots");
+ if(!r.roots.length){$("detail").innerHTML='<div class="mut">This database has no workspace yet. Start the server with <span class="mono">--seed</span>, or insert nodes through <span class="mono">/v1/lcf/node</span>.</div>';return false}
+ r.roots.forEach(addNode);S.root=r.roots[0].key;await expand(S.root,["CONTAINS"]);return true;
+}
+async function expand(k,rels){
+ const id=k+"|"+(rels?rels.join():"*");if(S.expanded.has(id))return;
+ const res=await api("POST","/v1/lcf/expand",{key:k,rels:rels||[]});
+ merge(res);S.expanded.add(id);
+ if(res.has_more)$("hint").textContent="Showing the first "+res.nodes.length+" neighbours of "+k;
+}
+async function openNode(k){
+ S.sel=k;S.collapsed.delete(k);
+ try{await expand(k)}catch(e){$("hint").textContent=String(e)}
+ layout();animate();showDetail(k);focusOn(k);
+}
+function toggleCollapse(k){if(S.collapsed.has(k))S.collapsed.delete(k);else S.collapsed.add(k);layout();animate()}
+async function showDetail(k){
+ let n;try{n=await api("POST","/v1/lcf/node/get",{key:k})}catch(e){$("detail").textContent=String(e);return}
+ addNode(n);
+ const rels=Array.from(S.edges.values()).filter(e=>e.from===k||e.to===k),by={};
+ rels.forEach(e=>{(by[e.rel]=by[e.rel]||[]).push(e)});
+ let h='<div class="card '+(n.lifecycle==="superseded"?"sup":"")+'"><span class="badge" style="color:'+KIND_COLOR[n.kind]+'">'+esc(n.kind)+'</span><span class="badge">'+esc(n.epistemic_status)+'</span><span class="badge '+(n.lifecycle==="superseded"?"warn":"")+'">'+esc(n.lifecycle)+'</span><div class="t" style="margin-top:4px">'+esc(n.title)+'</div><div style="margin-top:4px">'+esc(n.body)+'</div></div>';
+ h+='<div class="kv"><div>key</div><div class="mono">'+esc(n.key)+'</div><div>source</div><div class="mono">'+esc(n.source)+'</div><div>recorded</div><div>'+new Date(n.ts*1000).toISOString().slice(0,10)+'</div><div>relations</div><div>'+n.degree+(n.truncated?" (truncated)":"")+'</div>';
+ if(n.superseded_by)h+='<div>superseded by</div><div><span class="link" data-k="'+esc(n.superseded_by)+'">'+esc(n.superseded_by)+'</span></div>';
+ h+="</div>";
+ for(const r of RELS){
+  if(!by[r])continue;
+  h+='<h2 style="color:var(--'+r+')">'+r+' ('+by[r].length+')</h2>';
+  for(const e of by[r]){
+   const o=e.from===k?e.to:e.from,dir=e.from===k?"→":"←",on=S.nodes.get(o);
+   h+='<div class="card"><span class="mut">'+dir+'</span> <span class="link" data-k="'+esc(o)+'">'+esc(on?on.title:o)+'</span><div class="mut mono">source '+esc(e.source)+' · '+esc(e.epistemic_status)+'</div></div>';
+  }
+ }
+ h+='<div style="margin-top:8px;display:flex;gap:6px"><button id="dcol">'+(S.collapsed.has(k)?"Expand branch":"Collapse branch")+'</button><button id="dwhy">Ask why</button></div>';
+ $("detail").innerHTML=h;
+ $("detail").querySelectorAll(".link").forEach(a=>a.onclick=()=>openNode(a.dataset.k));
+ $("dcol").onclick=()=>{toggleCollapse(k);showDetail(k)};
+ $("dwhy").onclick=()=>{$("q").value="Why does "+n.title+" exist?";runQuery()};
+}
+async function ancestors(keys){
+ let calls=0;
+ for(const k of keys){
+  let cur=k;
+  for(let i=0;i<6&&calls<40;i++){
+   const has=Array.from(S.edges.values()).find(e=>e.rel==="CONTAINS"&&e.to===cur);
+   if(has){cur=has.from;continue}
+   calls++;await expand(cur,["CONTAINS"]);
+   const p=Array.from(S.edges.values()).find(e=>e.rel==="CONTAINS"&&e.to===cur);
+   if(!p)break;cur=p.from;
+  }
+ }
+}
+async function runQuery(){
+ const q=$("q").value.trim();if(!q)return;
+ $("qres").innerHTML='<div class="mut">Running…</div>';let r;
+ const body={q:q,max_hops:+$("hops").value};const pin=$("asof").value.trim();if(pin!=="")body.as_of=+pin;
+ try{r=await api("POST","/v1/lcf/query",body)}
+ catch(e){$("qres").innerHTML='<div class="card" style="color:var(--err)">'+esc(e.message)+'</div>';return}
+ historyAdd(q,r);
+ S.hl=new Set(r.nodes.map(n=>n.key));r.nodes.forEach(addNode);r.edges.forEach(addEdge);
+ try{await ancestors(r.nodes.map(n=>n.key))}catch(e){$("hint").textContent=String(e)}
+ for(const n of r.nodes)S.collapsed.delete(n.key);
+ layout();animate();renderResult(r);
+ if(r.seeds[0]){S.sel=r.seeds[0].key;showDetail(S.sel);setTimeout(()=>fit(S.hl),60)}
+}
+function pathText(n){
+ if(!n.path_from_seed.length)return "seed";
+ return n.path_from_seed.map(s=>esc(s.from)+' <b class="rel" style="color:var(--'+s.rel+')">'+s.rel+'</b> '+esc(s.to)).join(" → ");
+}
+function renderResult(r){
+ const ms=(r.stats.elapsed_us/1000).toFixed(1);
+ let h='<h2>Result</h2><div class="card"><span class="badge">'+r.stats.nodes+' objects</span><span class="badge">'+r.stats.edges+' relationships</span><span class="badge">≤'+r.query_plan.max_hops+' hops</span><span class="badge">'+ms+' ms</span>'+(r.truncated?'<span class="badge warn">truncated</span>':"")+'</div>';
+ for(const w of r.warnings)h+='<div class="card" style="color:var(--err)">'+esc(w)+'</div>';
+ h+='<h2>Plan</h2><div class="card"><div class="mono">relations: '+r.query_plan.relations.map(x=>'<span class="rel" style="color:var(--'+x+')">'+x+'</span>').join(", ")+'</div><div class="mut">'+r.query_plan.reasons.map(esc).join("; ")+'</div></div>';
+ h+='<h2>Seeds (retrieval signals)</h2>'+r.seeds.map(s=>'<div class="card"><span class="link" data-k="'+esc(s.key)+'">'+esc(s.key)+'</span> <span class="mut mono">score '+s.score.toFixed(2)+' · vector '+s.signals.vector.toFixed(2)+' · lexical '+s.signals.lexical.toFixed(2)+' · exact '+s.signals.exact+'</span></div>').join("");
+ h+='<h2>Connected context</h2>'+r.nodes.slice().sort((a,b)=>a.depth-b.depth||a.key.localeCompare(b.key)).map(n=>
+  '<div class="card '+(n.lifecycle==="superseded"?"sup":"")+'"><span class="badge" style="color:'+KIND_COLOR[n.kind]+'">'+esc(n.kind)+'</span><span class="badge">'+esc(n.epistemic_status)+'</span>'+(n.lifecycle==="superseded"?'<span class="badge warn">superseded by '+esc(n.superseded_by)+"</span>":"")+
+  '<div class="t"><span class="link" data-k="'+esc(n.key)+'">'+esc(n.title)+'</span></div><div class="mut mono">path: '+pathText(n)+'</div><div class="mut mono">source: '+esc(n.source)+'</div></div>').join("");
+ h+='<h2>Trace</h2>'+r.trace.map(t=>'<div class="trace">'+esc(t)+'</div>').join("")+'<h2>Read version</h2><div class="trace">read at version '+r.read_version+' of '+r.latest_version+(r.read_version<r.latest_version?" (pinned: newer writes are hidden)":" (latest)")+'</div><div class="trace">not implemented: '+r.not_implemented.map(esc).join(", ")+'</div>';
+ $("qres").innerHTML=h;
+ $("qres").querySelectorAll(".link").forEach(a=>a.onclick=()=>openNode(a.dataset.k));
+}
+function historyAdd(q,r){
+ let h=[];try{h=JSON.parse(lstore("atlas.hist")||"[]")}catch(e){}
+ h=[{q:q,n:r.stats.nodes,ms:+(r.stats.elapsed_us/1000).toFixed(1)}].concat(h.filter(x=>x.q!==q)).slice(0,10);
+ lstore("atlas.hist",JSON.stringify(h));drawHist();
+}
+function drawHist(){
+ let h=[];try{h=JSON.parse(lstore("atlas.hist")||"[]")}catch(e){}
+ $("hist").innerHTML=h.length?h.map(x=>'<div class="link" data-q="'+esc(x.q)+'">'+esc(x.q)+'</div><div class="mut mono">'+x.n+' objects · '+x.ms+' ms</div>').join(""):"No queries yet.";
+ $("hist").querySelectorAll(".link").forEach(a=>a.onclick=()=>{$("q").value=a.dataset.q;runQuery()});
+}
+/* pan / zoom */
+(function(){
+ const svg=$("svg");let d=null;
+ svg.addEventListener("pointerdown",e=>{d={x:e.clientX,y:e.clientY,vx:S.view.x,vy:S.view.y};svg.classList.add("drag");svg.setPointerCapture(e.pointerId)});
+ svg.addEventListener("pointermove",e=>{if(!d)return;S.goal=null;S.view.x=d.vx+e.clientX-d.x;S.view.y=d.vy+e.clientY-d.y;draw()});
+ svg.addEventListener("pointerup",()=>{d=null;svg.classList.remove("drag")});
+ svg.addEventListener("wheel",e=>{
+  e.preventDefault();S.goal=null;
+  const r=svg.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
+  const k=Math.min(3,Math.max(.25,S.view.k*Math.exp(-e.deltaY*.0015)));
+  S.view.x=mx-(mx-S.view.x)*k/S.view.k;S.view.y=my-(my-S.view.y)*k/S.view.k;S.view.k=k;draw();
+ },{passive:false});
+})();
+$("legend").innerHTML=RELS.map(r=>'<span><i style="background:var(--'+r+')"></i>'+r+'</span>').join("")+'<span class="mut">dashed = superseded · gold ring = in query result</span>';
+$("chips").innerHTML=EXAMPLES.map(x=>"<button>"+esc(x)+"</button>").join("");
+$("chips").querySelectorAll("button").forEach(b=>b.onclick=()=>{$("q").value=b.textContent;runQuery()});
+$("run").onclick=runQuery;
+$("ingest").onclick=async()=>{
+ const path=$("ipath").value.trim(),text=$("itext").value;
+ if(!path||!text){$("ires").textContent="Enter a path and the document text.";return}
+ try{const r=await api("POST","/v1/lcf/ingest",{documents:[{path:path,text:text}]});
+  const bad=(r.conflicts||[]).length+(r.errors||[]).length;
+  $("ires").innerHTML='<div class="card" style="'+(bad?"color:var(--err)":"")+'">objects '+r.nodes_written+' new / '+r.nodes_unchanged+' unchanged · relationships '+r.relationships_written+' new'+((r.unresolved||[]).length?" · "+r.unresolved.length+" link(s) point at ids not ingested yet":"")+(bad?" · "+esc(JSON.stringify((r.conflicts||[]).concat(r.errors||[]))):"")+'</div>';
+  const st=await api("GET","/v1/lcf/stats");$("hint").textContent=st.records+" records · version "+st.version;
+ }catch(e){$("ires").innerHTML='<div class="card" style="color:var(--err)">'+esc(e.message)+'</div>'}
+};
+$("q").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey))runQuery()});
+$("rekey").onclick=()=>gate("");
+$("keygo").onclick=()=>{const v=$("keyin").value.trim();if(v){store("atlas.key",v);location.reload()}};
+async function boot(){
+ const m=location.hash.match(/key=([^&]+)/);
+ if(m){store("atlas.key",decodeURIComponent(m[1]));history.replaceState(null,"",location.pathname)}
+ S.key=store("atlas.key");if(!S.key){gate("");return}
+ drawHist();
+ try{
+  const ok=await loadRoots();if(!ok)return;
+  layout();for(const k of S.target.keys())S.pos.set(k,{x:0,y:0});
+  S.sel=S.root;animate();fit();showDetail(S.root);
+  const st=await api("GET","/v1/lcf/stats");
+  $("hint").textContent=st.records+" records in this tenant · scroll to zoom · click a node to open it";
+ }catch(e){if(String(e)!=="Error: 401")$("detail").textContent=String(e)}
+}
+window.addEventListener("resize",()=>draw());
+boot();
+</script>
+</body>
+</html>

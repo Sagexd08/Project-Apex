@@ -3,32 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Algorithm | Prism | Project Apex</title>
+<title>Algorithm | Prism | Bat DB</title>
 <meta name="description" content="One stored code, read progressively: encode once, score with a few bits, spend more only where the answer is still in doubt.">
-<meta name="theme-color" content="#232323">
+<meta name="theme-color" content="#071a3d">
 <link rel="icon" href="assets/favicon.ico" sizes="any">
 <link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/main.css">
 <link rel="stylesheet" href="css/lab.css">
+<link rel="stylesheet" href="css/site.css">
 </head>
 <body class="lab">
 <a class="skip" href="#main">Skip to content</a>
-<header class="lb-bar" role="banner"><a class="logo" href="index.html" aria-label="Project Apex home"></a>
-  <a class="lb-brand" href="prism.html">Prism</a>
-  <button class="lb-burger" type="button" aria-expanded="false" aria-controls="lb-nav">Menu</button>
-  <ul class="lb-nav" id="lb-nav" aria-label="Primary">
-    <li><a href="prism.html#abstract">Abstract</a></li><li><a href="prism.html#film-sec">Film</a></li>
-    <li><button class="lb-dd cur" type="button" aria-expanded="false" aria-haspopup="true" aria-controls="lb-menu">Manifesto &#9662;</button>
-      <div class="lb-menu" id="lb-menu"><a href="manifesto.html"><b>01</b>Manifesto<small>The statement of direction and the falsifiers</small></a><a href="related-work.html"><b>02</b>Related work<small>Prior art and the claim audit</small></a><a href="algorithm.html" aria-current="page"><b>03</b>Algorithm<small>Encode, cascade, rerank, snapshot</small></a><a href="mathematics.html"><b>04</b>Mathematics<small>Derivations, lemma, open problem</small></a><a href="tournament.html"><b>05</b>Algorithm tournament<small>Candidates A to G, keep or defer</small></a><a href="snapshot-protocol.html"><b>06</b>Snapshot protocol<small>Visibility, publication, reclamation</small></a><a href="loopholes.html"><b>07</b>Loophole audit<small>Math, storage, filter, concurrency</small></a><a href="roadmap.html"><b>08</b>Roadmap<small>Stages A to J and the licence gate</small></a></div></li>
-    <li><a href="prism.html#lab">Lab</a></li><li><a href="prism.html#paper">Paper</a></li>
-    <li><a href="prism.html#evidence">Evidence<i class="ping"></i></a></li>
-    <li><a href="https://github.com/Sagexd08/Project-Apex">Source &#8599;</a></li>
-  </ul></header><div class="lb-prog" aria-hidden="true"></div>
+<header class="gx" id="gx"><a class="gx-logo" href="index.html" aria-label="Bat DB, home"><i></i>Bat DB</a>
+<button class="gx-burger" type="button" aria-expanded="false" aria-controls="gx-links">Menu</button>
+<ul class="gx-links" id="gx-links">
+<li><a href="index.html">Home</a></li><li><a href="index.html#product">Product</a></li><li><a href="index.html#benchmarks">Benchmarks</a></li>
+<li><div class="gx-dd"><a href="manifesto.html" aria-current="page">Manifesto</a><button class="gx-arrow" type="button" aria-label="Show Manifesto pages" aria-haspopup="true" aria-expanded="false" aria-controls="gx-menu"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.2 6 8l4-3.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="gx-menu" id="gx-menu" role="group" aria-label="Manifesto pages"><div class="gx-col"><h4>The argument</h4><a href="manifesto.html"><b>01</b>Manifesto<small>Why we are building this, and what would prove us wrong</small></a><a href="abstract.html"><b>02</b>Abstract<small>The whole research note in one page</small></a><a href="paper.html"><b>03</b>Research paper<small>arXiv-style, with every table. Save as PDF</small></a><a href="evidence.html"><b>04</b>Evidence<small>Every measurement, loaded from the raw results</small></a></div><div class="gx-col"><h4>The method</h4><a href="algorithm.html" aria-current="page"><b>05</b>Algorithm<small>Encode, cascade, rerank, snapshot</small></a><a href="mathematics.html"><b>06</b>Mathematics<small>Derivations, lemma, open problem</small></a><a href="film.html"><b>07</b>Film<small>The mathematics in ninety seconds</small></a><a href="lab.html"><b>08</b>Interactive lab<small>Move the sliders, see the geometry</small></a><a href="snapshot-protocol.html"><b>09</b>Snapshot protocol<small>What a reader pin has to mean</small></a></div><div class="gx-col"><h4>The honesty</h4><a href="related-work.html"><b>10</b>Related work<small>Prior art and the claim audit</small></a><a href="tournament.html"><b>11</b>Algorithm tournament<small>Seven candidates, no winner yet</small></a><a href="loopholes.html"><b>12</b>Loophole audit<small>Where an easy-data win can break</small></a><a href="roadmap.html"><b>13</b>Roadmap<small>Done, next, and what we cannot do</small></a></div></div></div></li><li><a href="https://github.com/Sagexd08/Project-Apex" rel="noopener">Source &#8599;</a></li></ul>
+<div class="gx-cta"><a href="index.html#status">What&rsquo;s done</a></div></header><div class="gx-prog" id="gx-prog" aria-hidden="true"></div>
 <main id="main">
 <section class="lh" aria-labelledby="h1">
   <div class="lh-l">
-    <p class="crumb"><a href="prism.html">Prism</a><span>/</span><a href="manifesto.html">Manifesto</a><span>/</span><span>Algorithm</span></p>
+    <p class="crumb"><a href="index.html">Home</a><span>/</span><a href="manifesto.html">Manifesto</a><span>/</span><span>Algorithm</span></p>
     <h1 id="h1">Algorithm</h1>
     <p class="lead">One stored code, read progressively: encode once, score with a few bits, spend more only where the answer is still in doubt.</p>
     <div class="status-row"><span class="badge b-implemented">Implemented</span> <span class="badge b-measured">Measured</span></div>
@@ -39,7 +35,7 @@
     <rect class="fa" x="150" y="170" width="100" height="34" rx="4"/><rect class="fa dim" x="180" y="230" width="40" height="34" rx="4" stroke-dasharray="4 3"/>
     <text class="ft" x="200" y="71" text-anchor="middle">1 bit · all n</text><text class="ft" x="200" y="131" text-anchor="middle">2 bits · survivors</text>
     <text class="ft" x="200" y="191" text-anchor="middle">4 bits</text><text class="ft" x="200" y="251" text-anchor="middle">rerank</text>
-    <text class="ft" x="200" y="300" text-anchor="middle">widths are schematic, not measured</text></g></svg><span class="num" aria-hidden="true">03</span></div>
+    <text class="ft" x="200" y="300" text-anchor="middle">widths are schematic, not measured</text></g></svg><span class="num" aria-hidden="true">02</span></div>
 </section>
 <div class="lb-main">
   <nav class="toc" aria-label="On this page"><p>On this page</p><ol><li><a href="#idea">The idea in four steps</a></li><li><a href="#encode">Encoding</a></li><li><a href="#cascade">The cascade</a></li><li><a href="#storage">Complete storage accounting</a></li><li><a href="#snap">Snapshots in one paragraph</a></li><li><a href="#result">What was measured</a></li></ol></nav>
@@ -83,7 +79,7 @@
 <p>Segments are immutable once sealed. A commit builds one new sealed segment and publishes a new snapshot that lists the old segments plus the new one. A reader copies the current snapshot pointer, then never takes a lock again. Because the quantizer has no trained state, a writer encodes a new vector from the seed alone: no codebook to retrain and no moment when stored codes and the quantizer disagree. The full definition, and what is not yet defined, is on the <a href="snapshot-protocol.html">snapshot protocol</a> page.</p></section>
 
 <section id="result"><h2>What was measured</h2>
-<p>One synthetic benchmark, one machine, one run of each configuration. Raw results are in <code>benchmarks/prism/results/results.json</code>, and the <a href="prism.html#evidence">evidence page</a> shows them with their limits.</p>
+<p>One synthetic benchmark, one machine, one run of each configuration. Raw results are in <code>benchmarks/prism/results/results.json</code>, and the <a href="evidence.html">evidence page</a> shows them with their limits.</p>
 <div class="tw"><table><thead><tr><th>Quantity</th><th>Value</th><th>Status</th></tr></thead><tbody>
 <tr><td>Bits read per coordinate per vector at z = 3</td><td>about 1.06, against 4 for a flat 4-bit scan</td><td><span class="badge b-measured">Measured</span> synthetic data</td></tr>
 <tr><td>Fewer bits read than a flat 4-bit scan</td><td>about 3.8 times</td><td><span class="badge b-measured">Measured</span></td></tr>
@@ -99,12 +95,11 @@ cargo run --release --bin prism-bench</div></section>
 </div>
 <nav class="pn" aria-label="Page navigation"><a href="related-work.html"><small>Previous</small><span>Related work</span></a><a href="mathematics.html"><small>Next</small><span>Mathematics</span></a></nav>
 </main>
-<footer class="lb-foot"><div class="cols">
-    <div><h4>Project Apex / Prism</h4><p>An open research prototype about progressively refined vector codes and per-reader snapshots. Research Note v1.0, preprint, not peer reviewed.</p></div>
-    <div><h4>Pages</h4><a href="manifesto.html">Manifesto</a><a href="related-work.html">Related work</a><a href="algorithm.html">Algorithm</a><a href="mathematics.html">Mathematics</a><a href="tournament.html">Algorithm tournament</a><a href="snapshot-protocol.html">Snapshot protocol</a><a href="loopholes.html">Loophole audit</a><a href="roadmap.html">Roadmap</a></div>
-    <div><h4>Evidence</h4><a href="prism.html#evidence">Measurements</a><a href="prism.html#paper">Research note</a><a href="prism.html#lab">Interactive lab</a></div>
-    <div><h4>Open source</h4><a href="https://github.com/Sagexd08/Project-Apex">Repository</a><a href="https://github.com/Sagexd08/Project-Apex/tree/main/benchmarks/prism">Benchmark source</a><a href="https://github.com/Sagexd08/Project-Apex/issues">Issues</a></div></div>
-    <p class="fine">Synthetic data, one machine. No comparison with other systems. Nothing on these pages is a claim to be first, fastest or best.</p></footer>
+<footer class="footx"><div class="cols">
+<div><h4>Bat DB</h4><p>An open-source vector database for AI agent memory, written in Rust. Research Note v1.0, preprint, not peer reviewed. Early development; not ready for production.</p><a href="index.html">Home</a><a href="https://github.com/Sagexd08/Project-Apex">Repository</a></div>
+<div><h4>The argument</h4><a href="manifesto.html">Manifesto</a><a href="abstract.html">Abstract</a><a href="paper.html">Research paper</a><a href="evidence.html">Evidence</a></div><div><h4>The method</h4><a href="algorithm.html">Algorithm</a><a href="mathematics.html">Mathematics</a><a href="film.html">Film</a><a href="lab.html">Interactive lab</a><a href="snapshot-protocol.html">Snapshot protocol</a></div><div><h4>The honesty</h4><a href="related-work.html">Related work</a><a href="tournament.html">Algorithm tournament</a><a href="loopholes.html">Loophole audit</a><a href="roadmap.html">Roadmap</a></div></div>
+<p class="fine">Synthetic data, one machine. No comparison with other systems. Nothing on these pages claims to be first, fastest or best.</p></footer>
+<script src="js/site.js" defer></script>
 <script src="js/lab.js" defer></script>
 </body>
 </html>

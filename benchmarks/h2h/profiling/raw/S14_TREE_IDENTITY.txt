@@ -1,0 +1,13 @@
+HEAD 785478751d345261b11f99e926b14b496dd488b5
+digest 9b97729a3ea10a342c6192cf1db1fd86 (crates/ci only; excludes adapters/benchmarks)
+31937fb33ab2c5c3653608771695c51de88d68040a573b81e01a4e04688d8a9d *adapters/atlas-usearch/src/lib.rs
+5c4fe8a0034d874b27a1f61ce97d1afe325c2f6202ea8d14056a48def08f28aa *adapters/atlas-usearch/tests/f16.rs
+ecce6eaad26254ee315b3a001266619cca582545a312956e2513058b58c55172 *benchmarks/h2h/atlas-bench/src/main.rs
+378907e2d7bd332988f07f8e2fe3086b00d951f8682d96a4ee311c3f7671207f *benchmarks/h2h/atlas-bench/src/bin/buildbench.rs
+5f8aa1a3e6e86cb4fbef79d900387503852f148c5cc92f62b33a2913bd3e7a32 *benchmarks/h2h/build_bench.py
+e35d321f3980ca88f1b8cb7bb49775276f96d117fc1c5eee98b60e0282d4940f *benchmarks/h2h/run.sh
+c9692bc41a68e52e1806c716a70fb3400dccf58b555fcdcea0c76a1b4d2eee2a *benchmarks/h2h/atlas-bench/Cargo.toml
+c8dfa6b6a5a16de46c7e4547ecf85602d49668e07e723e55c185f6ba2c0efa51 *benchmarks/h2h/atlas-bench/Cargo.lock
+warning: in the working copy of 'benchmarks/h2h/atlas-bench/Cargo.lock', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'benchmarks/h2h/atlas-bench/Cargo.toml', LF will be replaced by CRLF the next time Git touches it
+ 5 files changed, 35 insertions(+), 3 deletions(-)

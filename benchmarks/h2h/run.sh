@@ -72,12 +72,29 @@ run_qdrant() {
   docker rm -f "$QNAME" > /dev/null 2>&1
 }
 
-[ "$ENG" = "gt" ] || write_config
+[ "$ENG" = "gt" ] || [ "$ENG" = "profile" ] || [ "$ENG" = "s14" ] || [ "$ENG" = "build" ] || write_config  # profile must not touch S9 results/
 case "$ENG" in
   gt) run_gt ;;
   atlas) run_atlas ;;
   hnswlib) run_hnsw ;;
   qdrant) run_qdrant ;;
+  s14) O14=benchmarks/h2h/profiling/raw/s14/$DS; mkdir -p "$O14"   # same-session: hnswlib, atlas f32, atlas f16; never touches S9 results/
+    dr python hnsw_bench.py "/cache/$DS" "/work/$O14/hnswlib.json" "${EXTRA[@]}" 2>&1 | tee "$O14/hnswlib.log"
+    dr bash -c "cd atlas-bench && cargo run --release --locked -- --dir /cache/$DS --out /work/$O14/atlas_f32.json ${EXTRA[*]}" 2>&1 | tee "$O14/atlas_f32.log"
+    dr bash -c "cd atlas-bench && cargo run --release --locked -- --dir /cache/$DS --out /work/$O14/atlas_f16.json --f16 ${EXTRA[*]}" 2>&1 | tee "$O14/atlas_f16.log" ;;
+  hnsw) O14=benchmarks/h2h/profiling/raw/s14/$DS; mkdir -p "$O14"
+    dr bash -c "cd atlas-bench && cargo run --release --locked -- --dir /cache/$DS --out /work/$O14/atlas_hnsw_e6.json --hnsw ${EXTRA[*]}" 2>&1 | tee "$O14/atlas_hnsw_e6.log" ;;
+  h14) O14=benchmarks/h2h/profiling/raw/s14/$DS; mkdir -p "$O14"
+    dr python hnsw_bench.py "/cache/$DS" "/work/$O14/hnswlib.json" "${EXTRA[@]}" 2>&1 | tee "$O14/hnswlib.log" ;;
+  hnsw16) O14=benchmarks/h2h/profiling/raw/s14/$DS; mkdir -p "$O14"
+    dr bash -c "cd atlas-bench && cargo run --release --locked -- --dir /cache/$DS --out /work/$O14/atlas_hnsw_f16.json --hnsw --f16 ${EXTRA[*]}" 2>&1 | tee "$O14/atlas_hnsw_f16.log" ;;
+  build) O14=benchmarks/h2h/profiling/raw/s14/$DS; mkdir -p "$O14"
+    for T in 1 8; do
+      dr python build_bench.py "/cache/$DS" "/work/$O14/build_hnswlib_t$T.json" $T 2>&1 | tee -a "$O14/build.log"
+      dr bash -c "cd atlas-bench && cargo run --release --locked --bin buildbench -- --dir /cache/$DS --out /work/$O14/build_usearch_t$T.json --threads $T" 2>&1 | tee -a "$O14/build.log"
+    done ;;
+  profile) mkdir -p benchmarks/h2h/profiling/raw
+    dr bash -c "cd atlas-bench && cargo run --release --bin profile -- --dir /cache/$DS --out /work/benchmarks/h2h/profiling/raw/$DS.json ${EXTRA[*]}" 2>&1 | tee "benchmarks/h2h/profiling/raw/$DS.log" ;;
   all) [ -f "$CACHE/$DS/gt.bin" ] || run_gt; run_atlas; run_hnsw; run_qdrant ;;
   *) echo "unknown engine $ENG"; exit 2 ;;
 esac

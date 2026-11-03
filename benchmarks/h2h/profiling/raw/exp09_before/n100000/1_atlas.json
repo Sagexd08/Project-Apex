@@ -1,0 +1,39 @@
+{
+ "engine": "atlas",
+ "n": 100000,
+ "dim": 64,
+ "cpus": 4.0,
+ "mem": "6g",
+ "reps": 5,
+ "runs": [
+  {
+   "rep": 0,
+   "restart_to_ready_ms": 1182.51489999966,
+   "acked_missing": 0
+  },
+  {
+   "rep": 1,
+   "restart_to_ready_ms": 1028.1400000021677,
+   "acked_missing": 0
+  },
+  {
+   "rep": 2,
+   "restart_to_ready_ms": 1016.8030999993789,
+   "acked_missing": 0
+  },
+  {
+   "rep": 3,
+   "restart_to_ready_ms": 1284.534899998107,
+   "acked_missing": 0
+  },
+  {
+   "rep": 4,
+   "restart_to_ready_ms": 1164.2824000009568,
+   "acked_missing": 0
+  }
+ ],
+ "load_seconds": 94.19830999999976,
+ "count_after_load": 100000,
+ "median_ms": 1164.2824000009568,
+ "acked_missing_total": 0
+}

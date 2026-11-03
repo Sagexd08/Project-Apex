@@ -63,7 +63,43 @@ fn u32_at(b: &[u8], o: usize) -> u32 {
     u32::from_le_bytes([b[o], b[o + 1], b[o + 2], b[o + 3]])
 }
 
-pub fn decode(bytes: &[u8], path: &Path) -> Result<Segment, AtlasError> {
+const PAR_CRC_MIN: usize = 4 << 20;
+
+pub fn parallel_crc(bytes: &[u8]) -> u32 {
+    let threads = std::thread::available_parallelism()
+        .map_or(1, |n| n.get())
+        .min(8);
+    if bytes.len() < PAR_CRC_MIN || threads < 2 {
+        return crc32fast::hash(bytes);
+    }
+    let chunk = bytes.len().div_ceil(threads);
+    let parts: Vec<(crc32fast::Hasher, usize)> = std::thread::scope(|sc| {
+        let handles: Vec<_> = bytes
+            .chunks(chunk)
+            .map(|c| {
+                sc.spawn(move || {
+                    let mut h = crc32fast::Hasher::new();
+                    h.update(c);
+                    (h, c.len())
+                })
+            })
+            .collect();
+        handles
+            .into_iter()
+            .map(|h| h.join().expect("crc worker"))
+            .collect()
+    });
+    let mut iter = parts.into_iter();
+    let Some((mut acc, _)) = iter.next() else {
+        return crc32fast::hash(bytes);
+    };
+    for (h, _) in iter {
+        acc.combine(&h);
+    }
+    acc.finalize()
+}
+
+fn index_records(bytes: &[u8], path: &Path) -> Result<(u64, Vec<(usize, usize)>), AtlasError> {
     if bytes.len() < HEADER_LEN + TRAILER_LEN {
         return Err(corrupt(path, "shorter than header and trailer"));
     }
@@ -78,12 +114,12 @@ pub fn decode(bytes: &[u8], path: &Path) -> Result<Segment, AtlasError> {
     if &bytes[body_end..body_end + 8] != TRAILER {
         return Err(corrupt(path, "missing trailer (incomplete write)"));
     }
-    if crc32fast::hash(&bytes[..body_end]) != u32_at(bytes, body_end + 8) {
+    if parallel_crc(&bytes[..body_end]) != u32_at(bytes, body_end + 8) {
         return Err(corrupt(path, "file checksum mismatch"));
     }
     let wal_seq = u64::from_le_bytes(bytes[12..20].try_into().expect("8 bytes"));
     let count = u32_at(bytes, 20) as usize;
-    let mut payloads = Vec::with_capacity(count.min((body_end - HEADER_LEN) / REC_HDR));
+    let mut ranges = Vec::with_capacity(count.min((body_end - HEADER_LEN) / REC_HDR));
     let mut off = HEADER_LEN;
     for i in 0..count {
         if off + REC_HDR > body_end {
@@ -95,17 +131,40 @@ pub fn decode(bytes: &[u8], path: &Path) -> Result<Segment, AtlasError> {
         if len > body_end - off {
             return Err(corrupt(path, &format!("record {i} length past end")));
         }
-        let p = &bytes[off..off + len];
-        if crc32fast::hash(p) != crc {
-            return Err(corrupt(path, &format!("record {i} checksum mismatch")));
-        }
-        payloads.push(p.to_vec());
+        let _ = crc;
+        ranges.push((off, off + len));
         off += len;
     }
     if off != body_end {
         return Err(corrupt(path, "trailing bytes after last record"));
     }
+    Ok((wal_seq, ranges))
+}
+
+pub fn decode(bytes: &[u8], path: &Path) -> Result<Segment, AtlasError> {
+    let (wal_seq, ranges) = index_records(bytes, path)?;
+    let payloads = ranges.iter().map(|&(s, e)| bytes[s..e].to_vec()).collect();
     Ok(Segment { wal_seq, payloads })
+}
+
+pub struct RawSegment {
+    pub wal_seq: u64,
+    bytes: Vec<u8>,
+    ranges: Vec<(usize, usize)>,
+}
+
+impl RawSegment {
+    pub fn len(&self) -> usize {
+        self.ranges.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.ranges.is_empty()
+    }
+
+    pub fn payloads(&self) -> impl Iterator<Item = &[u8]> + Clone {
+        self.ranges.iter().map(|&(s, e)| &self.bytes[s..e])
+    }
 }
 
 pub fn write_segment(
@@ -144,6 +203,23 @@ pub fn list_segments(dir: &Path) -> Result<Vec<(u64, PathBuf)>, AtlasError> {
     }
     found.sort_by_key(|(seq, _)| *seq);
     Ok(found)
+}
+
+pub fn latest_segment_raw(dir: &Path) -> Result<Option<RawSegment>, AtlasError> {
+    let mut all = list_segments(dir)?;
+    let Some((seq, path)) = all.pop() else {
+        return Ok(None);
+    };
+    let bytes = std::fs::read(&path)?;
+    let (wal_seq, ranges) = index_records(&bytes, &path)?;
+    if wal_seq != seq {
+        return Err(corrupt(&path, "file name and header sequence disagree"));
+    }
+    Ok(Some(RawSegment {
+        wal_seq,
+        bytes,
+        ranges,
+    }))
 }
 
 pub fn latest_segment(dir: &Path) -> Result<Option<Segment>, AtlasError> {

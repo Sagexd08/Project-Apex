@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Abstract | Bat DB</title>
+<meta name="description" content="The whole Prism research note in one page.">
+<meta name="theme-color" content="#071a3d">
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/main.css">
+
+<link rel="stylesheet" href="css/site.css">
+</head>
+<body class="gxp pg-abstract">
+<a class="skip" href="#main">Skip to content</a>
+<header class="gx" id="gx"><a class="gx-logo" href="index.html" aria-label="Bat DB, home"><i></i>Bat DB</a>
+<button class="gx-burger" type="button" aria-expanded="false" aria-controls="gx-links">Menu</button>
+<ul class="gx-links" id="gx-links">
+<li><a href="index.html">Home</a></li><li><a href="index.html#product">Product</a></li><li><a href="index.html#benchmarks">Benchmarks</a></li>
+<li><div class="gx-dd"><a href="manifesto.html" aria-current="page">Manifesto</a><button class="gx-arrow" type="button" aria-label="Show Manifesto pages" aria-haspopup="true" aria-expanded="false" aria-controls="gx-menu"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.2 6 8l4-3.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="gx-menu" id="gx-menu" role="group" aria-label="Manifesto pages"><div class="gx-col"><h4>The argument</h4><a href="manifesto.html"><b>01</b>Manifesto<small>Why we are building this, and what would prove us wrong</small></a><a href="abstract.html" aria-current="page"><b>02</b>Abstract<small>The whole research note in one page</small></a><a href="paper.html"><b>03</b>Research paper<small>arXiv-style, with every table. Save as PDF</small></a><a href="evidence.html"><b>04</b>Evidence<small>Every measurement, loaded from the raw results</small></a></div><div class="gx-col"><h4>The method</h4><a href="algorithm.html"><b>05</b>Algorithm<small>Encode, cascade, rerank, snapshot</small></a><a href="mathematics.html"><b>06</b>Mathematics<small>Derivations, lemma, open problem</small></a><a href="film.html"><b>07</b>Film<small>The mathematics in ninety seconds</small></a><a href="lab.html"><b>08</b>Interactive lab<small>Move the sliders, see the geometry</small></a><a href="snapshot-protocol.html"><b>09</b>Snapshot protocol<small>What a reader pin has to mean</small></a></div><div class="gx-col"><h4>The honesty</h4><a href="related-work.html"><b>10</b>Related work<small>Prior art and the claim audit</small></a><a href="tournament.html"><b>11</b>Algorithm tournament<small>Seven candidates, no winner yet</small></a><a href="loopholes.html"><b>12</b>Loophole audit<small>Where an easy-data win can break</small></a><a href="roadmap.html"><b>13</b>Roadmap<small>Done, next, and what we cannot do</small></a></div></div></div></li><li><a href="https://github.com/Sagexd08/Project-Apex" rel="noopener">Source &#8599;</a></li></ul>
+<div class="gx-cta"><a href="index.html#status">What&rsquo;s done</a></div></header><div class="gx-prog" id="gx-prog" aria-hidden="true"></div>
+
+<main id="main">
+<header class="pg-hero"><p class="crumb"><a href="index.html">Home</a><span>/</span><a href="manifesto.html">Manifesto</a><span>/</span><span>Abstract</span></p><h1>The whole note, in one page.</h1>
+  <p class="lead">Research Note v1.0 (preprint, not peer reviewed), 2026-10-26. Preliminary synthetic results that have not been reproduced. Numbers are from one machine (<code>benchmarks/prism/results/results.json</code>, source checksum <code>103fcb801fb94647</code>).</p>
+  <div class="badges"><span class="chipx hot">Preprint</span><span class="chipx">Synthetic data</span><span class="chipx">Unreproduced</span></div></header>
+<section class="sx"><div class="wrapx abs-wrap">
+  <article class="abs-card glass"><div id="abs-text"><p>Agentic workloads read and write the same vector store within milliseconds of each other, and other work reports tail latency inflating when inserts run during queries (reported, not reproduced here). We propose Prism, a storage layout for that case. Each vector is rotated by a seeded randomized Hadamard transform and stored once as four nested bit planes, so the quantizer has no trained state and cannot drift as the data changes. A query runs an error-gated cascade: it scores every vector with one bit and reads further planes only for candidates that can still reach the top k.</p><p>Readers search immutable snapshots pinned to a write-ahead-log position, so a reader takes no lock after pinning and does not see a partial write (implemented and tested for one writer and four readers). In a Rust reference implementation on synthetic data (20,000 vectors, 256 dimensions, 1,000 queries), a gate width of z = 3 returned the same top 10 as exact search for all 1,000 queries while reading about 1.06 bits per coordinate per vector, against 4 for a flat 4-bit scan; at z = 2 recall@10 was 0.998. This gate is a calibrated heuristic, so the match is an observation, not a guarantee; the only certified bound we tested reads 3.7 to 4.0 bits. Bits read is not total memory, because raw float32 vectors must be kept for the exact rerank.</p><p>The saving in bits read was not shown to become a saving in time: with a lookup-table kernel the z = 2 cascade took 0.61 ms per query against 0.55 ms for an optimised exact float scan in the first run, and 0.48 ms against 0.63 ms in a re-run on a busy machine. The time comparison is inconclusive: the sign reversed between runs. On harder synthetic sets it read 1.3 to 1.4 bits at z = 2, and over seven alternating trials a concurrent writer raised median P99 latency by 21% (range 12% to 34%). Open problems: a gate whose provable width does not cost most of the saving, real embedding data, and a kernel that beats an optimised exact scan.</p></div>
+    <p style="margin-top:28px;display:flex;gap:10px;flex-wrap:wrap"><button class="gx-btn" type="button" data-copy="#abs-text">Copy abstract</button><a class="gx-btn ghost" href="paper.html">Read the full paper</a></p></article>
+  <aside class="abs-rail" aria-label="Headline numbers">
+    <div class="fact glass"><b>1.06</b><span>bits read per coordinate per vector at z = 3, against 4 for a flat 4-bit scan (measured, synthetic).</span></div>
+    <div class="fact glass"><b>0.998</b><span>recall@10 at z = 2. At z = 3 all 1,000 queries matched exact search: an observation, not a guarantee.</span></div>
+    <div class="fact glass"><b>+21%</b><span>median P99 latency with a concurrent writer over seven alternating trials (range 12% to 34%).</span></div>
+    <div class="fact glass warn"><b>Unproven</b><span>The saving in bits read was not shown to become a saving in time. The sign reversed between runs.</span></div>
+  </aside></div></section>
+</main>
+<footer class="footx"><div class="cols">
+<div><h4>Bat DB</h4><p>An open-source vector database for AI agent memory, written in Rust. Research Note v1.0, preprint, not peer reviewed. Early development; not ready for production.</p><a href="index.html">Home</a><a href="https://github.com/Sagexd08/Project-Apex">Repository</a></div>
+<div><h4>The argument</h4><a href="manifesto.html">Manifesto</a><a href="abstract.html">Abstract</a><a href="paper.html">Research paper</a><a href="evidence.html">Evidence</a></div><div><h4>The method</h4><a href="algorithm.html">Algorithm</a><a href="mathematics.html">Mathematics</a><a href="film.html">Film</a><a href="lab.html">Interactive lab</a><a href="snapshot-protocol.html">Snapshot protocol</a></div><div><h4>The honesty</h4><a href="related-work.html">Related work</a><a href="tournament.html">Algorithm tournament</a><a href="loopholes.html">Loophole audit</a><a href="roadmap.html">Roadmap</a></div></div>
+<p class="fine">Synthetic data, one machine. No comparison with other systems. Nothing on these pages claims to be first, fastest or best.</p></footer>
+<script src="js/site.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+<section class="kpis dark" aria-label="Measured on synthetic data, one machine">
+    <div class="kpi"><b data-count="1.06" data-dec="2">1.06</b><span>bits read per coordinate per vector at z = 3 (measured, synthetic). A flat 4-bit scan reads 4. Raw float32 is still stored for the exact rerank.</span></div>
+    <div class="kpi"><b data-count="3.8" data-dec="1" data-suf="×">3.8×</b><span>fewer bits read than a flat 4-bit scan. At z = 3 the top 10 matched exact search on this set; the gate is empirical, not a guarantee.</span></div>
+    <div class="kpi"><b data-count="1000" data-dec="0" data-suf=" / 1000">1000 / 1000</b><span>queries returned all ten true neighbours at z = 3 on one synthetic set. Not a proof; the provable bound reads about 4 bits.</span></div>
+    <div class="kpi warn"><b data-count="0.61" data-dec="2" data-suf=" ms">0.61 ms</b><span>per query for the z = 2 cascade against 0.55 ms for an optimised exact scan (first run). A re-run reversed the sign (0.48 vs 0.63 ms): inconclusive, no speed claim.</span></div>
+  </section>

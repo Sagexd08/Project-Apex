@@ -1,0 +1,9 @@
+    Finished `release` profile [optimized] target(s) in 2.28s
+     Running `/cache/target/release/profile --dir /cache/nytimes --out /work/benchmarks/h2h/profiling/raw/nytimes.json --ef 64,256,512 --queries 2000 --reps 3 --ip --f16`
+accel compiled=serial, haswell, skylake, icelake, genoa, sapphire, sapphireamx, graniteamx, turin, sierra, alder available=serial, haswell, skylake, icelake, genoa
+built n=290000 (parallel) in 134.1s
+built n=290000 (parallel) in 131.0s
+built n=290000 (parallel) in 90.3s
+ef=64 native=0.841ms rescore=0.009ms full=0.855ms recall=0.8824
+ef=256 native=2.827ms rescore=0.009ms full=2.866ms recall=0.9349
+ef=512 native=5.604ms rescore=0.014ms full=5.620ms recall=0.9574

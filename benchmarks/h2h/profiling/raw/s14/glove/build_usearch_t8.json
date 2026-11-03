@@ -1,0 +1,20 @@
+[
+  {
+    "build_seconds": 375.825882632,
+    "memory_usage_bytes": 1066434640,
+    "n": 1183514,
+    "quant": "f32",
+    "serialized_bytes": 800419888,
+    "threads": 8,
+    "vps": 3149.1018971646226
+  },
+  {
+    "build_seconds": 271.37523987,
+    "memory_usage_bytes": 797999184,
+    "n": 1183514,
+    "quant": "f16",
+    "serialized_bytes": 563718144,
+    "threads": 8,
+    "vps": 4361.171640297591
+  }
+]

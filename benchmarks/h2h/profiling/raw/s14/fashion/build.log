@@ -1,0 +1,31 @@
+   Compiling atlas-usearch v0.1.0 (/work/adapters/atlas-usearch)
+   Compiling atlas-bench v0.0.0 (/work/benchmarks/h2h/atlas-bench)
+    Finished `release` profile [optimized] target(s) in 10.68s
+     Running `/cache/target/release/buildbench --dir /cache/fashion --out /work/benchmarks/h2h/profiling/raw/s14/fashion/build_usearch_t1.json --threads 1`
+hnswlib threads=1 build=32.6s
+    Finished `release` profile [optimized] target(s) in 4.79s
+     Running `/cache/target/release/buildbench --dir /cache/fashion --out /work/benchmarks/h2h/profiling/raw/s14/fashion/build_usearch_t1.json --threads 1`
+f32 threads=1 build=56.8s mem=285694848
+f32 threads=1 build=53.5s mem=285694848
+f16 threads=1 build=35.6s mem=151477120
+hnswlib threads=8 build=9.9s
+    Finished `release` profile [optimized] target(s) in 5.48s
+     Running `/cache/target/release/buildbench --dir /cache/fashion --out /work/benchmarks/h2h/profiling/raw/s14/fashion/build_usearch_t8.json --threads 8`
+f32 threads=8 build=9.8s mem=285694848
+f16 threads=8 build=6.3s mem=151477120
+f16 threads=1 build=58.3s mem=151477120
+hnswlib threads=8 build=16.6s
+    Finished `release` profile [optimized] target(s) in 19.46s
+     Running `/cache/target/release/buildbench --dir /cache/fashion --out /work/benchmarks/h2h/profiling/raw/s14/fashion/build_usearch_t8.json --threads 8`
+f32 threads=8 build=17.2s mem=285694848
+f16 threads=8 build=11.9s mem=151477120
+hnswlib threads=1 build=46.5s
+    Finished `release` profile [optimized] target(s) in 4.18s
+     Running `/cache/target/release/buildbench --dir /cache/fashion --out /work/benchmarks/h2h/profiling/raw/s14/fashion/build_usearch_t1.json --threads 1`
+f32 threads=1 build=84.1s mem=285694848
+f16 threads=1 build=65.3s mem=151477120
+hnswlib threads=8 build=16.2s
+    Finished `release` profile [optimized] target(s) in 9.62s
+     Running `/cache/target/release/buildbench --dir /cache/fashion --out /work/benchmarks/h2h/profiling/raw/s14/fashion/build_usearch_t8.json --threads 8`
+f32 threads=8 build=22.0s mem=285694848
+f16 threads=8 build=13.9s mem=151477120

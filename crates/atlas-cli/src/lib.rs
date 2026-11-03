@@ -1,4 +1,5 @@
 pub mod api;
+pub mod checkpointer;
 pub mod http;
 
 use atlas_core::{Authenticator, KeyScope, KeyVerifier, PermSet, Principal, TenantId};
@@ -77,6 +78,8 @@ impl KeyVerifier for StaticKeys {
 pub struct Server {
     pub engine: Arc<Engine>,
     pub auth: Authenticator<StaticKeys>,
+    pub lcf: atlas_lcf::LcfState,
+    pub throttle: http::AuthThrottle,
 }
 
 pub fn serve(server: Arc<Server>, listener: TcpListener, stop: Arc<AtomicBool>) {

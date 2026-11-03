@@ -1,0 +1,7 @@
+loaded 100000 in 4.7 s
+{"rep": 0, "restart_to_ready_ms": 453.149499999995, "acked_missing": 0}
+{"rep": 1, "restart_to_ready_ms": 316.1194000000478, "acked_missing": 0}
+{"rep": 2, "restart_to_ready_ms": 511.18689999998423, "acked_missing": 0}
+{"rep": 3, "restart_to_ready_ms": 462.3066999999992, "acked_missing": 0}
+{"rep": 4, "restart_to_ready_ms": 411.7327999999816, "acked_missing": 0}
+median_ms 453.149499999995 missing 0

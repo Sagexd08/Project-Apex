@@ -1,0 +1,11 @@
+[package]
+name = "lcf-prototype"
+version = "0.0.1"
+edition = "2021"
+publish = false
+description = "Isolated, deterministic Living Context Forest semantics prototype. Not production storage."
+
+# Empty workspace table: keeps this crate out of the root Atlas workspace.
+[workspace]
+
+[dependencies]

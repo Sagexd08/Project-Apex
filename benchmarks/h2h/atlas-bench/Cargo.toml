@@ -4,6 +4,7 @@ version = "0.0.0"
 edition = "2021"
 publish = false
 license = "Apache-2.0"
+default-run = "atlas-bench"
 
 [workspace]
 
@@ -13,3 +14,4 @@ atlas-index = { path = "../../../crates/atlas-index" }
 atlas-usearch = { path = "../../../adapters/atlas-usearch" }
 rayon = "=1.12.0"
 serde_json = "=1.0.154"
+usearch = "=2.26.6"

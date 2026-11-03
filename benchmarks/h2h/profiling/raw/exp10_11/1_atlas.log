@@ -1,0 +1,12 @@
+exp11 {"n": 10000, "timeouts": 0, "p50": 7.96980000086478, "p95": 24.800999999570195, "p99": 30.06720000121277, "max": 62.32350000209408}
+{"kill": 0, "acked": 2014, "missing": 0}
+{"kill": 1, "acked": 1768, "missing": 0}
+{"kill": 2, "acked": 525, "missing": 0}
+{"kill": 3, "acked": 247, "missing": 0}
+{"kill": 4, "acked": 961, "missing": 0}
+{"kill": 5, "acked": 1438, "missing": 0}
+{"kill": 6, "acked": 1303, "missing": 0}
+{"kill": 7, "acked": 852, "missing": 0}
+{"kill": 8, "acked": 787, "missing": 0}
+{"kill": 9, "acked": 845, "missing": 0}
+done missing 0 acked 10740

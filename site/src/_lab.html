@@ -1,0 +1,72 @@
+<section class="s cream" id="lab" aria-labelledby="lab-h">
+    <div class="wrap">
+      <p class="mono lbl">Lab</p>
+      <h2 id="lab-h">Try the three ideas.</h2>
+      <p class="grey">These widgets run the model from the paper in your browser. They show how the mechanism behaves. They are not measurements; the measurements are in the evidence section.</p>
+
+      <div class="lab" aria-labelledby="lab1-h">
+        <h3 id="lab1-h">1. Why one bit can rank neighbours</h3>
+        <p class="grey" style="margin-bottom:22px">A random hyperplane separates two vectors with probability θ/π. Orange lines are hyperplanes that separate q from x, seen in the plane they span.</p>
+        <div class="lab-grid">
+          <svg class="geo" id="geo" viewBox="0 0 320 320" role="img" aria-label="Unit circle with two vectors and random hyperplanes"></svg>
+          <div class="ctrl">
+            <label for="theta"><span>Angle between q and x <b id="theta-v">60°</b></span><input id="theta" type="range" min="5" max="175" step="1" value="60"></label>
+            <label for="dim">Dimension <select id="dim"><option>128</option><option selected>256</option><option>768</option><option>1024</option></select></label>
+            <button class="btn ghost" id="resample" type="button"><span class="odo">Draw new hyperplanes</span></button>
+            <dl class="read">
+              <div><dt>Expected disagree θ/π</dt><dd id="o-p">0.333</dd></div>
+              <div><dt>Observed of 64</dt><dd id="o-obs">0.000</dd></div>
+              <div><dt>Std of θ̂</dt><dd id="o-sd">0°</dd></div>
+              <div><dt>Std of cos θ̂</dt><dd id="o-sc">0.000</dd></div>
+            </dl>
+          </div>
+        </div>
+      </div>
+
+      <div class="lab" aria-labelledby="lab2-h">
+        <h3 id="lab2-h">2. The error-gated cascade</h3>
+        <p class="grey" style="margin-bottom:22px">4,000 vectors whose similarity to the query follows a bell curve. Orange squares are the true top ten. Bright dots survive the stage you are viewing; faint dots were dropped. A red square means a true neighbour was wrongly dropped.</p>
+        <div class="lab-grid">
+          <canvas id="cascade" width="760" height="420" role="img" aria-label="Scatter of vectors by similarity showing which survive each stage"></canvas>
+          <div class="ctrl">
+            <label for="z"><span>Gate width z <b id="z-v">2.0</b></span><input id="z" type="range" min="0.5" max="4" step="0.1" value="2"></label>
+            <div><p class="mono" style="margin-bottom:8px">Bit schedule</p><div class="seg" id="sched"><button type="button" data-s="1-2-4" aria-pressed="true">1 → 2 → 4</button><button type="button" data-s="1-4" aria-pressed="false">1 → 4</button><button type="button" data-s="2-4" aria-pressed="false">2 → 4</button><button type="button" data-s="4" aria-pressed="false">4 only</button></div></div>
+            <div><p class="mono" style="margin-bottom:8px">View after stage</p><div class="seg" id="stage-view"><button type="button" data-v="0" aria-pressed="false">1st</button><button type="button" data-v="1" aria-pressed="false">2nd</button><button type="button" data-v="99" aria-pressed="true">Last</button></div></div>
+            <button class="btn ghost" id="reseed" type="button"><span class="odo">New random corpus</span></button>
+            <dl class="read">
+              <div><dt>Left after stage 1</dt><dd id="r-s1">0</dd></div>
+              <div><dt>After stage 2</dt><dd id="r-s2">0</dd></div>
+              <div><dt>After stage 3</dt><dd id="r-s3">0</dd></div>
+              <div><dt>Bits/vector (new / prefix)</dt><dd id="r-bits">0</dd></div>
+              <div><dt>Gate window</dt><dd id="r-win">0</dd></div>
+              <div><dt>Runs missing a neighbour</dt><dd id="r-miss">0%</dd></div>
+            </dl>
+          </div>
+        </div>
+        <p class="note-m">Model: similarity ~ N(0, 0.25²), error std = C / (√(3P)·2^b) with C = 3, P = 256, errors perfectly correlated across stages. Miss rate is over 100 simulated corpora.</p>
+      </div>
+
+      <div class="lab" aria-labelledby="lab3-h">
+        <h3 id="lab3-h">3. A snapshot per reader</h3>
+        <p class="grey" style="margin-bottom:22px">The writer commits numbered log positions. A reader pinned to a position sees exactly the commits up to it, however many arrive afterwards.</p>
+        <div class="lab-grid">
+          <div class="tl" id="tl" aria-live="polite"></div>
+          <div class="ctrl">
+            <div class="seg">
+              <button class="btn" id="tl-commit" type="button"><span class="odo">Commit</span></button>
+              <button class="btn ghost" id="tl-play" type="button"><span class="odo">Play writer</span></button>
+            </div>
+            <div class="seg">
+              <button class="btn ghost" id="tl-repin" type="button"><span class="odo">Re-pin reader B</span></button>
+              <button class="btn ghost" id="tl-reset" type="button"><span class="odo">Reset</span></button>
+            </div>
+            <dl class="read">
+              <div><dt>Writer at</dt><dd id="tl-lsn">6</dd></div>
+              <div><dt>Reader A sees up to</dt><dd id="tl-a">3</dd></div>
+              <div><dt>Reader B sees up to</dt><dd id="tl-b">6</dd></div>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>

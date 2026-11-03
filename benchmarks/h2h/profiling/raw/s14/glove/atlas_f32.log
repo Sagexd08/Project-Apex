@@ -1,0 +1,12 @@
+    Finished `release` profile [optimized] target(s) in 2.89s
+     Running `/cache/target/release/atlas-bench --dir /cache/glove --out /work/benchmarks/h2h/profiling/raw/s14/glove/atlas_f32.json --reps 3`
+built n=1183514 in 1749.6s
+atlas ef=64 recall=0.8325099999999882 p95=1.023141ms
+atlas ef=128 recall=0.8892999999999832 p95=1.776384ms
+atlas ef=256 recall=0.9335699999999817 p95=3.039314ms
+atlas ef=512 recall=0.9659099999999818 p95=5.523605ms
+atlas ef=1024 recall=0.9851699999999853 p95=10.523995ms
+atlas sel=100permille recall=0.9967699999999957 p95=43.220082ms route=native filtered HNSW walk
+atlas sel=50permille recall=1.0 p95=25.026346ms route=exact pre-filter scan over allowed ids
+atlas sel=10permille recall=1.0 p95=10.781708ms route=exact pre-filter scan over allowed ids
+atlas sel=1permille recall=0.9999899999999999 p95=7.343357ms route=exact pre-filter scan over allowed ids

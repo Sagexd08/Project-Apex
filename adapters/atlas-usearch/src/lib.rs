@@ -36,6 +36,7 @@ pub struct UsearchIndex {
     graph: Option<Index>,
     metric: Metric,
     ef_search: usize,
+    quantization: ScalarKind,
 }
 
 impl UsearchIndex {
@@ -49,7 +50,15 @@ impl UsearchIndex {
             graph: None,
             metric,
             ef_search: EF_SEARCH_DEFAULT,
+            quantization: ScalarKind::F32,
         }
+    }
+
+    /// EXPERIMENTAL (S14): store the traversal graph as F16. Exact F32 vectors stay in `flat`
+    /// and are used for rescoring. Default remains F32. Must be set before the first insert.
+    pub fn with_f16_graph(mut self) -> Self {
+        self.quantization = ScalarKind::F16;
+        self
     }
 
     pub fn with_ef_search(mut self, ef: usize) -> Self {
@@ -59,6 +68,11 @@ impl UsearchIndex {
 
     pub fn factory() -> impl Fn(usize) -> Box<dyn AnnIndex + Send + Sync> + Send + Sync + 'static {
         |dim| Box::new(UsearchIndex::new(dim))
+    }
+
+    /// EXPERIMENTAL (S14): factory for engines that should use the F16 traversal graph.
+    pub fn factory_f16() -> impl Fn(usize) -> Box<dyn AnnIndex + Send + Sync> + Send + Sync + 'static {
+        |dim| Box::new(UsearchIndex::new(dim).with_f16_graph())
     }
 
     pub fn set_ef_search(&mut self, ef: usize) {
@@ -77,7 +91,7 @@ impl UsearchIndex {
             let o = IndexOptions {
                 dimensions: self.flat.dim(),
                 metric: kind(self.metric),
-                quantization: ScalarKind::F32,
+                quantization: self.quantization,
                 connectivity: CONNECTIVITY,
                 expansion_add: EF_ADD,
                 expansion_search: self.ef_search,

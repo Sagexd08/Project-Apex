@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Interactive lab | Bat DB</title>
+<meta name="description" content="Move the sliders: rotation, the error-gated cascade and log-pinned snapshots, running in your browser.">
+<meta name="theme-color" content="#071a3d">
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/prism.css">
+<link rel="stylesheet" href="css/site.css">
+</head>
+<body class="gxp pg-lab">
+<a class="skip" href="#main">Skip to content</a>
+<header class="gx" id="gx"><a class="gx-logo" href="index.html" aria-label="Bat DB, home"><i></i>Bat DB</a>
+<button class="gx-burger" type="button" aria-expanded="false" aria-controls="gx-links">Menu</button>
+<ul class="gx-links" id="gx-links">
+<li><a href="index.html">Home</a></li><li><a href="index.html#product">Product</a></li><li><a href="index.html#benchmarks">Benchmarks</a></li>
+<li><div class="gx-dd"><a href="manifesto.html" aria-current="page">Manifesto</a><button class="gx-arrow" type="button" aria-label="Show Manifesto pages" aria-haspopup="true" aria-expanded="false" aria-controls="gx-menu"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.2 6 8l4-3.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="gx-menu" id="gx-menu" role="group" aria-label="Manifesto pages"><div class="gx-col"><h4>The argument</h4><a href="manifesto.html"><b>01</b>Manifesto<small>Why we are building this, and what would prove us wrong</small></a><a href="abstract.html"><b>02</b>Abstract<small>The whole research note in one page</small></a><a href="paper.html"><b>03</b>Research paper<small>arXiv-style, with every table. Save as PDF</small></a><a href="evidence.html"><b>04</b>Evidence<small>Every measurement, loaded from the raw results</small></a></div><div class="gx-col"><h4>The method</h4><a href="algorithm.html"><b>05</b>Algorithm<small>Encode, cascade, rerank, snapshot</small></a><a href="mathematics.html"><b>06</b>Mathematics<small>Derivations, lemma, open problem</small></a><a href="film.html"><b>07</b>Film<small>The mathematics in ninety seconds</small></a><a href="lab.html" aria-current="page"><b>08</b>Interactive lab<small>Move the sliders, see the geometry</small></a><a href="snapshot-protocol.html"><b>09</b>Snapshot protocol<small>What a reader pin has to mean</small></a></div><div class="gx-col"><h4>The honesty</h4><a href="related-work.html"><b>10</b>Related work<small>Prior art and the claim audit</small></a><a href="tournament.html"><b>11</b>Algorithm tournament<small>Seven candidates, no winner yet</small></a><a href="loopholes.html"><b>12</b>Loophole audit<small>Where an easy-data win can break</small></a><a href="roadmap.html"><b>13</b>Roadmap<small>Done, next, and what we cannot do</small></a></div></div></div></li><li><a href="https://github.com/Sagexd08/Project-Apex" rel="noopener">Source &#8599;</a></li></ul>
+<div class="gx-cta"><a href="index.html#status">What&rsquo;s done</a></div></header><div class="gx-prog" id="gx-prog" aria-hidden="true"></div>
+
+<main id="main"><header class="pg-hero" style="min-height:52svh"><p class="crumb"><a href="index.html">Home</a><span>/</span><a href="manifesto.html">Manifesto</a><span>/</span><span>Interactive lab</span></p><h1>Try the three ideas.</h1><p class="lead">Everything here runs in your browser on synthetic data. Nothing is sent anywhere.</p></header><section class="s cream" id="lab" aria-labelledby="lab-h">
+    <div class="wrap">
+      <p class="mono lbl">Lab</p>
+      <h2 id="lab-h">Try the three ideas.</h2>
+      <p class="grey">These widgets run the model from the paper in your browser. They show how the mechanism behaves. They are not measurements; the measurements are in the evidence section.</p>
+
+      <div class="lab" aria-labelledby="lab1-h">
+        <h3 id="lab1-h">1. Why one bit can rank neighbours</h3>
+        <p class="grey" style="margin-bottom:22px">A random hyperplane separates two vectors with probability θ/π. Orange lines are hyperplanes that separate q from x, seen in the plane they span.</p>
+        <div class="lab-grid">
+          <svg class="geo" id="geo" viewBox="0 0 320 320" role="img" aria-label="Unit circle with two vectors and random hyperplanes"></svg>
+          <div class="ctrl">
+            <label for="theta"><span>Angle between q and x <b id="theta-v">60°</b></span><input id="theta" type="range" min="5" max="175" step="1" value="60"></label>
+            <label for="dim">Dimension <select id="dim"><option>128</option><option selected>256</option><option>768</option><option>1024</option></select></label>
+            <button class="btn ghost" id="resample" type="button"><span class="odo">Draw new hyperplanes</span></button>
+            <dl class="read">
+              <div><dt>Expected disagree θ/π</dt><dd id="o-p">0.333</dd></div>
+              <div><dt>Observed of 64</dt><dd id="o-obs">0.000</dd></div>
+              <div><dt>Std of θ̂</dt><dd id="o-sd">0°</dd></div>
+              <div><dt>Std of cos θ̂</dt><dd id="o-sc">0.000</dd></div>
+            </dl>
+          </div>
+        </div>
+      </div>
+
+      <div class="lab" aria-labelledby="lab2-h">
+        <h3 id="lab2-h">2. The error-gated cascade</h3>
+        <p class="grey" style="margin-bottom:22px">4,000 vectors whose similarity to the query follows a bell curve. Orange squares are the true top ten. Bright dots survive the stage you are viewing; faint dots were dropped. A red square means a true neighbour was wrongly dropped.</p>
+        <div class="lab-grid">
+          <canvas id="cascade" width="760" height="420" role="img" aria-label="Scatter of vectors by similarity showing which survive each stage"></canvas>
+          <div class="ctrl">
+            <label for="z"><span>Gate width z <b id="z-v">2.0</b></span><input id="z" type="range" min="0.5" max="4" step="0.1" value="2"></label>
+            <div><p class="mono" style="margin-bottom:8px">Bit schedule</p><div class="seg" id="sched"><button type="button" data-s="1-2-4" aria-pressed="true">1 → 2 → 4</button><button type="button" data-s="1-4" aria-pressed="false">1 → 4</button><button type="button" data-s="2-4" aria-pressed="false">2 → 4</button><button type="button" data-s="4" aria-pressed="false">4 only</button></div></div>
+            <div><p class="mono" style="margin-bottom:8px">View after stage</p><div class="seg" id="stage-view"><button type="button" data-v="0" aria-pressed="false">1st</button><button type="button" data-v="1" aria-pressed="false">2nd</button><button type="button" data-v="99" aria-pressed="true">Last</button></div></div>
+            <button class="btn ghost" id="reseed" type="button"><span class="odo">New random corpus</span></button>
+            <dl class="read">
+              <div><dt>Left after stage 1</dt><dd id="r-s1">0</dd></div>
+              <div><dt>After stage 2</dt><dd id="r-s2">0</dd></div>
+              <div><dt>After stage 3</dt><dd id="r-s3">0</dd></div>
+              <div><dt>Bits/vector (new / prefix)</dt><dd id="r-bits">0</dd></div>
+              <div><dt>Gate window</dt><dd id="r-win">0</dd></div>
+              <div><dt>Runs missing a neighbour</dt><dd id="r-miss">0%</dd></div>
+            </dl>
+          </div>
+        </div>
+        <p class="note-m">Model: similarity ~ N(0, 0.25²), error std = C / (√(3P)·2^b) with C = 3, P = 256, errors perfectly correlated across stages. Miss rate is over 100 simulated corpora.</p>
+      </div>
+
+      <div class="lab" aria-labelledby="lab3-h">
+        <h3 id="lab3-h">3. A snapshot per reader</h3>
+        <p class="grey" style="margin-bottom:22px">The writer commits numbered log positions. A reader pinned to a position sees exactly the commits up to it, however many arrive afterwards.</p>
+        <div class="lab-grid">
+          <div class="tl" id="tl" aria-live="polite"></div>
+          <div class="ctrl">
+            <div class="seg">
+              <button class="btn" id="tl-commit" type="button"><span class="odo">Commit</span></button>
+              <button class="btn ghost" id="tl-play" type="button"><span class="odo">Play writer</span></button>
+            </div>
+            <div class="seg">
+              <button class="btn ghost" id="tl-repin" type="button"><span class="odo">Re-pin reader B</span></button>
+              <button class="btn ghost" id="tl-reset" type="button"><span class="odo">Reset</span></button>
+            </div>
+            <dl class="read">
+              <div><dt>Writer at</dt><dd id="tl-lsn">6</dd></div>
+              <div><dt>Reader A sees up to</dt><dd id="tl-a">3</dd></div>
+              <div><dt>Reader B sees up to</dt><dd id="tl-b">6</dd></div>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section></main>
+<footer class="footx"><div class="cols">
+<div><h4>Bat DB</h4><p>An open-source vector database for AI agent memory, written in Rust. Research Note v1.0, preprint, not peer reviewed. Early development; not ready for production.</p><a href="index.html">Home</a><a href="https://github.com/Sagexd08/Project-Apex">Repository</a></div>
+<div><h4>The argument</h4><a href="manifesto.html">Manifesto</a><a href="abstract.html">Abstract</a><a href="paper.html">Research paper</a><a href="evidence.html">Evidence</a></div><div><h4>The method</h4><a href="algorithm.html">Algorithm</a><a href="mathematics.html">Mathematics</a><a href="film.html">Film</a><a href="lab.html">Interactive lab</a><a href="snapshot-protocol.html">Snapshot protocol</a></div><div><h4>The honesty</h4><a href="related-work.html">Related work</a><a href="tournament.html">Algorithm tournament</a><a href="loopholes.html">Loophole audit</a><a href="roadmap.html">Roadmap</a></div></div>
+<p class="fine">Synthetic data, one machine. No comparison with other systems. Nothing on these pages claims to be first, fastest or best.</p></footer>
+<script src="js/site.js" defer></script>
+<script src="js/prism.js" defer></script>
+</body>
+</html>

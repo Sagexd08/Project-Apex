@@ -1,0 +1,69 @@
+{
+ "engine": "atlas",
+ "base_n": 20000,
+ "writers": 16,
+ "cpus": 4,
+ "mem": "6g",
+ "exp11_ms": {
+  "n": 10000,
+  "timeouts": 0,
+  "p50": 7.84774999920046,
+  "p95": 21.529700003156904,
+  "p99": 28.911300003528595,
+  "max": 51.32370000501396
+ },
+ "exp10": [
+  {
+   "kill": 0,
+   "acked": 1298,
+   "missing": 0
+  },
+  {
+   "kill": 1,
+   "acked": 1349,
+   "missing": 0
+  },
+  {
+   "kill": 2,
+   "acked": 1586,
+   "missing": 0
+  },
+  {
+   "kill": 3,
+   "acked": 1188,
+   "missing": 0
+  },
+  {
+   "kill": 4,
+   "acked": 1888,
+   "missing": 0
+  },
+  {
+   "kill": 5,
+   "acked": 1538,
+   "missing": 0
+  },
+  {
+   "kill": 6,
+   "acked": 1487,
+   "missing": 0
+  },
+  {
+   "kill": 7,
+   "acked": 878,
+   "missing": 0
+  },
+  {
+   "kill": 8,
+   "acked": 1326,
+   "missing": 0
+  },
+  {
+   "kill": 9,
+   "acked": 1137,
+   "missing": 0
+  }
+ ],
+ "exp10_missing_total": 0,
+ "exp10_acked_total": 13675
+}

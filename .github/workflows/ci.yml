@@ -20,6 +20,16 @@ jobs:
       - name: production graph has no test-only features or hooks
         shell: bash
         run: ci/check-prod-graph.sh
+  macos-evidence:
+    # Real macOS run (Apple fsync semantics, APFS). Simulated crash enumeration + live-server e2e.
+    # This is NOT power-loss evidence: no hardware power is cut in CI.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test -p atlas-engine --test crash_enumeration -- --nocapture
+      - run: cargo test -p atlas-engine --test kill -- --nocapture
+      - run: cargo build -p atlas-cli && bash scripts/e2e-lcf.sh
   coverage-deny:
     runs-on: ubuntu-latest
     steps:

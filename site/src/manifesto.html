@@ -1,7 +1,7 @@
 <section id="see"><h2>What we see</h2>
 <p>An agent does not work like a report. It reads what it knows, acts, writes what it learned, and reads again, often within a few milliseconds. The storage under most agents was designed for the opposite rhythm: load in bulk, build an index, then query for a long time. When the two meet, writes slow reads, tail latency spikes, and a memory that should be instant becomes the part of the loop everyone waits for.</p>
 <p>We also see that moving bytes is expensive. A search over a million vectors is mostly a question of how many bytes the machine must pull through memory. A system that asks the question with fewer bytes may win on time and energy. <b>We have not shown that it does</b>; see the falsifiers below.</p>
-<div class="call warn"><b class="k">Status of this page</b><p>A statement of direction, not a result. Measurements live on the <a href="prism.html#evidence">evidence page</a>. Anything not measured there is <span class="badge b-proposed">Proposed</span>.</p></div></section>
+<div class="call warn"><b class="k">Status of this page</b><p>A statement of direction, not a result. Measurements live on the <a href="evidence.html">evidence page</a>. Anything not measured there is <span class="badge b-proposed">Proposed</span>.</p></div></section>
 
 <section id="believe"><h2>What we believe</h2>
 <ol class="steps">

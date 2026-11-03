@@ -12,3 +12,14 @@ target/
 /docs/*
 !/docs/brand/
 !/docs/prism/
+adapters/atlas-onnx/models/
+film/
+__pycache__/
+*.pyc
+*.whl
+.impeccable/
+.atlas-demo/
+benchmarks/**/target/
+benchmarks/h2h/.s14-target/
+benchmarks/ann-spike/target/
+benchmarks/h2h/live/
