@@ -291,3 +291,17 @@ body.pg-paper{background:#0a0a0a;color:#e5e5e5}
 /* shared dark components used by abstract and other pages */
 .fact.warn{border-color:#525252}.chipx.hot{background:#fff;color:#0a0a0a}
 .sx.light{background:#141414;color:#e5e5e5}.sx.light .lblx{color:#a3a3a3}
+
+/* ---- Contrast fixes: dark pages (gxp) use light-on-dark tokens; light panels become dark panels ---- */
+body.gxp{--grey:#a3a3a3;--mid:#a3a3a3;--accent-ink:#ffffff}
+.gxp .lab{background:#141414;border:1px solid #262626;color:#e5e5e5}
+.gxp .lab canvas{background:#0a0a0a;border:1px solid #262626}
+.gxp .lab .ctrl label,.gxp .lab .read dd{color:#e5e5e5}
+.gxp .lab .ctrl select{background:#0a0a0a;color:#e5e5e5;border-color:#404040}
+.gxp .lab .seg button{color:#e5e5e5}
+.gxp .lab .seg button[aria-pressed=true]{background:#fff;color:#0a0a0a}
+.gxp .tl .cell{background:#262626;color:#fff}.gxp .tl .cell.pin{background:#fff;color:#0a0a0a}
+.gxp .read dt,.gxp .note-m,.gxp .eq p,.gxp .tbl th,.gxp .grey,.gxp .lbl{color:#a3a3a3}
+.gxp .tbl th,.gxp .tbl td{border-bottom-color:#262626}
+.gxp .eq{border-color:#262626}
+.gxp svg.geo text{fill:#e5e5e5}
