@@ -168,7 +168,7 @@
     $("pgx-verl").textContent = (S.slider == null ? "now · version " + max : "viewing version " + S.slider + " of " + max);
   }
 
-  function run(name, fn, req, tag) { var res = fn(); return record(name, req, res, tag); }
+  function run(name, fn, req, tag) { var res = fn(); if (res && !res.error && /^(remember|link|supersede|forget)$/.test(name)) walAppend(name, req); return record(name, req, res, tag); }
   var api = {
     remember: function (n, tag) { return run("remember", function () { return bat.put(S.tenant, n); }, n, tag); },
     link: function (r, f, t, tag) { return run("link", function () { return bat.link(S.tenant, { rel: r, from: f, to: t }); }, { rel: r, from: f, to: t }, tag); },
@@ -194,7 +194,7 @@
       li.append(b); ol.append(li);
     });
   }
-  function resetAll() { bat = new Bat(); S.calls = []; S.sel = null; S.slider = null; S.hl = {}; S.node = null; S.v1 = null; $("pgx-feed").textContent = ""; var e = el("div", "pgx-empty", "Press a step on the left, or run the whole story."); e.id = "pgx-empty"; $("pgx-feed").append(e); $("pgx-insp").textContent = "Select a call, or click a node in the graph."; drawGraph(); drawSlider(); stats(); }
+  function resetAll() { walLog = []; bat = new Bat(); S.calls = []; S.sel = null; S.slider = null; S.hl = {}; S.node = null; S.v1 = null; $("pgx-feed").textContent = ""; var e = el("div", "pgx-empty", "Press a step on the left, or run the whole story."); e.id = "pgx-empty"; $("pgx-feed").append(e); $("pgx-insp").textContent = "Select a call, or click a node in the graph."; drawGraph(); drawSlider(); stats(); drawWal(); }
 
 
   function pickNode(k) {
@@ -262,6 +262,89 @@
     S.node = key; $("pgx-title").value = ""; $("pgx-body").value = "";
   }
 
+
+  /* ---- write-ahead log, crash recovery, console (simulation) ---- */
+  var walLog = [];
+  var CRC_T = (function () { var t = [], c, n, k; for (n = 0; n < 256; n++) { c = n; for (k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); t[n] = c >>> 0; } return t; })();
+  function crc32(s) { var c = 0xFFFFFFFF; for (var i = 0; i < s.length; i++) c = CRC_T[(c ^ s.charCodeAt(i)) & 255] ^ (c >>> 8); return ((c ^ 0xFFFFFFFF) >>> 0).toString(16).padStart(8, "0"); }
+  function walBody(e) { return JSON.stringify([e.lsn, e.tenant, e.op, e.req]); }
+  function walAppend(name, req) {
+    var e = { lsn: walLog.length + 1, tenant: S.tenant, op: name, req: req };
+    e.crc = crc32(walBody(e)); walLog.push(e); drawWal();
+  }
+  function walSummary(e) {
+    var r = e.req || {};
+    if (e.op === "remember") return (r.title || r.key || "").slice(0, 44);
+    if (e.op === "link") return r.from + " -" + r.rel + "- " + r.to;
+    if (e.op === "supersede") return r.old + " -> " + (r.node && r.node.key);
+    return r.key || "";
+  }
+  function drawWal() {
+    var box = $("pgx-wal"); if (!box) return; box.textContent = "";
+    if (!walLog.length) { box.append(el("p", "pgx-dim", "Empty. Every write is appended here, with a checksum, before it is applied.")); return; }
+    walLog.slice(-8).forEach(function (e) {
+      var r = el("div", "pgx-walrow");
+      r.append(el("b", "", "LSN " + e.lsn), el("span", "", e.tenant + "  " + e.op + "  " + walSummary(e)), el("code", "", "crc " + e.crc));
+      box.append(r);
+    });
+    if (walLog.length > 8) box.append(el("p", "pgx-dim", "... " + (walLog.length - 8) + " earlier records"));
+  }
+  function applyEntry(b, e) {
+    var r = e.req;
+    if (e.op === "remember") b.put(e.tenant, r);
+    else if (e.op === "link") b.link(e.tenant, { rel: r.rel, from: r.from, to: r.to });
+    else if (e.op === "supersede") b.supersede(e.tenant, r.old, r.node);
+    else if (e.op === "forget") b.forget(e.tenant, r.key);
+  }
+  function digest(b) {
+    var parts = [];
+    Object.keys(b.tenants).sort().forEach(function (tn) {
+      var V = b.view(tn, null);
+      Object.keys(V.nodes).sort().forEach(function (k) { parts.push(tn + "|" + k + "|" + V.nodes[k].node.status + "|" + V.nodes[k].ver); });
+      V.edges.forEach(function (e) { parts.push(tn + "|" + e.rel + e.from + e.to + e.ver); });
+    });
+    return crc32(parts.join("\n"));
+  }
+  function killAndRecover(corrupt) {
+    if (!walLog.length) { say("result", "The log is empty. Write something first, then kill the process."); return; }
+    if (corrupt) {
+      var last = walLog[walLog.length - 1];
+      last.req = Object.assign({}, last.req, { tampered: true });
+      say("result", "Flipped bits in the last log record (LSN " + last.lsn + ") without updating its checksum.");
+    }
+    var before = digest(bat), total = walLog.length;
+    say("result", "kill -9: the process is gone and every in-memory structure is lost.");
+    bat = new Bat(); S.slider = null; S.hl = {}; S.node = null; drawGraph(); drawSlider(); stats();
+    setTimeout(function () {
+      var t0 = performance.now(), nb = new Bat(), ok = 0, bad = 0;
+      for (var i = 0; i < walLog.length; i++) {
+        if (crc32(walBody(walLog[i])) !== walLog[i].crc) { bad = walLog.length - i; break; }
+        applyEntry(nb, walLog[i]); ok++;
+      }
+      bat = nb;
+      var ms = performance.now() - t0, after = digest(bat);
+      if (bad) walLog = walLog.slice(0, ok);
+      say("result", bad
+        ? "Replayed " + ok + " of " + total + " records in " + ms.toFixed(2) + " ms. Record " + (ok + 1) + " failed its checksum and was discarded; everything before it is intact."
+        : "Replayed " + total + " records in " + ms.toFixed(2) + " ms. State identical to before the crash: " + (after === before ? "yes" : "NO") + " (digest " + after + ").");
+      drawWal(); drawGraph(); drawSlider(); stats();
+    }, 900);
+  }
+  function runCmd(line) {
+    line = line.trim(); if (!line) return;
+    say("you", "> " + line);
+    var sp = line.indexOf(" "), cmd = (sp < 0 ? line : line.slice(0, sp)).toLowerCase(), rest = sp < 0 ? "" : line.slice(sp + 1).trim(), p, m;
+    if (cmd === "help") say("result", "remember <title> :: <detail>   recall <question>   asof <version> <question>   supersede <key> <title> :: <detail>   forget <key>   stats   kill");
+    else if (cmd === "remember") { p = rest.split("::"); if (!p[0].trim()) { say("result", "usage: remember <title> :: <detail>"); return; } api.remember({ key: "mem-" + (bat.ver + 1), title: p[0].trim(), body: (p[1] || p[0]).trim(), kind: "note" }, "console"); }
+    else if (cmd === "recall") { if (!rest) { say("result", "usage: recall <question>"); return; } api.recall(rest, S.slider, "console"); }
+    else if (cmd === "asof") { m = rest.match(/^(\d+)\s+(.+)$/); if (!m) { say("result", "usage: asof <version> <question>"); return; } api.recall(m[2], +m[1], "as of v" + m[1]); }
+    else if (cmd === "supersede") { m = rest.match(/^(\S+)\s+(.+)$/); if (!m) { say("result", "usage: supersede <key> <title> :: <detail>"); return; } p = m[2].split("::"); api.supersede(m[1], { key: "mem-" + (bat.ver + 1), title: p[0].trim(), body: (p[1] || p[0]).trim(), kind: "decision" }, "console"); }
+    else if (cmd === "forget") { if (!rest) { say("result", "usage: forget <key>"); return; } api.forget(rest, "console"); }
+    else if (cmd === "stats") say("result", $("pgx-stats").textContent + "  |  log records " + walLog.length);
+    else if (cmd === "kill") killAndRecover(false);
+    else say("result", "Unknown command. Type help.");
+  }
+
   function init() {
     if (!$("pgx-feed")) return;
     buildSteps();
@@ -271,6 +354,10 @@
     $("pgx-copy").addEventListener("click", copyLast);
     document.querySelectorAll(".pgx-chip").forEach(function (c) { c.addEventListener("click", function () { $("pgx-q").value = c.textContent; $("pgx-ask").requestSubmit(); }); });
     document.addEventListener("keydown", function (e) { if (e.key === "/" && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) { e.preventDefault(); $("pgx-q").focus(); } });
+    $("pgx-kill").addEventListener("click", function () { killAndRecover(false); });
+    $("pgx-corrupt").addEventListener("click", function () { killAndRecover(true); });
+    $("pgx-cmd-form").addEventListener("submit", function (e) { e.preventDefault(); var i = $("pgx-cmd"); runCmd(i.value); i.value = ""; });
+    drawWal();
     $("pgx-reset").addEventListener("click", function () { if (!S.busy) resetAll(); });
     document.querySelectorAll("[name=pgx-tenant]").forEach(function (r) { r.addEventListener("change", function () { S.tenant = r.value; S.slider = null; S.hl = {}; drawGraph(); drawSlider(); }); });
     $("pgx-ask").addEventListener("submit", function (e) { e.preventDefault(); var q = $("pgx-q").value.trim(); if (!q) return; S.lastQ = q; api.recall(q, S.slider, "ask"); });

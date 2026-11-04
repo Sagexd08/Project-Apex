@@ -48,7 +48,21 @@
 <section class="pgx-col" aria-label="Memory graph"><h2 class="pgx-h">Memory graph</h2><svg id="pgx-graph" viewBox="0 0 380 300" role="img" aria-label="Memory graph"></svg>
 <div class="pgx-slider"><input id="pgx-ver" type="range" min="0" max="0" value="0" disabled aria-label="Log version"><span id="pgx-verl">now</span></div>
 <h2 class="pgx-h">Inspector</h2><div id="pgx-insp"><p class="pgx-dim">Select a call, or click a node in the graph.</p></div><div class="pgx-run" style="margin-top:8px"><button class="pgx-btn ghost" id="pgx-copy" type="button">Copy call as Python</button></div></section>
-</div></main>
+</div>
+<section class="pgx-wide" aria-label="Database console and write-ahead log">
+<div class="pgx-col"><h2 class="pgx-h">Console</h2><p class="pgx-dim" style="margin-bottom:10px">A database shell. Type <b>help</b>, or try: <b>remember Use mmap checkpoints :: restart maps the file</b></p><form id="pgx-cmd-form" class="pgx-cmdf"><span aria-hidden="true">&gt;</span><input id="pgx-cmd" type="text" autocomplete="off" spellcheck="false" placeholder="remember, recall, asof, supersede, forget, stats, kill" aria-label="Console command"></form></div>
+<div class="pgx-col"><h2 class="pgx-h">Write-ahead log</h2><div id="pgx-wal"></div><div class="pgx-run" style="margin-top:12px"><button class="pgx-btn" id="pgx-kill" type="button">Kill -9 and recover</button><button class="pgx-btn ghost" id="pgx-corrupt" type="button">Corrupt last record</button></div></div>
+</section>
+<section class="pgx-why" aria-label="Why Bat DB"><h2>Why Bat DB</h2><p class="pgx-sub">Measured on one machine with public datasets and raw data published. This is not a leaderboard rank.</p>
+<div class="pgx-whygrid">
+<article><b>0.58 ms</b><p>p50 for a filtered search that keeps 1% of the data (60k vectors). hnswlib 45.8 ms, Qdrant 1.8 ms.</p><span>Fashion-MNIST, Oct 2026</span></article>
+<article><b>0 lost</b><p>acknowledged writes across 20 kill -9 rounds. Qdrant matched this; we do not claim to beat it.</p><span>Durability test</span></article>
+<article><b>1.6 s &rarr; 0.5 s</b><p>restart after kill -9 at 1M vectors, after memory-mapped checkpoints. Qdrant restarts in about 0.46 s.</p><span>Restart test, Docker</span></article>
+<article><b>12.8k QPS</b><p>with 8 workers at recall 0.998. hnswlib reached 9.9k on the same data.</p><span>Fashion-MNIST, Oct 2026</span></article>
+<article><b>Pinned reads</b><p>A reader names a log version and sees the same answer every time. Drag the slider above to try it.</p><span>Time travel</span></article>
+<article><b>0 leaks</b><p>results outside the filter, in every filtered-search run (200 queries each).</p><span>Filtered search</span></article>
+</div>
+<p class="pgx-sub" style="margin-top:18px"><b>Where we are behind:</b> single-query ANN speed is slower than hnswlib on some datasets, and we are working on it. <a href="benchmarks.html">Full tables, raw data and how to reproduce &rarr;</a></p></section></main>
 <footer class="footx"><div class="cols">
 <div><h4>Bat DB</h4><p>An open-source vector database for AI agent memory, written in Rust. Research Note v1.0, preprint, not peer reviewed. Early development; not ready for production.</p><a href="index.html">Home</a><a href="playground.html">Playground</a><a href="https://github.com/Sagexd08/Project-Apex">Repository</a></div>
 <div><h4>The argument</h4><a href="manifesto.html">Manifesto</a><a href="abstract.html">Abstract</a><a href="paper.html">Research paper</a><a href="evidence.html">Evidence</a></div><div><h4>The method</h4><a href="algorithm.html">Algorithm</a><a href="mathematics.html">Mathematics</a><a href="film.html">Film</a><a href="lab.html">Interactive lab</a><a href="snapshot-protocol.html">Snapshot protocol</a></div><div><h4>The honesty</h4><a href="related-work.html">Related work</a><a href="tournament.html">Algorithm tournament</a><a href="loopholes.html">Loophole audit</a><a href="roadmap.html">Roadmap</a></div></div>
