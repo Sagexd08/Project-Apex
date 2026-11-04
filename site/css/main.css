@@ -299,7 +299,7 @@ html.static .chip{display:none}
 @media(prefers-reduced-motion:reduce){.viz .ghostline,.viz .bars rect{animation:none}.bcard{transition:none}}
 
 .logo{background:url(../assets/mark.svg) center/contain no-repeat}
-.foot .logo{background-image:url(../assets/mark-dark.png)}
+.foot .logo{background-image:url(../assets/mark.svg)}
 
 .anat-grid{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,5fr);gap:clamp(24px,5vw,90px);align-items:center;margin-top:clamp(32px,5vw,72px)}
 .anat-fig{width:100%;height:clamp(460px,52vw,640px);border:0;background:transparent;display:block}
