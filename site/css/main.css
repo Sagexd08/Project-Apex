@@ -2,7 +2,7 @@
 @font-face{font-family:"Geist Mono";src:url(../fonts/geist-mono.woff2) format("woff2");font-weight:100 900;font-display:swap}
 
 :root{
-  --black:#0a0a0a;--deep:#0a0a0a;--white:#fff;--off:#e5e5e5;--grey:#a3a3a3;--ghost:#d4d4d4;--mid:#a3a3a3;--line:#262626;--accent:#fff;--accent-ink:#fff;
+  --black:#0a0a0a;--deep:#0a0a0a;--white:#fff;--off:#e5e5e5;--grey:#525252;--ghost:#d4d4d4;--mid:#a3a3a3;--line:#262626;--accent:#fff;--accent-ink:#0a0a0a;
   --sans:"Geist",ui-sans-serif,system-ui,"Segoe UI",sans-serif;--mono:"Geist Mono",ui-monospace,monospace;
   --gutter:clamp(20px,7.72vw,120px);
   --slope:calc((100vw - 375px)/1225);
@@ -33,9 +33,9 @@ h2{font-size:var(--t-h2);line-height:1;letter-spacing:-.025em}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .skip{position:fixed;left:12px;top:-60px;z-index:200;background:var(--accent);color:var(--black);padding:10px 14px;border-radius:8px}.skip:focus{top:12px}
 
-.progress{position:fixed;inset:0 0 auto 0;height:3px;background:var(--accent);transform:scaleX(0);transform-origin:0 50%;z-index:120;pointer-events:none}
-.nav{position:fixed;top:16px;left:0;right:0;margin:0 auto;z-index:80;width:min(94vw,680px);background:var(--black);color:var(--mid);border-radius:14px;padding:10px 14px 0;overflow:hidden;box-shadow:0 14px 44px rgba(0,0,0,.28)}
-.nav ul{display:flex;gap:clamp(12px,2.4vw,26px);list-style:none;align-items:center;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.progress{position:fixed;inset:0 0 auto 0;height:3px;background:#737373;transform:scaleX(0);transform-origin:0 50%;z-index:120;pointer-events:none}
+.nav{position:fixed;top:16px;left:0;right:0;margin:0 auto;z-index:80;width:min(96vw,880px);background:var(--black);color:var(--mid);border-radius:14px;padding:10px 14px 0;overflow:hidden;box-shadow:0 14px 44px rgba(0,0,0,.28)}
+.nav ul{display:flex;gap:clamp(10px,1.7vw,22px);list-style:none;align-items:center;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
 .nav ul::-webkit-scrollbar{display:none}
 .nav a.nl{font-family:var(--mono);font-size:13px;text-transform:uppercase;white-space:nowrap;position:relative;display:block;padding:10px 0}
 .nav a.nl:has(.ping){padding-right:14px}.nav a.nl .ping{right:0;top:9px}

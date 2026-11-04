@@ -5,7 +5,7 @@ const SPAN = 1.9;
 const PITCH_PX = 44;
 const R0_PX = 66;
 const FS = 19;
-const WORD = 'PROJECT APEX · ATLAS · ';
+const WORD = 'BAT DB · ATLAS · ';
 const PITCH = (PITCH_PX / SIZE) * SPAN;
 const R0 = (R0_PX / SIZE) * SPAN;
 
